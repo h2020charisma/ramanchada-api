@@ -1,0 +1,9 @@
+# Other dependencies...
+# Example: fastapi==0.63.0
+
+fastapi
+python-multipart
+
+# Local paths to packages
+../pynanomapper
+../ramanchada2
