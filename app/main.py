@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from app.api import upload, process  # Import your endpoint modules
-import os
+
+from pydantic import BaseSettings
 
 app = FastAPI()
 
