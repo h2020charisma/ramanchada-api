@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "ramanchada-api"
+version = "0.1.0"
+description = "A web API for the RamanChada 2 Raman spectroscopy harmonisation library, incorporating the AMBIT/eNanoMapper data model"
+authors = ["Nina Jeliazkova <jeliazkova.nina@gmail.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "ramanchada_api"}]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+fastapi = "^0.101.0"
+python-multipart = "^0.0.6"
+pynanomapper = {path = "pynanomapper"}
+ramanchada2 = {path = "ramanchada2"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
