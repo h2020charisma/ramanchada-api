@@ -40,32 +40,7 @@ def process(file,jsonconfig,expandconfig,base_url):
         task.result=f"{base_url}dataset/{task_id}{file_extension}",
         
         if file_extension.lower() == ".xlsx" or file_extension.lower() == ".xls":
-            if jsonconfig is None:
-                task.status="Error"
-                task.error = "Missing jsonconfig"
-            else:    
-                json_file_path = os.path.join(UPLOAD_DIR, f"{task_id}_config.json")
-                with open(json_file_path, "wb") as f:
-                    shutil.copyfileobj(jsonconfig.file, f)
-
-                parsed_file_path = os.path.join(UPLOAD_DIR, f"{task_id}.json")   
-                parsed_json = nmparser(file_path,json_file_path)
-                with open(parsed_file_path, "w") as json_file:
-                     json.dump(parsed_json, json_file)                       
-                try:
-                    s = Substances(**parsed_json)
-                    root = s.to_nexus(nx.NXroot())
-                    #print(root.tree)
-                    nexus_file_path = os.path.join(UPLOAD_DIR, f"{task_id}.nxs")   
-                    root.save(nexus_file_path, 'w')                    
-                    task.status="Completed"
-                    task.result=f"{base_url}dataset/{task_id}.nxs",
-                except Exception as perr:    
-              
-                    task.result=f"{base_url}dataset/{task_id}.json",
-                    task.status="Error"
-                    task.error = "Error converting to hdf5"                
-
+            parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
         else: #consider a spectrum
             task.status="Error"
             task.error = "not supported yet"
@@ -79,13 +54,36 @@ def process(file,jsonconfig,expandconfig,base_url):
     
     return task
 
+def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=None):
+    if jsonconfig is None:
+        task.status="Error"
+        task.error = "Missing jsonconfig"
+    else:    
+        json_file_path = os.path.join(UPLOAD_DIR, f"{task.id}_config.json")
+        with open(json_file_path, "wb") as f:
+            shutil.copyfileobj(jsonconfig.file, f)
 
+        parsed_file_path = os.path.join(UPLOAD_DIR, f"{task.id}.json")   
+        parsed_json = nmparser(file_path,json_file_path)
+        with open(parsed_file_path, "w") as json_file:
+            json.dump(parsed_json, json_file)                       
+        try:
+            s = Substances(**parsed_json)
+            root = s.to_nexus(nx.NXroot())
+                #print(root.tree)
+            nexus_file_path = os.path.join(UPLOAD_DIR, f"{task.id}.nxs")   
+            root.save(nexus_file_path, 'w')                    
+            task.status="Completed"
+            task.result=f"{base_url}dataset/{task.id}.nxs",
+        except Exception as perr:    
+            task.result=f"{base_url}dataset/{task.id}.json",
+            task.status="Error"
+            task.error = "Error converting to hdf5"    
 
 def nmparser(xfile,jsonconfig,expandfile=None):
     with open(xfile, 'rb') as fin:
         with open(jsonconfig, 'rb') as jin:
             form = {'files[]': fin,'jsonconfig' : jin, 'expandfile':expandfile}
             response = requests.post(config.nmparse_url, files=form)
-                                 #auth=GraviteeAuth("1942a33b-d71e-466c-8c06-c0147b90d878"))
         return response.json()
            
