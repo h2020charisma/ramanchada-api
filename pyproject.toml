@@ -5,7 +5,7 @@ description = "A web API for the RamanChada 2 Raman spectroscopy harmonisation l
 authors = ["Nina Jeliazkova <jeliazkova.nina@gmail.com>"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "ramanchada_api"}]
+#packages = [{include = "ramanchada_api"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
