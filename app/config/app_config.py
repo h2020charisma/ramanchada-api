@@ -4,7 +4,8 @@ import os
 
 class AppConfig(BaseSettings):
     upload_dir: str
-
+    nmparse_url: str 
+    
 #    class Config:
 #        env_file = ".env"  # Optional: Load configuration from an .env file
 

@@ -1,1 +1,2 @@
 upload_dir: "uploads"
+nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"

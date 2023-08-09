@@ -7,9 +7,12 @@ import os
 import uuid
 import time
 import shutil
-from ..config.app_config import load_config
+
 
 router = APIRouter()
+
+from ..config.app_config import load_config
+
 config = load_config()
 
 UPLOAD_DIR = config.upload_dir
@@ -19,9 +22,11 @@ async def get_request(request: Request = Depends()):
     return request
 
 @router.post("/dataset")  # Use router.post instead of app.post
-async def upload_and_convert(request: Request,file: UploadFile = File(...)):
+async def upload_and_convert(request: Request,file: UploadFile = File(...), 
+                                jsonconfig: UploadFile = File(None),
+                                expandconfig: UploadFile = File(None)):
     base_url = str(request.base_url)  
-    task =  upload_service.process(file,base_url)
+    task =  upload_service.process(file,jsonconfig,expandconfig,base_url)
     return {"task": [task.dict()]}
 
 @router.get("/dataset/{uuid}")
