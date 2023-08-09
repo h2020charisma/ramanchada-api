@@ -3,6 +3,7 @@ import uuid
 import time
 import shutil
 from app.models.models import Task  # Import your data models
+from pathlib import Path
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -13,8 +14,8 @@ def process(file,base_url):
         uri=f"{base_url}task/{task_id}",
         id=task_id,
         name=f"Upload file {file.filename}",
-        error="",
-        policyError="",
+        error=None,
+        policyError=None,
         status="Running",
         started=int(time.time() * 1000),
         completed=int(time.time() * 1000),
@@ -23,7 +24,8 @@ def process(file,base_url):
     )    
     try:
         # Save uploaded file to a temporary location
-        file_path = os.path.join(UPLOAD_DIR, file.filename)
+        file_extension = Path(file.filename).suffix
+        file_path = os.path.join(UPLOAD_DIR, f"{task_id}{file_extension}")
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
         
@@ -31,6 +33,7 @@ def process(file,base_url):
         time.sleep(5)
         task.status="Completed"
         task.completed=int(time.time() * 1000)
+        task.result=f"{base_url}dataset/{task_id}{file_extension}",
     except Exception as err:
         task.error = str(err)
         task.status = "Error"
