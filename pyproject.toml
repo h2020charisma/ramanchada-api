@@ -8,7 +8,7 @@ readme = "README.md"
 packages = [{include = "ramanchada_api"}]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = ">=3.9,<3.11"
 fastapi = "^0.101.0"
 python-multipart = "^0.0.6"
 pynanomapper = {path = "pynanomapper"}
