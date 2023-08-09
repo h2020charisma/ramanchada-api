@@ -42,8 +42,7 @@ def process(file,jsonconfig,expandconfig,base_url):
         if file_extension.lower() == ".xlsx" or file_extension.lower() == ".xls":
             parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
         else: #consider a spectrum
-            task.status="Error"
-            task.error = "not supported yet"
+            parse_spectrum_files(task,base_url,file_path)
         
         task.completed=int(time.time() * 1000)
         
@@ -53,6 +52,10 @@ def process(file,jsonconfig,expandconfig,base_url):
         task.completed=int(time.time() * 1000)
     
     return task
+
+def parse_spectrum_files(task,base_url,file_path):
+    task.status="Error"
+    task.error = "not supported yet"
 
 def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=None):
     if jsonconfig is None:
