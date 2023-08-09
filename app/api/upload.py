@@ -1,13 +1,13 @@
 from fastapi import APIRouter, UploadFile, File, Depends
-from fastapi import Request 
-from fastapi.responses import FileResponse
+from fastapi import Request , Query , HTTPException
+from fastapi.responses import JSONResponse, FileResponse
 from app.models.models import Task  # Import the Task model
 from app.services import upload_service
 import os
 import uuid
 import time
 import shutil
-
+from pynanomapper.datamodel.ambit import Substances
 
 router = APIRouter()
 
@@ -29,13 +29,42 @@ async def upload_and_convert(request: Request,file: UploadFile = File(...),
     task =  upload_service.process(file,jsonconfig,expandconfig,base_url)
     return {"task": [task.dict()]}
 
-@router.get("/dataset/{uuid}")
-async def get_dataset(uuid: str):
+@router.get("/dataset/{uuid}",
+    responses={
+    200: {
+        "description": "Returns the dataset in the requested format",
+        "content": {
+            "application/json": {
+                "example": "see pynanomapper.datamodel.ambit.Substances "
+                #"schema": {"$ref": "#/components/schemas/Substances"}
+            },
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "example": "see Template Wizard data entry templates"
+            },
+            "application/x-hdf5": {
+                "example": "pynanomapper.datamodel.ambit.Substances converted to Nexus format"
+            }
+        }
+    },
+    404: {"description": "Dataset not found"}
+}
+)
+async def get_dataset(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "h5", "nxs"])):
     # Construct the file path based on the provided UUID
-    file_path = os.path.join(UPLOAD_DIR, f"{uuid}.xlsx")
-
-    if os.path.exists(file_path):
-        # Return the file using FileResponse
-        return FileResponse(file_path, media_type="application/octet-stream")
+    format_supported  = {
+        "xlsx" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "json" : "application/json",
+        "hdf5" : "application/x-hdf5",
+        "h5" : "application/x-hdf5",
+        "nxs" : "application/x-hdf5",
+        "nexus" : "application/x-hdf5",
+    }
+    if format is None:
+        format = "nxs"
+    if format in format_supported:
+        file_path = os.path.join(UPLOAD_DIR, f"{uuid}.{format}")
+        if os.path.exists(file_path):
+            # Return the file using FileResponse
+            return FileResponse(file_path, media_type=format_supported[format])
     else:
-        return {"error": "File not found"}
+        raise HTTPException(status_code=404, detail="Not found")

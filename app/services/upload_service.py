@@ -50,6 +50,8 @@ def process(file,jsonconfig,expandconfig,base_url):
 
                 parsed_file_path = os.path.join(UPLOAD_DIR, f"{task_id}.json")   
                 parsed_json = nmparser(file_path,json_file_path)
+                with open(parsed_file_path, "w") as json_file:
+                     json.dump(parsed_json, json_file)                       
                 try:
                     s = Substances(**parsed_json)
                     root = s.to_nexus(nx.NXroot())
@@ -59,8 +61,7 @@ def process(file,jsonconfig,expandconfig,base_url):
                     task.status="Completed"
                     task.result=f"{base_url}dataset/{task_id}.nxs",
                 except Exception as perr:    
-                    with open(parsed_file_path, "w") as json_file:
-                        json.dump(parsed_json, json_file)                     
+              
                     task.result=f"{base_url}dataset/{task_id}.json",
                     task.status="Error"
                     task.error = "Error converting to hdf5"                
