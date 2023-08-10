@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import Dict, Optional, Union
 
 class Task(BaseModel):
-    uri: str
+    uri: Optional[str] = None
     id: str
     name: str
     error: Optional[str] = None

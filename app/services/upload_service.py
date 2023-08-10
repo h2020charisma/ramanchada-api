@@ -22,7 +22,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 def process(file,jsonconfig,expandconfig,base_url):
     task_id = str(uuid.uuid4())
     task = Task(
-        uri=f"{base_url}task/{task_id}",
+        #uri=f"{base_url}task/{task_id}",
         id=task_id,
         name=f"Upload file {file.filename}",
         error=None,
