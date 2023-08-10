@@ -10,7 +10,7 @@ COPY ./ramanchada2 /tmp/ramanchada2
 
 RUN poetry export -f requirements.txt --output requirements.txt --without-hashes
 
-FROM tiangolo/uvicorn-gunicorn:python3.9-slim
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9-slim
 
 LABEL maintainer="Luchesar ILIEV <luchesar.iliev@gmail.com>" \
       org.opencontainers.image.created=$BUILD_DATE \
