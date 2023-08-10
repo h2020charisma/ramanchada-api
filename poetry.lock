@@ -853,7 +853,7 @@ six = "*"
 [[package]]
 name = "pynanomapper"
 version = "1.1.1"
-description = ""
+description = "eNanoMapper API client"
 optional = false
 python-versions = "~=3.5"
 files = []
