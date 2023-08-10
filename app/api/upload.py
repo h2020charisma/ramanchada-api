@@ -65,6 +65,6 @@ async def get_dataset(request : Request, uuid: str,format:str = Query(None, desc
         file_path = os.path.join(UPLOAD_DIR, f"{uuid}.{format}")
         if os.path.exists(file_path):
             # Return the file using FileResponse
-            return FileResponse(file_path, media_type=format_supported[format])
+            return FileResponse(file_path, media_type=format_supported[format], headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
     else:
         raise HTTPException(status_code=404, detail="Not found")
