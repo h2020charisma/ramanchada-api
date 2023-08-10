@@ -1,0 +1,24 @@
+networks:
+  ramanchada_api_dev:
+    name: ramanchada-api-dev
+
+volumes:
+  uploads-dev:
+    driver: zfs
+    name: ${ZFSROOT}/ramanchada-api-uploads-dev
+
+services:
+
+  develop:
+    image: ghcr.io/h2020charisma/ramanchada-api:develop
+    container_name: ramanchada-api-dev
+    hostname: ramanchada-api-dev
+    restart: unless-stopped
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.ramanchada-api-dev.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
+      traefik.http.routers.ramanchada-api-dev.rule: Host(`api.ramanchada.ideaconsult.net`)
+    networks:
+      - ramanchada_api_dev
+    volumes:
+      - uploads-dev:/var/uploads
