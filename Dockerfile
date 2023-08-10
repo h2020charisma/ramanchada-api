@@ -12,15 +12,16 @@ RUN poetry export -f requirements.txt --output requirements.txt --without-hashes
 
 FROM tiangolo/uvicorn-gunicorn:python3.9-slim
 
-LABEL org.opencontainers.image.created=$BUILD_DATE \
+LABEL maintainer="Luchesar ILIEV <luchesar.iliev@gmail.com>" \
+      org.opencontainers.image.created=$BUILD_DATE \
       org.opencontainers.image.description="RamanChada 2 API service" \
-      org.opencontainers.image.title="ramanchada-api" \
-      org.opencontainers.image.version="latest" \
-      org.opencontainers.image.vendor="IDEAconsult" \
-      org.opencontainers.image.source="https://github.com/h2020charisma/ramanchada-api" \
       org.opencontainers.image.revision=$VCS_REF \
+      org.opencontainers.image.schema-version="1.0" \
+      org.opencontainers.image.source="https://github.com/h2020charisma/ramanchada-api" \
+      org.opencontainers.image.title="ramanchada-api" \
       org.opencontainers.image.url="https://github.com/h2020charisma/ramanchada-api/blob/main/README.md" \
-      org.opencontainers.image.schema-version="1.0"
+      org.opencontainers.image.vendor="IDEAconsult" \
+      org.opencontainers.image.version="latest"
 
 COPY --from=requirements-stage /tmp/requirements.txt /app/requirements.txt
 COPY ./pynanomapper /tmp/pynanomapper
