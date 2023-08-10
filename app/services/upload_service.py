@@ -39,7 +39,7 @@ def process(file,jsonconfig,expandconfig,base_url):
         file_path = os.path.join(UPLOAD_DIR, f"{task_id}{file_extension}")
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
-        task.result=f"{base_url}dataset/{task_id}{file_extension}",
+        task.result=f"{base_url}dataset/{task_id}?format={file_extension}",
         
         if file_extension.lower() == ".xlsx" or file_extension.lower() == ".xls":
             parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
@@ -94,7 +94,7 @@ def parse_spectrum_files(task,base_url,file_path,jsonconfig):
     nexus_file_path = os.path.join(UPLOAD_DIR, f"{task.id}.nxs")   
     nxroot.save(nexus_file_path,mode="w")
     task.status="Completed"
-    task.result=f"{base_url}dataset/{task.id}.nxs",        
+    task.result=f"{base_url}dataset/{task.id}?format=nxs",        
 
 def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=None):
     if jsonconfig is None:
@@ -116,11 +116,11 @@ def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=
             nexus_file_path = os.path.join(UPLOAD_DIR, f"{task.id}.nxs")   
             root.save(nexus_file_path, 'w')                    
             task.status="Completed"
-            task.result=f"{base_url}dataset/{task.id}.nxs",
+            task.result=f"{base_url}dataset/{task.id}?format=nxs",
         except Exception as perr:    
-            task.result=f"{base_url}dataset/{task.id}.json",
+            task.result=f"{base_url}dataset/{task.id}?format=json",
             task.status="Error"
-            task.error = "Error converting to hdf5"    
+            task.error = f"Error converting to hdf5 {perr}"    
 
 def nmparser(xfile,jsonconfig,expandfile=None):
     with open(xfile, 'rb') as fin:
