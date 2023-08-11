@@ -18,6 +18,8 @@ services:
       traefik.enable: 'true'
       traefik.http.routers.ramanchada-api-dev.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
       traefik.http.routers.ramanchada-api-dev.rule: Host(`api.ramanchada.ideaconsult.net`)
+      com.centurylinklabs.watchtower.enable: 'true'
+      com.centurylinklabs.watchtower.scope: default
     networks:
       - ramanchada_api_dev
     volumes:
