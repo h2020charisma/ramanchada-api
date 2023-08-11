@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import upload, process  # Import your endpoint modules
+from app.api import upload, process, info  # Import your endpoint modules
 
 from pydantic import BaseSettings
 
@@ -10,6 +10,7 @@ app = FastAPI()
 # Include your API endpoint routers here
 app.include_router(upload.router, prefix="", tags=["dataset"])
 app.include_router(process.router, prefix="", tags=["process"])
+app.include_router(info.router, prefix="", tags=["info"])
 
 for route in app.routes:
     print(f"Route: {route.path} | Methods: {route.methods}")
