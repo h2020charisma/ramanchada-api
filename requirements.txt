@@ -2,6 +2,7 @@
 # Example: fastapi==0.63.0
 
 fastapi
+apscheduler
 python-multipart
 
 # Local paths to packages
