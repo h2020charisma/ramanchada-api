@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Dict, Optional, Union
 
+tasks_db = {}
+
 class Task(BaseModel):
     uri: Optional[str] = None
     id: str

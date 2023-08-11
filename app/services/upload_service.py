@@ -21,33 +21,21 @@ config = load_config()
 UPLOAD_DIR = config.upload_dir
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def process(file,jsonconfig,expandconfig,base_url):
-    task_id = str(uuid.uuid4())
-    task = Task(
-        uri=f"{base_url}task/{task_id}",
-        id=task_id,
-        name=f"Upload file {file.filename}",
-        error=None,
-        policyError=None,
-        status="Running",
-        started=int(time.time() * 1000),
-        completed=int(time.time() * 1000),
-        result=f"{base_url}dataset/{task_id}",
-        errorCause=None
-    )    
+async def process(task,file,jsonconfig,expandconfig,base_url):
     
     try:
         # Save uploaded file to a temporary location
         file_extension = Path(file.filename).suffix
-        file_path = os.path.join(UPLOAD_DIR, f"{task_id}{file_extension}")
+        file_path = os.path.join(UPLOAD_DIR, f"{task.id}{file_extension}")
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
         ext = file_extension.replace(".","")    
-        task.result=f"{base_url}dataset/{task_id}?format={ext}",
+        task.result=f"{base_url}dataset/{task.id}?format={ext}",
         
         if file_extension.lower() == ".xlsx" or file_extension.lower() == ".xls":
             try:
                 parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
+                task.status = "Completed"
             except HTTPException as err:
                 print(err)
                 task.error = "error parsing file"
@@ -68,7 +56,6 @@ def process(file,jsonconfig,expandconfig,base_url):
         task.status = "Error"
         task.completed=int(time.time() * 1000)
     
-    return task
 
 def parse_spectrum_files(task,base_url,file_path,jsonconfig):
                         #instrument,wavelength,provider,investigation,sample,sample_provider,prefix):

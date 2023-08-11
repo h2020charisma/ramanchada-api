@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request, HTTPException
 
-tasks_db = {}
-
 router = APIRouter()
+
+from ..models.models import tasks_db
 
 @router.get("/task/{uuid}")
 async def get_dataset(request : Request, uuid: str):
