@@ -52,19 +52,27 @@ async def upload_and_convert(request: Request,file: UploadFile = File(...),
 async def get_dataset(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "h5", "nxs"])):
     # Construct the file path based on the provided UUID
     format_supported  = {
-        "xlsx" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "json" : "application/json",
-        "hdf5" : "application/x-hdf5",
-        "h5" : "application/x-hdf5",
-        "nxs" : "application/x-hdf5",
-        "nexus" : "application/x-hdf5",
+        "xlsx" : {"mime" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "ext" : "xlsx"},
+        "json" : {"mime" : "application/json" , "ext" : "json"},
+        "hdf5" : {"mime" : "application/x-hdf5", "ext" : "nxs"},
+        "h5" : {"mime" : "application/x-hdf5", "ext" : "nxs"},
+        "nxs" : {"mime" : "application/x-hdf5", "ext" : "nxs"},
+        "nexus" : {"mime" : "application/x-hdf5", "ext" : "nxs"}
     }
+    
     if format is None:
         format = "nxs"
     if format in format_supported:
-        file_path = os.path.join(UPLOAD_DIR, f"{uuid}.{format}")
+        _ext = format_supported[format]["ext"]
+        file_path = os.path.join(UPLOAD_DIR, f"{uuid}.{_ext}")
         if os.path.exists(file_path):
             # Return the file using FileResponse
-            return FileResponse(file_path, media_type=format_supported[format], headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
+            return FileResponse(file_path, media_type=format_supported[format]["mime"], 
+                                    headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
     else:
-        raise HTTPException(status_code=404, detail="Not found")
+        file_path = os.path.join(UPLOAD_DIR, f"{uuid}.{format}")
+        if os.path.exists(file_path):
+            return FileResponse(file_path, 
+                                    headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})            
+      
+    raise HTTPException(status_code=404, detail="Not found")
