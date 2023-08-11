@@ -1,7 +1,6 @@
 from pydantic import BaseModel
 from typing import Dict, Optional, Union
 
-tasks_db = {}
 
 class Task(BaseModel):
     uri: Optional[str] = None
@@ -11,6 +10,8 @@ class Task(BaseModel):
     policyError: Optional[str] = None
     status: str
     started: int
-    completed: int
+    completed: Optional[str] = None
     result: str
     errorCause: Optional[str] = None
+
+tasks_db: Dict[str, Task] = {}    

@@ -1,5 +1,10 @@
 from fastapi import FastAPI
+from apscheduler.schedulers.background import BackgroundScheduler
+from datetime import datetime, timedelta
+import time
+
 from app.api import upload, process, info, tasks
+from app.models.models import tasks_db
 
 from pydantic import BaseSettings
 
@@ -19,6 +24,18 @@ app.include_router(info.router, prefix="", tags=["info"])
 
 for route in app.routes:
     print(f"Route: {route.path} | Methods: {route.methods}")
+
+
+def cleanup_tasks():
+    current_time = int(time.time() * 1000)  # Current time in milliseconds
+    two_hours_ago = current_time - (2 * 60 * 60 * 1000)  # Two hours in milliseconds
+    tasks_to_remove = [task_id for task_id, task_data in tasks_db.items() if task_data.started < two_hours_ago and task_data.status != "Running"]
+    for task_id in tasks_to_remove:
+        tasks_db.pop(task_id)
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(cleanup_tasks, 'interval', minutes=30)  # Clean up every 30 minutes
+scheduler.start()
 
 if __name__ == "__main__":
     import uvicorn

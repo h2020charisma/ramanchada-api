@@ -40,7 +40,7 @@ async def upload_and_convert(request: Request,
         policyError=None,
         status="Running",
         started=int(time.time() * 1000),
-        completed=int(time.time() * 1000),
+        completed=None,
         result=f"{base_url}dataset/{task_id}",
         errorCause=None
     )      
