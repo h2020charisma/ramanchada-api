@@ -30,7 +30,6 @@ async def upload_and_convert(request: Request,
                                 expandconfig: UploadFile = File(None)
                                 ):
     base_url = str(request.base_url)  
-    #background_tasks.add_task(process_long_task, data)
     task_id = str(uuid.uuid4())
     task = Task(
         uri=f"{base_url}task/{task_id}",
