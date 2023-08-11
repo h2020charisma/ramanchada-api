@@ -24,7 +24,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 def process(file,jsonconfig,expandconfig,base_url):
     task_id = str(uuid.uuid4())
     task = Task(
-        #uri=f"{base_url}task/{task_id}",
+        uri=f"{base_url}task/{task_id}",
         id=task_id,
         name=f"Upload file {file.filename}",
         error=None,
@@ -35,6 +35,7 @@ def process(file,jsonconfig,expandconfig,base_url):
         result=f"{base_url}dataset/{task_id}",
         errorCause=None
     )    
+    
     try:
         # Save uploaded file to a temporary location
         file_extension = Path(file.filename).suffix
@@ -57,6 +58,7 @@ def process(file,jsonconfig,expandconfig,base_url):
                 task.status = "Error"
 
         else: #consider a spectrum
+            print("spectrum")
             parse_spectrum_files(task,base_url,file_path,jsonconfig)
         
         task.completed=int(time.time() * 1000)

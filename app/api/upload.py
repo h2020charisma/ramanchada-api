@@ -12,6 +12,7 @@ from pynanomapper.datamodel.ambit import Substances
 router = APIRouter()
 
 from ..config.app_config import load_config
+from .tasks import tasks_db
 
 config = load_config()
 
@@ -27,6 +28,7 @@ async def upload_and_convert(request: Request,file: UploadFile = File(...),
                                 expandconfig: UploadFile = File(None)):
     base_url = str(request.base_url)  
     task =  upload_service.process(file,jsonconfig,expandconfig,base_url)
+    tasks_db[task.id] = task
     return {"task": [task.dict()]}
 
 @router.get("/dataset/{uuid}",
