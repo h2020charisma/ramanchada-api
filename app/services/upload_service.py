@@ -11,6 +11,8 @@ from  pynanomapper.datamodel.nexus_utils import to_nexus
 from  pynanomapper.datamodel.nexus_spectra import spe2ambit
 import nexusformat.nexus.tree as nx
 import ramanchada2 as rc2 
+from fastapi import HTTPException
+import traceback
 
 from ..config.app_config import load_config
 
@@ -39,10 +41,21 @@ def process(file,jsonconfig,expandconfig,base_url):
         file_path = os.path.join(UPLOAD_DIR, f"{task_id}{file_extension}")
         with open(file_path, "wb") as f:
             shutil.copyfileobj(file.file, f)
-        task.result=f"{base_url}dataset/{task_id}?format={file_extension}",
+        ext = file_extension.replace(".","")    
+        task.result=f"{base_url}dataset/{task_id}?format={ext}",
         
         if file_extension.lower() == ".xlsx" or file_extension.lower() == ".xls":
-            parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
+            try:
+                parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
+            except HTTPException as err:
+                print(err)
+                task.error = "error parsing file"
+                task.errorCause = traceback.format_exc()
+                task.status = "Error"                
+            except Exception as err:
+                task.error = str(err)
+                task.status = "Error"
+
         else: #consider a spectrum
             parse_spectrum_files(task,base_url,file_path,jsonconfig)
         
@@ -126,6 +139,10 @@ def nmparser(xfile,jsonconfig,expandfile=None):
     with open(xfile, 'rb') as fin:
         with open(jsonconfig, 'rb') as jin:
             form = {'files[]': fin,'jsonconfig' : jin, 'expandfile':expandfile}
-            response = requests.post(config.nmparse_url, files=form)
-        return response.json()
+            try:
+                response = requests.post(config.nmparse_url, files=form, timeout=None)
+                response.raise_for_status()
+                return response.json()
+            except Exception as err:
+                raise err
            
