@@ -3,7 +3,11 @@ from app.api import upload, process, info  # Import your endpoint modules
 
 from pydantic import BaseSettings
 
-app = FastAPI()
+app = FastAPI(
+     title="Ramanchada API",
+     version="0.0.1",
+     description = "A web API for the RamanChada 2 Raman spectroscopy harmonisation library, incorporating the AMBIT/eNanoMapper data model"
+)
 
 # Include your application configuration here if needed
 
