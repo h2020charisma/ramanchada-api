@@ -7,7 +7,7 @@ from pathlib import Path
 import requests
 import json 
 from  pynanomapper.datamodel.ambit import Substances,SubstanceRecord,CompositionEntry,Component, Compound
-from  pynanomapper.datamodel.nexus_utils import to_nexus
+from  pynanomapper.datamodel.nexus_writer import to_nexus
 from  pynanomapper.datamodel.nexus_spectra import spe2ambit
 import nexusformat.nexus.tree as nx
 import ramanchada2 as rc2 
