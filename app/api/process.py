@@ -30,5 +30,5 @@ async def process_hdf5(request: Request,
         errorCause=None
     )      
     tasks_db[task.id] = task
-    background_tasks.add_task(process_service.process,task,dataset_uri)
+    background_tasks.add_task(process_service.process,task,dataset_uri,base_url)
     return {"task": [task.dict()]}
