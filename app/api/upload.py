@@ -8,6 +8,7 @@ import uuid
 import time
 import shutil
 from pynanomapper.datamodel.ambit import Substances
+from pathlib import Path
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 async def get_request(request: Request = Depends()):
     return request
+
 
 @router.post("/dataset")  # Use router.post instead of app.post
 async def upload_and_convert(request: Request,
@@ -46,6 +48,7 @@ async def upload_and_convert(request: Request,
     tasks_db[task.id] = task
     background_tasks.add_task(upload_service.process,task,file,jsonconfig,expandconfig,base_url)
     return {"task": [task.dict()]}
+
 
 @router.get("/dataset/{uuid}",
     responses={
@@ -94,3 +97,22 @@ async def get_dataset(request : Request, uuid: str,format:str = Query(None, desc
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})            
       
     raise HTTPException(status_code=404, detail="Not found")
+
+@router.get("/dataset")
+async def get_datasets(request : Request,q:str = Query(None)):
+    base_url = str(request.base_url) 
+    uuids = {}
+    for filename in os.listdir(UPLOAD_DIR):
+        file_path = os.path.join(UPLOAD_DIR, filename)
+        if os.path.isfile(file_path):
+            _uuid = Path(file_path).stem.split("_")[0]
+            uri=f"{base_url}dataset/{_uuid}"
+            _ext = Path(file_path).suffix
+            if not uri in uuids:
+                uuids[uri] = {}
+                uuids[uri]["format"] = []
+            if Path(file_path).stem.endswith("_config"):
+                uuids[uri]["config"] = Path(file_path).stem
+            else:
+                uuids[uri]["format"].append(_ext.replace(".",""))
+    return { "datasets" : uuids}
