@@ -20,6 +20,8 @@ config = load_config()
 
 UPLOAD_DIR = config.upload_dir
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+NEXUS_DIR = os.path.join(UPLOAD_DIR,"NEXUS")
+os.makedirs(NEXUS_DIR, exist_ok=True)
 
 async def process(task,file,jsonconfig,expandconfig,base_url):
     
@@ -93,7 +95,7 @@ def parse_spectrum_files(task,base_url,file_path,jsonconfig):
     substances.append(substance)
         #study = mx.Study(study=studies)
     nxroot = Substances(substance=substances).to_nexus(nx.NXroot())
-    nexus_file_path = os.path.join(UPLOAD_DIR, f"{task.id}.nxs")   
+    nexus_file_path = os.path.join(NEXUS_DIR, f"{task.id}.nxs")   
     nxroot.save(nexus_file_path,mode="w")
     task.status="Completed"
     task.result=f"{base_url}dataset/{task.id}?format=nxs",        
@@ -115,7 +117,7 @@ def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=
             s = Substances(**parsed_json)
             root = s.to_nexus(nx.NXroot())
                 #print(root.tree)
-            nexus_file_path = os.path.join(UPLOAD_DIR, f"{task.id}.nxs")   
+            nexus_file_path = os.path.join(NEXUS_DIR, f"{task.id}.nxs")   
             root.save(nexus_file_path, 'w')                    
             task.status="Completed"
             task.result=f"{base_url}dataset/{task.id}?format=nxs",

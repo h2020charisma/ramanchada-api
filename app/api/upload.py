@@ -9,7 +9,11 @@ import time
 import shutil
 from pynanomapper.datamodel.ambit import Substances
 from pathlib import Path
-
+def migrate_dir():
+    for filename in Path(UPLOAD_DIR).glob('*.nxs'):
+        print(filename)
+        shutil.move(filename, NEXUS_DIR)
+        
 router = APIRouter()
 
 from ..config.app_config import load_config
@@ -19,9 +23,13 @@ config = load_config()
 
 UPLOAD_DIR = config.upload_dir
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+NEXUS_DIR = os.path.join(UPLOAD_DIR,"NEXUS")
+os.makedirs(NEXUS_DIR, exist_ok=True)
+migrate_dir()
 
 async def get_request(request: Request = Depends()):
     return request
+
 
 
 @router.post("/dataset")  # Use router.post instead of app.post
@@ -73,19 +81,21 @@ async def upload_and_convert(request: Request,
 async def get_dataset(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "h5", "nxs"])):
     # Construct the file path based on the provided UUID
     format_supported  = {
-        "xlsx" : {"mime" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "ext" : "xlsx"},
-        "json" : {"mime" : "application/json" , "ext" : "json"},
-        "hdf5" : {"mime" : "application/x-hdf5", "ext" : "nxs"},
-        "h5" : {"mime" : "application/x-hdf5", "ext" : "nxs"},
-        "nxs" : {"mime" : "application/x-hdf5", "ext" : "nxs"},
-        "nexus" : {"mime" : "application/x-hdf5", "ext" : "nxs"}
+        "xlsx" : {"mime" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                  "ext" : "xlsx", "dir" : UPLOAD_DIR},
+        "json" : {"mime" : "application/json" , "ext" : "json" , "dir" : UPLOAD_DIR},
+        "hdf5" : {"mime" : "application/x-hdf5", "ext" : "nxs" , "dir" : NEXUS_DIR},
+        "h5" : {"mime" : "application/x-hdf5", "ext" : "nxs" , "dir" : NEXUS_DIR},
+        "nxs" : {"mime" : "application/x-hdf5", "ext" : "nxs" , "dir" : NEXUS_DIR},
+        "nexus" : {"mime" : "application/x-hdf5", "ext" : "nxs" , "dir" : NEXUS_DIR}
     }
     
     if format is None:
         format = "nxs"
     if format in format_supported:
         _ext = format_supported[format]["ext"]
-        file_path = os.path.join(UPLOAD_DIR, f"{uuid}.{_ext}")
+        _dir = format_supported[format]["dir"]
+        file_path = os.path.join(_dir, f"{uuid}.{_ext}")
         if os.path.exists(file_path):
             # Return the file using FileResponse
             return FileResponse(file_path, media_type=format_supported[format]["mime"], 
@@ -102,17 +112,18 @@ async def get_dataset(request : Request, uuid: str,format:str = Query(None, desc
 async def get_datasets(request : Request,q:str = Query(None)):
     base_url = str(request.base_url) 
     uuids = {}
-    for filename in os.listdir(UPLOAD_DIR):
-        file_path = os.path.join(UPLOAD_DIR, filename)
-        if os.path.isfile(file_path):
-            _uuid = Path(file_path).stem.split("_")[0]
-            uri=f"{base_url}dataset/{_uuid}"
-            _ext = Path(file_path).suffix
-            if not uri in uuids:
-                uuids[uri] = {}
-                uuids[uri]["format"] = []
-            if Path(file_path).stem.endswith("_config"):
-                uuids[uri]["config"] = Path(file_path).stem
-            else:
-                uuids[uri]["format"].append(_ext.replace(".",""))
+    for _dir in [UPLOAD_DIR,NEXUS_DIR]:
+        for filename in os.listdir(_dir):
+            file_path = os.path.join(_dir, filename)
+            if os.path.isfile(file_path):
+                _uuid = Path(file_path).stem.split("_")[0]
+                uri=f"{base_url}dataset/{_uuid}"
+                _ext = Path(file_path).suffix
+                if not uri in uuids:
+                    uuids[uri] = {}
+                    uuids[uri]["format"] = []
+                if Path(file_path).stem.endswith("_config"):
+                    uuids[uri]["config"] = Path(file_path).stem
+                else:
+                    uuids[uri]["format"].append(_ext.replace(".",""))
     return { "datasets" : uuids}
