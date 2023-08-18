@@ -18,6 +18,29 @@ services:
       traefik.enable: 'true'
       traefik.http.routers.ramanchada-api-dev.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
       traefik.http.routers.ramanchada-api-dev.rule: Host(`api.ramanchada.ideaconsult.net`)
+      traefik.http.routers.ramanchada-api-dev.middlewares: ramanchada-api-dev-cors
+      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowCredentials: 'true'
+      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowHeaders: >-
+        Authorization,
+        Cache-Control,
+        Content-Type,
+        DNT,
+        If-Modified-Since,
+        Keep-Alive,
+        User-Agent,
+        X-CustomHeader,
+        X-Requested-With
+      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowMethods: >-
+        GET,
+        OPTIONS,
+        POST
+      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowOriginList: >-
+        https://search-dev.data.enanomapper.net,
+        https://search-experimental.data.enanomapper.net,
+        https://search.charisma.ideaconsult.net,
+        https://search.data.enanomapper.net
+      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlMaxAge: 1728000
+      traefik.http.middlewares.ramanchada-api-dev-cors.headers.addVaryHeader: 'true'
       com.centurylinklabs.watchtower.enable: 'true'
       com.centurylinklabs.watchtower.scope: default
     networks:
