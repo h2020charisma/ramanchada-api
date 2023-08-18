@@ -4,15 +4,10 @@ import time
 import shutil
 from app.models.models import Task  # Import your data models
 import h5py
-from ..config.app_config import load_config
+from ..config.app_config import initialize_dirs
 from pynanomapper.datamodel.nexus_parser import SpectrumParser
 
-config = load_config()
-
-UPLOAD_DIR = config.upload_dir
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-NEXUS_DIR = os.path.join(UPLOAD_DIR,"NEXUS")
-os.makedirs(NEXUS_DIR, exist_ok=True)
+config, UPLOAD_DIR, NEXUS_DIR = initialize_dirs()
 
 
 async def process(task : Task,nexus_dataset_url: str,base_url: str):
