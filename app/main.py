@@ -5,12 +5,10 @@ import time
 from app.api import upload, process, info, tasks
 from app.models.models import tasks_db
 from pydantic import BaseSettings
-#from h5grove.fastapi_utils import router, settings
 import os 
 from .config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DIR = initialize_dirs(migrate=True)
-
 
 app = FastAPI(
      title="Ramanchada API",
@@ -26,8 +24,10 @@ app.include_router(process.router, prefix="", tags=["process"])
 app.include_router(tasks.router, prefix="", tags=["task"])
 app.include_router(info.router, prefix="", tags=["info"])
 
-#settings.base_dir = os.path.abspath(NEXUS_DIR)
-#app.include_router(router)
+
+#from h5grove import fastapi_utils 
+#fastapi_utils.settings.base_dir = os.path.abspath(NEXUS_DIR)
+#app.include_router(fastapi_utils.router, prefix="/h5grove", tags=["h5grove"])
 
 for route in app.routes:
     print(f"Route: {route.path} | Methods: {route.methods}")
