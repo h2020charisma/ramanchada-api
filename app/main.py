@@ -25,9 +25,9 @@ app.include_router(tasks.router, prefix="", tags=["task"])
 app.include_router(info.router, prefix="", tags=["info"])
 
 
-#from h5grove import fastapi_utils 
-#fastapi_utils.settings.base_dir = os.path.abspath(NEXUS_DIR)
-#app.include_router(fastapi_utils.router, prefix="/h5grove", tags=["h5grove"])
+from h5grove import fastapi_utils
+fastapi_utils.settings.base_dir = os.path.abspath(NEXUS_DIR)
+app.include_router(fastapi_utils.router, prefix="/h5grove", tags=["h5grove"])
 
 for route in app.routes:
     print(f"Route: {route.path} | Methods: {route.methods}")
