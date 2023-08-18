@@ -14,14 +14,9 @@ import ramanchada2 as rc2
 from fastapi import HTTPException
 import traceback
 
-from ..config.app_config import load_config
+from ..config.app_config import initialize_dirs
 
-config = load_config()
-
-UPLOAD_DIR = config.upload_dir
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-NEXUS_DIR = os.path.join(UPLOAD_DIR,"NEXUS")
-os.makedirs(NEXUS_DIR, exist_ok=True)
+config, UPLOAD_DIR, NEXUS_DIR = initialize_dirs()
 
 async def process(task,file,jsonconfig,expandconfig,base_url):
     

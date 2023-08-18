@@ -9,23 +9,16 @@ import time
 import shutil
 from pynanomapper.datamodel.ambit import Substances
 from pathlib import Path
-def migrate_dir():
-    for filename in Path(UPLOAD_DIR).glob('*.nxs'):
-        print(filename)
-        shutil.move(filename, NEXUS_DIR)
+
         
 router = APIRouter()
 
-from ..config.app_config import load_config
 from ..models.models import tasks_db
 
-config = load_config()
+from ..config.app_config import initialize_dirs
 
-UPLOAD_DIR = config.upload_dir
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-NEXUS_DIR = os.path.join(UPLOAD_DIR,"NEXUS")
-os.makedirs(NEXUS_DIR, exist_ok=True)
-migrate_dir()
+config, UPLOAD_DIR, NEXUS_DIR = initialize_dirs()
+
 
 async def get_request(request: Request = Depends()):
     return request
