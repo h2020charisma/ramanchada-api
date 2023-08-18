@@ -42,7 +42,7 @@ services:
       traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlMaxAge: 1728000
       traefik.http.middlewares.ramanchada-api-dev-cors.headers.addVaryHeader: 'true'
       com.centurylinklabs.watchtower.enable: 'true'
-      com.centurylinklabs.watchtower.scope: default
+      com.centurylinklabs.watchtower.scope: frequent
     networks:
       - ramanchada_api_dev
     volumes:
