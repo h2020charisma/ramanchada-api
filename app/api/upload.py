@@ -28,29 +28,50 @@ async def get_request(request: Request = Depends()):
 @router.post("/dataset")  # Use router.post instead of app.post
 async def upload_and_convert(request: Request,
                              background_tasks: BackgroundTasks,
+                             dataset_type:str = Query("template_wizard", description="dataset type",enum=["template_wizard", "raman_spectrum", "ambit_json"]),
                                 file: UploadFile = File(...), 
                                 jsonconfig: UploadFile = File(None),
                                 expandconfig: UploadFile = File(None)
                                 ):
     base_url = str(request.base_url)  
     task_id = str(uuid.uuid4())
-    task = Task(
-        uri=f"{base_url}task/{task_id}",
-        id=task_id,
-        name=f"Upload file {file.filename}",
-        error=None,
-        policyError=None,
-        status="Running",
-        started=int(time.time() * 1000),
-        completed=None,
-        result=f"{base_url}dataset/{task_id}",
-        errorCause=None
-    )      
-    tasks_db[task.id] = task
-    background_tasks.add_task(upload_service.process,task,file,jsonconfig,expandconfig,base_url)
+    if "application/json" in request.headers.get("Content-Type"):
+        #"ambit_json"
+        substances = Substances(**await request.json())
+        task = Task(
+            uri=f"{base_url}task/{task_id}",
+            id=task_id,
+            name=f"Convert AMBIT json into nexus format",
+            error=None,
+            policyError=None,
+            status="Running",
+            started=int(time.time() * 1000),
+            completed=None,
+            result=f"{base_url}dataset/{task_id}",
+            errorCause=None
+        )      
+        tasks_db[task.id] = task
+        background_tasks.add_task(upload_service.process_substances,task,substances,base_url)
+            
+    else:    
+        task = Task(
+            uri=f"{base_url}task/{task_id}",
+            id=task_id,
+            name=f"Upload file {file.filename} of type {dataset_type}",
+            error=None,
+            policyError=None,
+            status="Running",
+            started=int(time.time() * 1000),
+            completed=None,
+            result=f"{base_url}dataset/{task_id}",
+            errorCause=None
+        )      
+        tasks_db[task.id] = task
+        background_tasks.add_task(upload_service.process,task,dataset_type,file,jsonconfig,expandconfig,base_url)
+    
     return {"task": [task.dict()]}
 
-
+    
 @router.get("/dataset/{uuid}",
     responses={
     200: {

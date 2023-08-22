@@ -18,7 +18,7 @@ from ..config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DIR = initialize_dirs()
 
-async def process(task,file,jsonconfig,expandconfig,base_url):
+async def process(task,dataset_type,file,jsonconfig,expandconfig,base_url):
     
     try:
         # Save uploaded file to a temporary location
@@ -29,23 +29,28 @@ async def process(task,file,jsonconfig,expandconfig,base_url):
         ext = file_extension.replace(".","")    
         task.result=f"{base_url}dataset/{task.id}?format={ext}",
         
-        if file_extension.lower() == ".xlsx" or file_extension.lower() == ".xls":
-            try:
-                parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
-                task.status = "Completed"
-            except HTTPException as err:
-                print(err)
-                task.error = "error parsing file"
-                task.errorCause = traceback.format_exc()
-                task.status = "Error"                
-            except Exception as err:
-                task.error = str(err)
-                task.status = "Error"
-
-        else: #consider a spectrum
-            print("spectrum")
+        if dataset_type == "raman_spectrum":
             parse_spectrum_files(task,base_url,file_path,jsonconfig)
-        
+        elif dataset_type == "ambit_json":
+            task.error = "not supported yet"
+            task.status = "Error"              
+            pass
+        else: #assume "template_wizard"
+            dataset_type = "template_wizard"
+            if file_extension.lower() == ".xlsx" or file_extension.lower() == ".xls":
+                try:
+                    parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
+                    task.status = "Completed"
+                except HTTPException as err:
+                    task.error = "error parsing file"
+                    task.errorCause = traceback.format_exc()
+                    task.status = "Error"                
+                except Exception as err:
+                    task.error = str(err)
+                    task.status = "Error"
+            else:
+                task.error = f"Unsupported file {file.filename} of type {dataset_type}"
+                task.status = "Error"
         task.completed=int(time.time() * 1000)
         
     except Exception as err:
@@ -89,11 +94,20 @@ def parse_spectrum_files(task,base_url,file_path,jsonconfig):
     substances = []
     substances.append(substance)
         #study = mx.Study(study=studies)
-    nxroot = Substances(substance=substances).to_nexus(nx.NXroot())
-    nexus_file_path = os.path.join(NEXUS_DIR, f"{task.id}.nxs")   
-    nxroot.save(nexus_file_path,mode="w")
-    task.status="Completed"
-    task.result=f"{base_url}dataset/{task.id}?format=nxs",        
+    convert_to_nexus(substances,task,base_url)       
+
+def convert_to_nexus(substances: Substances,task,base_url):
+    try:
+        nxroot = Substances(substance=substances).to_nexus(nx.NXroot())
+        nexus_file_path = os.path.join(NEXUS_DIR, f"{task.id}.nxs")   
+        nxroot.save(nexus_file_path,mode="w")
+        task.status="Completed"
+        task.result=f"{base_url}dataset/{task.id}?format=nxs"
+    except Exception as perr:
+        task.result=f"{base_url}dataset/{task.id}?format=json",
+        task.status="Error"
+        task.error = f"Error converting to hdf5 {perr}"
+     
 
 def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=None):
     if jsonconfig is None:
@@ -103,23 +117,18 @@ def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=
         json_file_path = os.path.join(UPLOAD_DIR, f"{task.id}_config.json")
         with open(json_file_path, "wb") as f:
             shutil.copyfileobj(jsonconfig.file, f)
-
         parsed_file_path = os.path.join(UPLOAD_DIR, f"{task.id}.json")   
-        parsed_json = nmparser(file_path,json_file_path)
-        with open(parsed_file_path, "w") as json_file:
-            json.dump(parsed_json, json_file)                       
         try:
-            s = Substances(**parsed_json)
-            root = s.to_nexus(nx.NXroot())
-                #print(root.tree)
-            nexus_file_path = os.path.join(NEXUS_DIR, f"{task.id}.nxs")   
-            root.save(nexus_file_path, 'w')                    
-            task.status="Completed"
-            task.result=f"{base_url}dataset/{task.id}?format=nxs",
+            parsed_json = nmparser(file_path,json_file_path)
+            with open(parsed_file_path, "w") as json_file:
+                json.dump(parsed_json, json_file)             
+            substances = Substances(**parsed_json)
+            convert_to_nexus(substances,task,base_url)                
         except Exception as perr:    
             task.result=f"{base_url}dataset/{task.id}?format=json",
             task.status="Error"
-            task.error = f"Error converting to hdf5 {perr}"    
+            task.error = f"Error parsing template wizard files {perr}"   
+            task.errorCause = traceback.format_exc() 
 
 def nmparser(xfile,jsonconfig,expandfile=None):
     with open(xfile, 'rb') as fin:
