@@ -94,11 +94,11 @@ def parse_spectrum_files(task,base_url,file_path,jsonconfig):
     substances = []
     substances.append(substance)
         #study = mx.Study(study=studies)
-    convert_to_nexus(substances,task,base_url)       
+    convert_to_nexus(Substances(substance=substances),task,base_url)       
 
 def convert_to_nexus(substances: Substances,task,base_url):
     try:
-        nxroot = Substances(substance=substances).to_nexus(nx.NXroot())
+        nxroot = substances.to_nexus(nx.NXroot())
         nexus_file_path = os.path.join(NEXUS_DIR, f"{task.id}.nxs")   
         nxroot.save(nexus_file_path,mode="w")
         task.status="Completed"
@@ -107,6 +107,7 @@ def convert_to_nexus(substances: Substances,task,base_url):
         task.result=f"{base_url}dataset/{task.id}?format=json",
         task.status="Error"
         task.error = f"Error converting to hdf5 {perr}"
+        task.errorCause = traceback.format_exc() 
      
 
 def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=None):
