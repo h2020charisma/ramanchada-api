@@ -7,7 +7,7 @@ import h5py
 from ..config.app_config import initialize_dirs
 from pynanomapper.datamodel.nexus_parser import SpectrumParser
 
-config, UPLOAD_DIR, NEXUS_DIR = initialize_dirs()
+config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
 
 
 async def process(task : Task,nexus_dataset_url: str,base_url: str):
