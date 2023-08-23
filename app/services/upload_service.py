@@ -16,7 +16,7 @@ import traceback
 
 from ..config.app_config import initialize_dirs
 
-config, UPLOAD_DIR, NEXUS_DIR = initialize_dirs()
+config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
 
 async def process(task,dataset_type,file,jsonconfig,expandconfig,base_url):
     

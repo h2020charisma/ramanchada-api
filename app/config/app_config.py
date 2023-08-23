@@ -32,7 +32,9 @@ def initialize_dirs(migrate=False):
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     NEXUS_DIR = os.path.join(UPLOAD_DIR,"NEXUS")
     os.makedirs(NEXUS_DIR, exist_ok=True)
+    TEMPLATE_DIR = os.path.join(UPLOAD_DIR,"TEMPLATES")
+    os.makedirs(TEMPLATE_DIR, exist_ok=True)    
     if migrate:
         migrate_dir(UPLOAD_DIR,NEXUS_DIR)
-    return config, UPLOAD_DIR, NEXUS_DIR
+    return config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR
 
