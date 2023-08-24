@@ -20,7 +20,7 @@ def process(_json,task,base_url):
     try:
         with open(os.path.join(TEMPLATE_DIR,f"{task.id}.json"), "w") as json_file:
             json.dump(_json, json_file, indent=4) 
-
+        task.status="Completed"
         task.result=f"{base_url}template/{task.id}?format=json"
     except Exception as perr:
         task.result=f"{base_url}template/{task.id}?format=json",
