@@ -74,34 +74,20 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
     format_supported  = {
         "xlsx" : {"mime" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
                   "ext" : "xlsx"},
-        "json" : {"mime" : "application/json" , "ext" : "json" },
-        "hdf5" : {"mime" : "application/x-hdf5", "ext" : "nxs"},
-        "h5" : {"mime" : "application/x-hdf5", "ext" : "nxs" },
-        "nxs" : {"mime" : "application/x-hdf5", "ext" : "nxs" },
-        "nexus" : {"mime" : "application/x-hdf5", "ext" : "nxs" }
+        "json" : {"mime" : "application/json" , "ext" : "json" }
     }
     
     if format is None:
         format = "json"
     if format in format_supported:
-        _ext = format_supported[format]["ext"]
-        _dir = TEMPLATE_DIR
-        file_path = os.path.join(_dir, f"{uuid}.{_ext}")
-        if os.path.exists(file_path):
-            if format=="json":
-                with open(file_path, "r") as json_file:
-                    json_data = json.load(json_file)
-                return json_data  
-            else:          
+        if format=="json":
+            return template_service.get_template_json(uuid);
+        elif format=="xlsx":         
+            file_path =  template_service.get_template_xlsx(uuid);
             # Return the file using FileResponse
-                return FileResponse(file_path, media_type=format_supported[format]["mime"], 
+            return FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
-    else:
-        file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.{format}")
-        if os.path.exists(file_path):
-            return FileResponse(file_path, 
-                                    headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})            
-      
+
     raise HTTPException(status_code=404, detail="Not found")
 
 @router.get("/template")
