@@ -21,9 +21,9 @@ def process(_json,task,base_url):
         with open(os.path.join(TEMPLATE_DIR,f"{task.id}.json"), "w") as json_file:
             json.dump(_json, json_file, indent=4) 
         task.status="Completed"
-        task.result=f"{base_url}template/{task.id}?format=json"
+        task.result=f"{base_url}template/{task.id}"
     except Exception as perr:
-        task.result=f"{base_url}template/{task.id}?format=json",
+        task.result=f"{base_url}template/{task.id}",
         task.status="Error"
         task.error = f"Error storing template {perr}"
         task.errorCause = traceback.format_exc() 
