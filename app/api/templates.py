@@ -45,10 +45,36 @@ async def convert(request: Request,
             errorCause=None
         )      
     tasks_db[task.id] = task
-    background_tasks.add_task(template_service.process,_json,task,base_url)
+    background_tasks.add_task(template_service.process,_json,task,base_url,task_id)
     return task
 
     
+
+@router.post("/template/{uuid}")  # Use router.post instead of app.post
+async def convert(request: Request,
+                    background_tasks: BackgroundTasks,
+                    uuid: str
+                ):
+    base_url = str(request.base_url)  
+    task_id = str(uuid.uuid4())
+    _json = await request.json()
+    task = Task(
+            uri=f"{base_url}task/{task_id}",
+            id=task_id,
+            name=f"Update template json {uuid}",
+            error=None,
+            policyError=None,
+            status="Running",
+            started=int(time.time() * 1000),
+            completed=None,
+            result=f"{base_url}template/{uuid}",
+            errorCause=None
+        )      
+    tasks_db[task.id] = task
+    background_tasks.add_task(template_service.process,_json,task,base_url,uuid)
+    return task
+
+
 @router.get("/template/{uuid}",
     responses={
     200: {
@@ -94,15 +120,23 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
 async def get_datasets(request : Request,q:str = Query(None)):
     base_url = str(request.base_url) 
     uuids = {}
-    for _dir in [TEMPLATE_DIR]:
-        for filename in os.listdir(_dir):
-            file_path = os.path.join(_dir, filename)
+    for filename in os.listdir(TEMPLATE_DIR):
+        if filename.endswith(".json"):
+            file_path = os.path.join(TEMPLATE_DIR, filename)
             if os.path.isfile(file_path):
                 _uuid = Path(file_path).stem.split("_")[0]
-                uri=f"{base_url}template/{_uuid}"
-                _ext = Path(file_path).suffix
-                if not uri in uuids:
-                    uuids[uri] = {}
-                    uuids[uri]["format"] = []
-                uuids[uri]["format"].append(_ext.replace(".",""))
-    return { "templates" : uuids}
+                _json = template_service.get_template_json(_uuid); 
+                try:
+                    _method = _json["METHOD"]               
+                except:
+                    _method = None
+                if not (_uuid in uuids):
+                    uri=f"{base_url}template/{_uuid}"
+                    #_ext = Path(file_path).suffix
+                    uuids[_uuid] = {}
+                    uuids[_uuid]["uri"] =  uri
+                    uuids[_uuid]["uuid"] = _uuid 
+                    uuids[_uuid]["METHOD"] = _method
+                    uuids[_uuid]["PROTOCOL_CATEGORY_CODE"] = _json["PROTOCOL_CATEGORY_CODE"]
+                    uuids[_uuid]["EXPERIMENT"] = _json["EXPERIMENT"]
+    return {"template" : list(uuids.values())}
