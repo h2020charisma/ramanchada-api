@@ -1,6 +1,7 @@
 import os
 from app.models.models import Task
 from pynanomapper.datamodel.nexus_parser import SpectrumParser
+from  pynanomapper.datamodel.nexus_spectra import peaks2nxdata
 from ..config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
