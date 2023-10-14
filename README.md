@@ -10,3 +10,8 @@ git submodule update --remote
 git commit -am "Pull the latest commit for the submodules"
 git push
 ```
+
+### Run interminal
+```
+uvicorn app.main:app --reload
+```
