@@ -29,7 +29,6 @@ async def convert(request: Request,
                     background_tasks: BackgroundTasks
                 ):
     content_type = request.headers.get("content-type", "").lower()
-    print(content_type)
     base_url = str(request.base_url)  
     task_id = str(uuid.uuid4())
     ambit_json = await request.json()
@@ -61,6 +60,9 @@ async def upload_and_convert(request: Request,
                                 expandconfig: UploadFile = File(None)
                                 ):
     base_url = str(request.base_url)  
+    if "localhost" not in base_url:
+        # Replace "http://" with "https://"
+        base_url = base_url.replace("http://", "https://")        
     task_id = str(uuid.uuid4())
   
     task = Task(
