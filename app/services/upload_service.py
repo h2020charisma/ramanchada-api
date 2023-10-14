@@ -34,7 +34,7 @@ async def process(task,dataset_type,file,jsonconfig,expandconfig,base_url):
         if dataset_type == "raman_spectrum":
             parse_spectrum_files(task,base_url,file_path,jsonconfig)       
         elif dataset_type == "ambit_json":
-            task.error = "not supported yet"
+            task.error = "not supported here, use /dataset/convert instead"
             task.status = "Error"              
             pass
         else: #assume "template_wizard"
