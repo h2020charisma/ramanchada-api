@@ -13,10 +13,12 @@ import nexusformat.nexus.tree as nx
 import ramanchada2 as rc2 
 from fastapi import HTTPException
 import traceback
+import h5py
 
 from ..config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
+
 
 async def process(task,dataset_type,file,jsonconfig,expandconfig,base_url):
     
@@ -30,7 +32,7 @@ async def process(task,dataset_type,file,jsonconfig,expandconfig,base_url):
         task.result=f"{base_url}dataset/{task.id}?format={ext}",
         
         if dataset_type == "raman_spectrum":
-            parse_spectrum_files(task,base_url,file_path,jsonconfig)
+            parse_spectrum_files(task,base_url,file_path,jsonconfig)       
         elif dataset_type == "ambit_json":
             task.error = "not supported yet"
             task.status = "Error"              
@@ -58,22 +60,41 @@ async def process(task,dataset_type,file,jsonconfig,expandconfig,base_url):
         task.status = "Error"
         task.completed=int(time.time() * 1000)
     
+def extract_cha_metadata(file_path,json_meta={}):
+    with h5py.File(file_path) as dataset:
+        for tag in ["sample","sample_provider"]:
+            try:
+                json_meta[tag] = dataset["annotation_sample"].attrs[tag]
+            except:
+                json_meta[tag] = None
+        for tag in ["sample_provider","provider","wavelength","investigation","laser_power","optical_path","laser_power_percent"]:
+            try:
+                json_meta[tag] = dataset["annotation_study"].attrs[tag]
+            except:
+                json_meta[tag] = "DEFAULT"            
+    return json_meta
+            
 
 def parse_spectrum_files(task,base_url,file_path,jsonconfig):
                         #instrument,wavelength,provider,investigation,sample,sample_provider,prefix):
-    spe = rc2.spectrum.from_local_file(file_path)
     json_data = {"instrument" : "DEFAULT", "wavelength" : "DEFAULT", "provider" : "DEFAULT",
                  "investigation" : "DEFAULT", "sample" : "DEFAULT", "sample_provider" : "DEFAULT", 
-                 "prefix" : "NONE"}
-    if jsonconfig is None:
-        task.status="Warning"
-        task.error = "Missing jsonconfig"
-    else:    
-        json_file_path = os.path.join(UPLOAD_DIR, f"{task.id}_config.json")
-        with open(json_file_path, "wb") as f:
-            shutil.copyfileobj(jsonconfig.file, f)
-        with open(json_file_path, "r") as f:
-            json_data = json.load(f)            
+                 "prefix" : "NONE"}                        
+    if file_path.endswith(".cha"):
+         spe = rc2.spectrum.from_chada(file_path)
+         json_data = extract_cha_metadata(file_path, json_data )
+         print(json_data)
+    else:
+        spe = rc2.spectrum.from_local_file(file_path)
+        if jsonconfig is None:
+            task.status="Warning"
+            task.error = "Missing jsonconfig"
+        else:    
+            json_file_path = os.path.join(UPLOAD_DIR, f"{task.id}_config.json")
+            with open(json_file_path, "wb") as f:
+                shutil.copyfileobj(jsonconfig.file, f)
+            with open(json_file_path, "r") as f:
+                json_data = json.load(f)            
     sample=json_data["sample"]
     papp = spe2ambit(spe.x,spe.y,spe.meta,
                             instrument = json_data["instrument"],

@@ -24,7 +24,7 @@ async def get_request(request: Request = Depends()):
     return request
 
 
-@router.post("/dataset/convert")  # Use router.post instead of app.post
+@router.post("/dataset/convert") 
 async def convert(request: Request,
                     background_tasks: BackgroundTasks
                 ):
@@ -46,7 +46,7 @@ async def convert(request: Request,
             result=f"{base_url}dataset/{task_id}",
             errorCause=None
         )      
-    print(substances)
+    #print(substances)
     tasks_db[task.id] = task
     background_tasks.add_task(upload_service.convert_to_nexus,substances,task,base_url)
     return task
