@@ -61,19 +61,51 @@ async def process(task,dataset_type,file,jsonconfig,expandconfig,base_url):
         task.completed=int(time.time() * 1000)
     
 def extract_cha_metadata(file_path,json_meta={}):
+    #these are the attributes used by charisma_api and stored in HSDS 
+    annotation_found = False
     with h5py.File(file_path) as dataset:
-        for tag in ["sample","sample_provider"]:
-            try:
-                json_meta[tag] = dataset["annotation_sample"].attrs[tag]
-            except:
-                json_meta[tag] = None
-        for tag in ["sample_provider","provider","wavelength","investigation","laser_power","optical_path","laser_power_percent"]:
-            try:
-                json_meta[tag] = dataset["annotation_study"].attrs[tag]
-            except:
-                json_meta[tag] = "DEFAULT"            
-    return json_meta
+        if "annotation_sample" in dataset:
+            for tag in ["sample","sample_provider"]:
+                try:
+                    json_meta[tag] = dataset["annotation_sample"].attrs[tag]
+                except:
+                    json_meta[tag] = None
+            annotation_found = True
+        if "annotation_study" in dataset:
+            for tag in ["sample_provider","provider","wavelength","investigation","laser_power","optical_path","laser_power_percent","instrument"]:
+                try:
+                    json_meta[tag] = dataset["annotation_study"].attrs[tag]
+                except:
+                    json_meta[tag] = "DEFAULT"     
+            annotation_found = True       
+    return (annotation_found,json_meta)
             
+def extract_native_metadata(meta,json_meta={}):
+    for tag in meta.keys():
+        _tag = tag.lower()
+        try:
+            _value = "".join(meta[tag])
+        except: 
+            _value = meta[tag]
+        print(_tag, meta[tag],_value)
+        if _tag in ["laser_wavelength","wavelength","laser wavelength"]:
+            json_meta["wavelength"]=_value
+        elif _tag in ["laser_powerlevel","laser power"]:
+            json_meta["laser_power_percent"]=_value
+        elif _tag in ["intigration times(ms)","interval_time"]:
+            json_meta["integration_time (ms)","integration time"]=_value
+        elif _tag in  ["model","title"]:
+            json_meta["instrument_{}".format(_tag)]=_value             
+        elif _tag in  ["temperature"]:
+            json_meta["temperature".format(_tag)]=_value          
+        elif _tag in  ["laser temperature"]:
+            json_meta["laser_temperature".format(_tag)]=_value        
+        elif _tag in  ["technique"]:
+            json_meta["technique".format(_tag)]=_value 
+        elif _tag in  ["slit width"]:
+            json_meta["slit_width".format(_tag)]=_value                                                    
+    return json_meta
+
 
 def parse_spectrum_files(task,base_url,file_path,jsonconfig):
                         #instrument,wavelength,provider,investigation,sample,sample_provider,prefix):
@@ -81,11 +113,21 @@ def parse_spectrum_files(task,base_url,file_path,jsonconfig):
                  "investigation" : "DEFAULT", "sample" : "DEFAULT", "sample_provider" : "DEFAULT", 
                  "prefix" : "NONE"}                        
     if file_path.endswith(".cha"):
-         spe = rc2.spectrum.from_chada(file_path)
-         json_data = extract_cha_metadata(file_path, json_data )
-         print(json_data)
+        spe = rc2.spectrum.from_chada(file_path)
+        annotation_found, json_meta = extract_cha_metadata(file_path, json_data )
+        if annotation_found:
+            json_data = json_meta   
+        else:
+            json_data = extract_native_metadata(spe.meta.dict()['__root__'],json_data)
+            #print(spe.meta,json_data)
     else:
         spe = rc2.spectrum.from_local_file(file_path)
+        #print(spe.meta)
+        json_data = extract_native_metadata(spe.meta.dict()['__root__'],json_data)
+        #print(spe.meta,json_data)
+        annotation_found= False    
+    if not annotation_found:  #load from 
+        #print(json_data)
         if jsonconfig is None:
             task.status="Warning"
             task.error = "Missing jsonconfig"
@@ -96,7 +138,8 @@ def parse_spectrum_files(task,base_url,file_path,jsonconfig):
             with open(json_file_path, "r") as f:
                 json_data = json.load(f)            
     sample=json_data["sample"]
-    papp = spe2ambit(spe.x,spe.y,spe.meta,
+    #print(json_data)
+    papp = spe2ambit(spe.x,spe.y,json_data,
                             instrument = json_data["instrument"],
                             wavelength=json_data["wavelength"],
                             provider=json_data["provider"],
