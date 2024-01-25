@@ -24,12 +24,20 @@ async def get_request(request: Request = Depends()):
     return request
 
 
+def get_baseurl(request : Request):
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "http")
+    base_url = str(request.base_url) 
+    if "localhost" not in base_url:
+        base_url = base_url.replace("http://", "{}://".format(forwarded_proto))  
+    return base_url
+
+
 @router.post("/template")  # Use router.post instead of app.post
 async def convert(request: Request,
                     background_tasks: BackgroundTasks
                 ):
     content_type = request.headers.get("content-type", "").lower()
-    base_url = str(request.base_url)  
+    base_url = get_baseurl(request)  
     task_id = str(uuid.uuid4())
     _json = await request.json()
     task = Task(
@@ -55,7 +63,7 @@ async def convert(request: Request,
                     background_tasks: BackgroundTasks,
                     uuid: str
                 ):
-    base_url = str(request.base_url)  
+    base_url = get_baseurl(request)
     task_id = str(uuid.uuid4())
     _json = await request.json()
     task = Task(
@@ -118,8 +126,7 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
 
 @router.get("/template")
 async def get_datasets(request : Request,q:str = Query(None)):
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "http")
-    base_url = str(request.base_url) 
+    base_url = get_baseurl(request) 
     uuids = {}
     for filename in os.listdir(TEMPLATE_DIR):
         if filename.endswith(".json"):
@@ -140,5 +147,5 @@ async def get_datasets(request : Request,q:str = Query(None)):
                     uuids[_uuid]["METHOD"] = _method
                     uuids[_uuid]["PROTOCOL_CATEGORY_CODE"] = _json["PROTOCOL_CATEGORY_CODE"]
                     uuids[_uuid]["EXPERIMENT"] = _json["EXPERIMENT"]
-                    uuids[_uuid]["test"] = forwarded_proto
+
     return {"template" : list(uuids.values())}
