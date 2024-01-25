@@ -118,6 +118,7 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
 
 @router.get("/template")
 async def get_datasets(request : Request,q:str = Query(None)):
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "http")
     base_url = str(request.base_url) 
     uuids = {}
     for filename in os.listdir(TEMPLATE_DIR):
@@ -139,4 +140,5 @@ async def get_datasets(request : Request,q:str = Query(None)):
                     uuids[_uuid]["METHOD"] = _method
                     uuids[_uuid]["PROTOCOL_CATEGORY_CODE"] = _json["PROTOCOL_CATEGORY_CODE"]
                     uuids[_uuid]["EXPERIMENT"] = _json["EXPERIMENT"]
+                    uuids[_uuid]["test"] = forwarded_proto
     return {"template" : list(uuids.values())}
