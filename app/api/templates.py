@@ -86,7 +86,7 @@ async def convert(request: Request,
 @router.get("/template/{uuid}",
     responses={
     200: {
-        "description": "Returns the dataset in the requested format",
+        "description": "Returns the template in the requested format",
         "content": {
             "application/json": {
                 "example": "surveyjs json"
@@ -97,13 +97,13 @@ async def convert(request: Request,
             },
             "application/x-hdf5": {
                 "example": "pynanomapper.datamodel.ambit.Substances converted to Nexus format"
-            }
+            }            
         }
     },
     404: {"description": "Template not found"}
 }
 )
-async def get_template(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "h5", "nxs"])):
+async def get_template(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "h5", "nxs","txt"])):
     # Construct the file path based on the provided UUID
     format_supported  = {
         "xlsx" : {"mime" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
@@ -115,9 +115,11 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
         format = "json"
     if format in format_supported:
         if format=="json":
-            return template_service.get_template_json(uuid);
+            return template_service.get_template_json(uuid)
+        elif format=="txt":             
+            df =  template_service.get_template_frame(uuid)
         elif format=="xlsx":         
-            file_path =  template_service.get_template_xlsx(uuid);
+            file_path =  template_service.get_template_xlsx(uuid)
             # Return the file using FileResponse
             return FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
@@ -146,13 +148,11 @@ async def get_datasets(request : Request,q:str = Query(None)):
                     uuids[_uuid]["uri"] =  uri
                     uuids[_uuid]["uuid"] = _uuid 
                     uuids[_uuid]["METHOD"] = _method
-                    uuids[_uuid]["PROTOCOL_CATEGORY_CODE"] = _json["PROTOCOL_CATEGORY_CODE"]
-                    uuids[_uuid]["EXPERIMENT"] = _json["EXPERIMENT"]
-                    uuids[_uuid]["timestamp"] = timestamp
-                    for tag in ["template_name","template_status","template_author","template_acknowledgment"]:
+                    uuids[_uuid]["timestamp"] = int(timestamp)
+                    for tag in ["PROTOCOL_CATEGORY_CODE","EXPERIMENT","template_name","template_status","template_author","template_acknowledgment"]:
                         try:
                             uuids[_uuid][tag] = _json[tag]
                         except:
-                            uuids[_uuid][tag] = ""
+                            uuids[_uuid][tag] = "?"
 
     return {"template" : list(uuids.values())}
