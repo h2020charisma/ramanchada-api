@@ -134,6 +134,7 @@ async def get_datasets(request : Request,q:str = Query(None)):
             if os.path.isfile(file_path):
                 _uuid = Path(file_path).stem.split("_")[0]
                 _json = template_service.get_template_json(_uuid); 
+                timestamp = os.path.getmtime(file_path)
                 try:
                     _method = _json["METHOD"]               
                 except:
@@ -147,5 +148,11 @@ async def get_datasets(request : Request,q:str = Query(None)):
                     uuids[_uuid]["METHOD"] = _method
                     uuids[_uuid]["PROTOCOL_CATEGORY_CODE"] = _json["PROTOCOL_CATEGORY_CODE"]
                     uuids[_uuid]["EXPERIMENT"] = _json["EXPERIMENT"]
+                    uuids[_uuid]["timestamp"] = timestamp
+                    for tag in ["template_name","template_status","template_author","template_acknowledgment"]:
+                        try:
+                            uuids[_uuid][tag] = _json[tag]
+                        except:
+                            uuids[_uuid][tag] = ""
 
     return {"template" : list(uuids.values())}
