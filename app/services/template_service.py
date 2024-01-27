@@ -50,7 +50,7 @@ def get_template_xlsx(uuid,force=True):
             with open(file_path, "r") as file:
                 json_blueprint = json.load(file)     
             file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.xlsx")      
-            df = bp.get_template_frame(json_blueprint)
-            bp.iom_format_2excel(df,file_path)
+            df_info,df_result,df_raw =bp.get_template_frame(json_blueprint)
+            bp.iom_format_2excel(file_path,df_info,df_result,df_raw)
 
     return file_path       
