@@ -4,6 +4,8 @@ from pynanomapper.datamodel.nexus_parser import SpectrumParser
 from  pynanomapper.datamodel.nexus_spectra import peaks2nxdata
 from ..config.app_config import initialize_dirs
 
+#from ramanchada2.protocols.calibration import CalibrationModel
+
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
 
 def open_dataset(nexus_dataset_url: str,base_url: str):
@@ -27,7 +29,10 @@ class ProcessMock:
 
 class ProcessCalibrate:
     def process(task : Task,nexus_dataset_url: str,base_url: str):
-        pass    
+        #calmodel = CalibrationModel(laser_wl)
+        #calmodel.derive_model_x(spe_neon,spe_neon_units="cm-1",ref_neon=None,ref_neon_units="nm",spe_sil=None,spe_sil_units="cm-1",ref_sil=None,ref_sil_units="cm-1")
+        pass
+       
 
 class ProcessFindPeak:
     def process(task : Task,nexus_dataset_url: str,base_url: str):
