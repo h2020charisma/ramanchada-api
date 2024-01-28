@@ -1,7 +1,6 @@
 [submodule "pynanomapper"]
 	path = pynanomapper
 	url = https://github.com/ideaconsult/pynanomapper.git
-	branch = keycloak_n_h5
 [submodule "ramanchada2"]
 	path = ramanchada2
 	url = https://github.com/h2020charisma/ramanchada2.git
