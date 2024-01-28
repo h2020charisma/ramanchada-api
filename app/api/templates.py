@@ -103,12 +103,13 @@ async def convert(request: Request,
     404: {"description": "Template not found"}
 }
 )
-async def get_template(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "h5", "nxs","txt"])):
+async def get_template(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"])):
     # Construct the file path based on the provided UUID
     format_supported  = {
         "xlsx" : {"mime" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
                   "ext" : "xlsx"},
-        "json" : {"mime" : "application/json" , "ext" : "json" }
+        "json" : {"mime" : "application/json" , "ext" : "json" },
+        "nmparser" : {"mime" : "application/json" , "ext" : "nprasrer.json" }
     }
     
     if format is None:
@@ -116,8 +117,10 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
     if format in format_supported:
         if format=="json":
             return template_service.get_template_json(uuid)
-        elif format=="txt":             
-            df =  template_service.get_template_frame(uuid)
+        elif format=="nmparser":             
+            file_path =  template_service.get_nmparser_config(uuid)
+            return FileResponse(file_path, media_type=format_supported[format]["mime"], 
+                                    headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}.json"'})
         elif format=="xlsx":         
             file_path =  template_service.get_template_xlsx(uuid)
             # Return the file using FileResponse
