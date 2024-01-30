@@ -156,6 +156,6 @@ async def get_datasets(request : Request,q:str = Query(None)):
                         try:
                             uuids[_uuid][tag] = _json[tag]
                         except:
-                            uuids[_uuid][tag] = "?"
+                            uuids[_uuid][tag] = "DRAFT" if tag=="template_status" else "?"
 
     return {"template" : list(uuids.values())}
