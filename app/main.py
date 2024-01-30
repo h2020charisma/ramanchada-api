@@ -41,8 +41,12 @@ def cleanup_tasks():
     for task_id in tasks_to_remove:
         tasks_db.pop(task_id)
 
+def cleanup_templates():
+    templates.cleanup(age_hours = 24)
+
 scheduler = BackgroundScheduler()
 scheduler.add_job(cleanup_tasks, 'interval', minutes=30)  # Clean up every 30 minutes
+scheduler.add_job(cleanup_templates, 'interval', hours=4)  # test, otherwise once a day would be ok
 scheduler.start()
 
 if __name__ == "__main__":

@@ -7,6 +7,8 @@ import ramanchada2 as rc2
 from fastapi import HTTPException
 import traceback
 import os
+from datetime import datetime, timedelta
+import glob 
 
 from ..config.app_config import initialize_dirs
 
@@ -66,3 +68,19 @@ def get_nmparser_config(uuid,force=True):
         else:
             raise Exception(f"No such file {uuid}.json")
     raise Exception("")    
+
+# 8h is for a test 
+# otherwise we agreed on 1 month
+def cleanup(age_hours = 8 ):
+    current_time = datetime.now()
+    threshold_time = current_time - timedelta(hours=24)
+    
+    json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
+    for file_name in json_files:
+        last_modified_time = datetime.fromtimestamp(os.path.getmtime(file_name))
+        # Check if the file is older than age_hours
+        if last_modified_time < threshold_time:
+            with open(file_name, 'r') as json_file:
+                json_data = json.load(json_file)
+                if json_data.get('template_status') == 'DRAFT':
+                   os.rename(file_name, "backup_{}".format(file_name))
