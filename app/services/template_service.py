@@ -89,12 +89,18 @@ def delete_template(template_path,task,base_url,uuid):
         try:
             with open(template_path, 'r') as json_file:
                 json_data = json.load(json_file)
-            if (json_data !=  None) and (json_data.get('template_status') == 'DRAFT'):
-                os.remove(template_path)
-                task.status="Completed"
-            else:
+            if json_data is None:
                 task.status="Error"
-                task.error = f"Template is finalized, can't be deleted"
+                task.error = f"Can't load template {template_path}"                    
+            else:    
+                template_status = json_data.get('template_status') if "template_status" in json_data else "DRAFT"
+                if template_status == 'DRAFT':
+                    os.remove(template_path)
+                    task.status="Completed"
+                else:
+                    task.status="Error"
+                    task.error = f"Template is finalized, can't be deleted"                    
+                
         except Exception as err:
             task.status="Error"
             task.error = f"Error deleting template {err}"
