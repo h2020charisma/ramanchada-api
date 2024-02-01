@@ -31,6 +31,8 @@ def get_baseurl(request : Request):
         base_url = base_url.replace("http://", "{}://".format(forwarded_proto))  
     return base_url
 
+def get_uuid():
+    return str(uuid.uuid4())
 
 @router.post("/template")  # Use router.post instead of app.post
 async def convert(request: Request,
@@ -38,7 +40,7 @@ async def convert(request: Request,
                 ):
     content_type = request.headers.get("content-type", "").lower()
     base_url = get_baseurl(request)  
-    task_id = str(uuid.uuid4())
+    task_id = get_uuid()
     _json = await request.json()
     task = Task(
             uri=f"{base_url}task/{task_id}",
@@ -130,7 +132,7 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
     raise HTTPException(status_code=404, detail="Not found")
 
 @router.get("/template")
-async def get_datasets(request : Request,q:str = Query(None)):
+async def get_templates(request : Request,q:str = Query(None)):
     base_url = get_baseurl(request) 
     uuids = {}
     for filename in os.listdir(TEMPLATE_DIR):
@@ -159,3 +161,31 @@ async def get_datasets(request : Request,q:str = Query(None)):
                             uuids[_uuid][tag] = "DRAFT" if tag=="template_status" else "?"
 
     return {"template" : list(uuids.values())}
+
+@router.delete("/template/{uuid}",
+    responses={
+        200: {"description": "Template deleted successfully"},
+        404: {"description": "Template not found"}
+    }
+)
+async def delete_template(request: Request,
+                    background_tasks: BackgroundTasks,
+                    uuid: str):
+    template_path = os.path.join(TEMPLATE_DIR, f"{uuid}.json")
+    base_url = get_baseurl(request)  
+    task_id = get_uuid()
+    task = Task(
+            uri=f"{base_url}task/{task_id}",
+            id=task_id,
+            name=f"Delete template {uuid}",
+            error=None,
+            policyError=None,
+            status="Running",
+            started=int(time.time() * 1000),
+            completed=None,
+            result=f"{base_url}task/{task_id}",
+            errorCause=None
+        )      
+    tasks_db[task.id] = task
+    background_tasks.add_task(template_service.delete_template,template_path,task,base_url,task_id)
+    return task
