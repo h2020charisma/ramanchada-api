@@ -50,7 +50,7 @@ def get_template_xlsx(uuid,force=True):
             df_info,df_result,df_raw =bp.get_template_frame(json_blueprint)
             bp.iom_format_2excel(file_path_xlsx,df_info,df_result,df_raw)
         else:
-            raise FileNotFoundError(f"Fole not found {uuid}.json")
+            raise FileNotFoundError(f"File not found {uuid}.json")
     return file_path_xlsx       
 
 def get_nmparser_config(uuid,force=True):
@@ -60,7 +60,7 @@ def get_nmparser_config(uuid,force=True):
         if os.path.exists(file_path):
             with open(file_path, "r") as file:
                 json_blueprint = json.load(file)     
-            file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.nmparser.json")      
+            file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.json.nmparser")      
             json_config = bp.get_nmparser_config(json_blueprint)
             with open(file_path, 'w') as json_file:
                 json.dump(json_config, json_file, indent=2)            
@@ -80,7 +80,25 @@ def cleanup(age_hours = 8 ):
         last_modified_time = datetime.fromtimestamp(os.path.getmtime(file_name))
         # Check if the file is older than age_hours
         if last_modified_time < threshold_time:
-            with open(file_name, 'r') as json_file:
+            delete_template(file_name)
+
+
+def delete_template(template_path,task,base_url,uuid):
+    if os.path.exists(template_path):
+        json_data = None
+        try:
+            with open(template_path, 'r') as json_file:
                 json_data = json.load(json_file)
-                if json_data.get('template_status') == 'DRAFT':
-                   os.rename(file_name, "backup_{}".format(file_name))
+            if (json_data !=  None) and (json_data.get('template_status') == 'DRAFT'):
+                os.remove(template_path)
+                task.status="Completed"
+            else:
+                task.status="Error"
+                task.error = f"Template is finalized, can't be deleted"
+        except Exception as err:
+            task.status="Error"
+            task.error = f"Error deleting template {err}"
+            task.errorCause = traceback.format_exc()     
+    else:
+        task.status="Error"
+        task.error = f"Template not found"
