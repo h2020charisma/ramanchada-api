@@ -10,7 +10,8 @@ from pathlib import Path
 import traceback
 from datetime import datetime
 import hashlib
-        
+import glob 
+
 router = APIRouter()
 
 from ..models.models import tasks_db
@@ -49,7 +50,8 @@ def get_last_modified(file_path):
 @router.post("/template")  # Use router.post instead of app.post
 async def convert(request: Request,
                     background_tasks: BackgroundTasks,
-                    response: Response
+                    response: Response,
+                    if_modified_since: datetime = Header(None, alias="If-Modified-Since")
                 ):
     task_id = get_uuid()    
     content_type = request.headers.get("content-type", "").lower()    
@@ -193,10 +195,21 @@ async def get_template(request : Request, response : Response,
 
 
 @router.get("/template")
-async def get_templates(request : Request,q:str = Query(None), response: Response = None):
+async def get_templates(request : Request,q:str = Query(None), response: Response = None,
+                    if_modified_since: datetime = Header(None, alias="If-Modified-Since")):
     base_url = get_baseurl(request) 
     uuids = {}
     last_modified_time = None
+    try:
+        list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
+        latest_json_file = max(list_of_json_files, key=os.path.getmtime)
+        last_modified_time = os.path.getmtime(latest_json_file)
+        if if_modified_since and if_modified_since >= last_modified_time:
+            return JSONResponse(content=None, status_code=304)        
+    except:
+        pass
+
+         
     for filename in os.listdir(TEMPLATE_DIR):
         if filename.endswith(".json"):
             file_path = os.path.join(TEMPLATE_DIR, filename)
