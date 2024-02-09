@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status, Response
+from fastapi import APIRouter, Depends, status, Response, Header
 from fastapi import Request , Query , HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from app.models.models import Task  # Import the Task model
@@ -139,8 +139,12 @@ async def convert(request: Request,
     404: {"description": "Template not found"}
 }
 )
-async def get_template(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"])
-                        , response : Response = None):
+async def get_template(request : Request, response : Response,
+                        uuid: str,
+                        format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"]),
+                        if_none_match: str = Header(None, alias="If-None-Match"),
+                        if_modified_since: datetime = Header(None, alias="If-Modified-Since")
+                        ):
     # Construct the file path based on the provided UUID
     format_supported  = {
         "xlsx" : {"mime" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
@@ -149,7 +153,7 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
         "nmparser" : {"mime" : "application/json" , "ext" : "nmparser.json" }
     }
 
-    response = None
+    _response = None
     if format is None:
         format = "json"
     
@@ -157,14 +161,23 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
     if format in format_supported:
         if format=="json":
             json_data ,file_path = template_service.get_template_json(uuid) 
-            custom_headers = { "ETag": generate_etag(json_data),    "Last-Modified": get_last_modified(file_path) }
+            # Check Last-Modified header
+            last_modified_time = get_last_modified(file_path)
+            if if_modified_since and if_modified_since >= last_modified_time:
+                return JSONResponse(content=None, status_code=304)       
+            _etag = generate_etag(json_data)
+            if if_none_match and if_none_match == str(_etag):
+                return JSONResponse(content=None, status_code=304)
+
+            # Return the data with updated headers
+            custom_headers = { "ETag": _etag,    "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
             response.headers.update(custom_headers)
             return json_data
         elif format=="nmparser":             
             file_path =  template_service.get_nmparser_config(uuid)
             _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}.json"'})
-            custom_headers = {   "Last-Modified": get_last_modified(file_path) }
+            custom_headers = {  "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
             response.headers.update(custom_headers)
             return _response
         elif format=="xlsx":         
@@ -172,7 +185,7 @@ async def get_template(request : Request, uuid: str,format:str = Query(None, des
             # Return the file using FileResponse
             _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
-            custom_headers = {    "Last-Modified": get_last_modified(file_path) }
+            custom_headers = {  "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
             response.headers.update(custom_headers)
             return _response
     else:
