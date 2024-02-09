@@ -14,6 +14,16 @@ from ..config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
 
+def process_error(perr,task,base_url,uuid):
+    task.result=f"{base_url}template/{uuid}",
+    task.status="Error"
+    task.error = f"Error storing template {perr}"
+    if isinstance(perr, str):
+        task.errorCause = perr
+    else:
+        task.errorCause = traceback.format_exc()
+
+
 def process(_json,task,base_url,uuid):
     try:
         with open(os.path.join(TEMPLATE_DIR,f"{uuid}.json"), "w") as json_file:
@@ -32,7 +42,7 @@ def get_template_json(uuid):
     if os.path.exists(file_path):
         with open(file_path, "r") as file:
             json_data = json.load(file)
-    return json_data
+    return json_data ,file_path
 
 
 
