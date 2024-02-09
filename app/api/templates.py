@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, Depends
+from fastapi import APIRouter, Depends, status, Response
 from fastapi import Request , Query , HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
 from app.models.models import Task  # Import the Task model
@@ -6,10 +6,10 @@ from app.services import template_service
 import os
 import uuid
 import time
-import shutil
-from pynanomapper.datamodel.ambit import Substances
 from pathlib import Path
-import json
+import traceback
+from datetime import datetime
+import hashlib
         
 router = APIRouter()
 
@@ -34,14 +34,34 @@ def get_baseurl(request : Request):
 def get_uuid():
     return str(uuid.uuid4())
 
+def generate_etag(data):
+    data_str = str(data)
+    return hashlib.md5(data_str.encode()).hexdigest()
+
+def get_last_modified(file_path):
+    try:
+        timestamp = os.path.getmtime(file_path)
+        last_modified = datetime.utcfromtimestamp(timestamp)
+        return last_modified
+    except FileNotFoundError:
+        return None
+
 @router.post("/template")  # Use router.post instead of app.post
 async def convert(request: Request,
-                    background_tasks: BackgroundTasks
+                    background_tasks: BackgroundTasks,
+                    response: Response
                 ):
-    content_type = request.headers.get("content-type", "").lower()
-    base_url = get_baseurl(request)  
-    task_id = get_uuid()
-    _json = await request.json()
+    task_id = get_uuid()    
+    content_type = request.headers.get("content-type", "").lower()    
+    if content_type != "application/json":
+        perr = Exception(": expected content type is not application/json")
+    else:
+        perr = None
+    try:
+        base_url = get_baseurl(request)  
+    except Exception as err:
+        perr = err
+
     task = Task(
             uri=f"{base_url}task/{task_id}",
             id=task_id,
@@ -54,8 +74,22 @@ async def convert(request: Request,
             result=f"{base_url}template/{task_id}",
             errorCause=None
         )      
-    tasks_db[task.id] = task
-    background_tasks.add_task(template_service.process,_json,task,base_url,task_id)
+    try:
+        tasks_db[task.id] = task
+        if perr is None:
+            _json = await request.json()        
+            background_tasks.add_task(template_service.process,_json,task,base_url,task_id)
+        else: 
+            background_tasks.add_task(template_service.process_error,perr,task,base_url,task_id)
+            response.status_code = status.HTTP_400_BAD_REQUEST
+    except Exception as perr:
+        task.result=f"{base_url}template/{uuid}",
+        task.status="Error"
+        task.error = f"Error storing template {perr}"
+        task.errorCause = traceback.format_exc() 
+        task.result = None
+        response.status_code = status.HTTP_400_BAD_REQUEST
+
     return task
 
     
@@ -105,43 +139,60 @@ async def convert(request: Request,
     404: {"description": "Template not found"}
 }
 )
-async def get_template(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"])):
+async def get_template(request : Request, uuid: str,format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"])
+                        , response : Response = None):
     # Construct the file path based on the provided UUID
     format_supported  = {
         "xlsx" : {"mime" : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
                   "ext" : "xlsx"},
         "json" : {"mime" : "application/json" , "ext" : "json" },
-        "nmparser" : {"mime" : "application/json" , "ext" : "nprasrer.json" }
+        "nmparser" : {"mime" : "application/json" , "ext" : "nmparser.json" }
     }
-    
+
+    response = None
     if format is None:
         format = "json"
+    
+    
     if format in format_supported:
         if format=="json":
-            return template_service.get_template_json(uuid)
+            json_data ,file_path = template_service.get_template_json(uuid) 
+            custom_headers = { "ETag": generate_etag(json_data),    "Last-Modified": get_last_modified(file_path) }
+            response.headers.update(custom_headers)
+            return json_data
         elif format=="nmparser":             
             file_path =  template_service.get_nmparser_config(uuid)
-            return FileResponse(file_path, media_type=format_supported[format]["mime"], 
+            _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}.json"'})
+            custom_headers = {   "Last-Modified": get_last_modified(file_path) }
+            response.headers.update(custom_headers)
+            return _response
         elif format=="xlsx":         
             file_path =  template_service.get_template_xlsx(uuid)
             # Return the file using FileResponse
-            return FileResponse(file_path, media_type=format_supported[format]["mime"], 
+            _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
+            custom_headers = {    "Last-Modified": get_last_modified(file_path) }
+            response.headers.update(custom_headers)
+            return _response
+    else:
+            raise HTTPException(status_code=400, detail="Format not supported")
 
-    raise HTTPException(status_code=404, detail="Not found")
 
 @router.get("/template")
-async def get_templates(request : Request,q:str = Query(None)):
+async def get_templates(request : Request,q:str = Query(None), response: Response = None):
     base_url = get_baseurl(request) 
     uuids = {}
+    last_modified_time = None
     for filename in os.listdir(TEMPLATE_DIR):
         if filename.endswith(".json"):
             file_path = os.path.join(TEMPLATE_DIR, filename)
             if os.path.isfile(file_path):
                 _uuid = Path(file_path).stem.split("_")[0]
-                _json = template_service.get_template_json(_uuid); 
+                _json, _file_path = template_service.get_template_json(_uuid); 
                 timestamp = os.path.getmtime(file_path)
+                if last_modified_time is None or last_modified_time<timestamp:
+                    last_modified_time = timestamp
                 try:
                     _method = _json["METHOD"]               
                 except:
@@ -159,7 +210,11 @@ async def get_templates(request : Request,q:str = Query(None)):
                             uuids[_uuid][tag] = _json[tag]
                         except:
                             uuids[_uuid][tag] = "DRAFT" if tag=="template_status" else "?"
-
+    last_modified_datetime = datetime.utcfromtimestamp(last_modified_time)
+    custom_headers = {
+        "Last-Modified": last_modified_datetime.strftime("%a, %d %b %Y %H:%M:%S GMT")
+    }
+    response.headers.update(custom_headers)
     return {"template" : list(uuids.values())}
 
 @router.delete("/template/{uuid}",
