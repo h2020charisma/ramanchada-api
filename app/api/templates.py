@@ -54,6 +54,7 @@ async def convert(request: Request,
                     if_modified_since: datetime = Header(None, alias="If-Modified-Since")
                 ):
     task_id = get_uuid()    
+    template_uuid = task_id
     content_type = request.headers.get("content-type", "").lower()    
     if content_type != "application/json":
         perr = Exception(": expected content type is not application/json")
@@ -73,19 +74,20 @@ async def convert(request: Request,
             status="Running",
             started=int(time.time() * 1000),
             completed=None,
-            result=f"{base_url}template/{task_id}",
+            result=f"{base_url}template/{template_uuid}",
+            result_uuid=template_uuid,
             errorCause=None
         )      
     try:
         tasks_db[task.id] = task
         if perr is None:
             _json = await request.json()        
-            background_tasks.add_task(template_service.process,_json,task,base_url,task_id)
+            background_tasks.add_task(template_service.process,_json,task,base_url,template_uuid)
         else: 
-            background_tasks.add_task(template_service.process_error,perr,task,base_url,task_id)
+            background_tasks.add_task(template_service.process_error,perr,task,base_url,template_uuid)
             response.status_code = status.HTTP_400_BAD_REQUEST
     except Exception as perr:
-        task.result=f"{base_url}template/{uuid}",
+        task.result=f"{base_url}template/{template_uuid}",
         task.status="Error"
         task.error = f"Error storing template {perr}"
         task.errorCause = traceback.format_exc() 
@@ -114,6 +116,7 @@ async def convert(request: Request,
             started=int(time.time() * 1000),
             completed=None,
             result=f"{base_url}template/{uuid}",
+            result_uuid = uuid,
             errorCause=None
         )      
     tasks_db[task.id] = task
@@ -265,6 +268,7 @@ async def delete_template(request: Request,
             started=int(time.time() * 1000),
             completed=None,
             result=f"{base_url}task/{task_id}",
+            result_uuid = None,
             errorCause=None
         )      
     tasks_db[task.id] = task

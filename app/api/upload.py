@@ -28,9 +28,18 @@ async def get_request(request: Request = Depends()):
 async def convert(request: Request,
                     background_tasks: BackgroundTasks
                 ):
+    """
+    Converts AMBIT json to NeXus format using background tasks.
+
+    Expects AMBIT JSON in the body.
+
+    Returns:
+    - Task Json representation, which includes link to the NeXus file.
+    """    
     content_type = request.headers.get("content-type", "").lower()
     base_url = str(request.base_url)  
     task_id = str(uuid.uuid4())
+    dataset_uuid = task_id
     ambit_json = await request.json()
     substances = Substances(**ambit_json)
     task = Task(
@@ -42,7 +51,8 @@ async def convert(request: Request,
             status="Running",
             started=int(time.time() * 1000),
             completed=None,
-            result=f"{base_url}dataset/{task_id}",
+            result=f"{base_url}dataset/{dataset_uuid}",
+            result_uuid=dataset_uuid,
             errorCause=None
         )      
     #print(substances)
@@ -51,7 +61,7 @@ async def convert(request: Request,
     return task
 
 
-@router.post("/dataset")  # Use router.post instead of app.post
+@router.post("/dataset")  
 async def upload_and_convert(request: Request,
                              background_tasks: BackgroundTasks,
                              dataset_type:str = Query(None, description="dataset type",enum=["template_wizard", "raman_spectrum", "ambit_json"]),
@@ -64,7 +74,7 @@ async def upload_and_convert(request: Request,
         # Replace "http://" with "https://"
         base_url = base_url.replace("http://", "https://")        
     task_id = str(uuid.uuid4())
-  
+    dataset_uuid = task_id
     task = Task(
             uri=f"{base_url}task/{task_id}",
             id=task_id,
@@ -74,7 +84,8 @@ async def upload_and_convert(request: Request,
             status="Running",
             started=int(time.time() * 1000),
             completed=None,
-            result=f"{base_url}dataset/{task_id}",
+            result=f"{base_url}dataset/{dataset_uuid}",
+            result_uuid = dataset_uuid,
             errorCause=None
         )      
     tasks_db[task.id] = task
