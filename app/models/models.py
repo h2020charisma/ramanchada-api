@@ -12,6 +12,7 @@ class Task(BaseModel):
     started: int
     completed: Optional[str] = None
     result: str
+    result_uuid: str
     errorCause: Optional[str] = None
 
 tasks_db: Dict[str, Task] = {}    

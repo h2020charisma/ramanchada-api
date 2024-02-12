@@ -47,6 +47,7 @@ async def process_run(request: Request,
         started=int(time.time() * 1000),
         completed=None,
         result=f"{dataset_uri}",
+        result_uuid= None,
         errorCause=None
     )      
     tasks_db[task.id] = task
