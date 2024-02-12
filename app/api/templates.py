@@ -99,25 +99,25 @@ async def convert(request: Request,
 @router.post("/template/{uuid}")  # Use router.post instead of app.post
 async def convert(request: Request,
                     background_tasks: BackgroundTasks,
-                    _uuid: str
+                    uuid: str
                 ):
     base_url = get_baseurl(request)
-    task_id = uuid.uuid4()
+    task_id = get_uuid()  
     _json = await request.json()
     task = Task(
             uri=f"{base_url}task/{task_id}",
             id=task_id,
-            name=f"Update template json {_uuid}",
+            name=f"Update template json {uuid}",
             error=None,
             policyError=None,
             status="Running",
             started=int(time.time() * 1000),
             completed=None,
-            result=f"{base_url}template/{_uuid}",
+            result=f"{base_url}template/{uuid}",
             errorCause=None
         )      
     tasks_db[task.id] = task
-    background_tasks.add_task(template_service.process,_json,task,base_url,_uuid)
+    background_tasks.add_task(template_service.process,_json,task,base_url,uuid)
     return task
 
 
