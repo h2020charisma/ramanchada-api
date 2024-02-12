@@ -46,7 +46,7 @@ def cleanup_templates():
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(cleanup_tasks, 'interval', minutes=30)  # Clean up every 30 minutes
-#scheduler.add_job(cleanup_templates, 'interval', hours=4)  # test, otherwise once a day would be ok
+scheduler.add_job(cleanup_templates, 'interval', hours=4)  # test, otherwise once a day would be ok
 scheduler.start()
 
 if __name__ == "__main__":
