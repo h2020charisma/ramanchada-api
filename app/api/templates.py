@@ -63,6 +63,7 @@ async def convert(request: Request,
     try:
         base_url = get_baseurl(request)  
     except Exception as err:
+        print(err)
         perr = err
 
     task = Task(
@@ -87,6 +88,8 @@ async def convert(request: Request,
             background_tasks.add_task(template_service.process_error,perr,task,base_url,template_uuid)
             response.status_code = status.HTTP_400_BAD_REQUEST
     except Exception as perr:
+        print(f"Error parsing JSON: {perr}")
+        print(f"Request body: {await request.body()}")           
         task.result=f"{base_url}template/{template_uuid}",
         task.status="Error"
         task.error = f"Error storing template {perr}"
@@ -147,8 +150,8 @@ async def convert(request: Request,
 async def get_template(request : Request, response : Response,
                         uuid: str,
                         format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"]),
-                        if_none_match: str = Header(None, alias="If-None-Match"),
-                        if_modified_since: datetime = Header(None, alias="If-Modified-Since")
+                        #if_none_match: str = Header(None, alias="If-None-Match"),
+                        #if_modified_since: datetime = Header(None, alias="If-Modified-Since")
                         ):
     # Construct the file path based on the provided UUID
     format_supported  = {
@@ -168,22 +171,22 @@ async def get_template(request : Request, response : Response,
             json_data ,file_path = template_service.get_template_json(uuid) 
             # Check Last-Modified header
             last_modified_time = get_last_modified(file_path)
-            if if_modified_since and if_modified_since >= last_modified_time:
-                return JSONResponse(content=None, status_code=304)       
+            #if if_modified_since and if_modified_since >= last_modified_time:
+            #    return JSONResponse(content=None, status_code=304)       
             _etag = generate_etag(json_data)
-            if if_none_match and if_none_match == str(_etag):
-                return JSONResponse(content=None, status_code=304)
+            #if if_none_match and if_none_match == str(_etag):
+            #    return JSONResponse(content=None, status_code=304)
 
             # Return the data with updated headers
-            custom_headers = { "ETag": _etag,    "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
-            response.headers.update(custom_headers)
+            #custom_headers = { "ETag": _etag,    "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
+            #response.headers.update(custom_headers)
             return json_data
         elif format=="nmparser":             
             file_path =  template_service.get_nmparser_config(uuid)
             _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}.json"'})
             custom_headers = {  "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
-            response.headers.update(custom_headers)
+            #_response.headers.update(custom_headers)
             return _response
         elif format=="xlsx":         
             file_path =  template_service.get_template_xlsx(uuid)
@@ -191,7 +194,7 @@ async def get_template(request : Request, response : Response,
             _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
             custom_headers = {  "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
-            response.headers.update(custom_headers)
+            #_response.headers.update(custom_headers)
             return _response
     else:
             raise HTTPException(status_code=400, detail="Format not supported")
@@ -199,7 +202,8 @@ async def get_template(request : Request, response : Response,
 
 @router.get("/template")
 async def get_templates(request : Request,q:str = Query(None), response: Response = None,
-                    if_modified_since: datetime = Header(None, alias="If-Modified-Since")):
+                    #if_modified_since: datetime = Header(None, alias="If-Modified-Since")
+                    ):
     base_url = get_baseurl(request) 
     uuids = {}
     last_modified_time = None
@@ -207,9 +211,11 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
         list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
         latest_json_file = max(list_of_json_files, key=os.path.getmtime)
         last_modified_time = get_last_modified(latest_json_file)
-        if if_modified_since and if_modified_since >= last_modified_time:
-            return JSONResponse(content=None, status_code=304)        
-    except:
+        #if if_modified_since and if_modified_since >= last_modified_time:
+            
+        #    return JSONResponse(content=None, status_code=304)        
+    except Exception as err:
+        print(err)
         pass
 
          
@@ -221,9 +227,9 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
                 _json, _file_path = template_service.get_template_json(_uuid); 
                 timestamp = get_last_modified(_file_path)
 
-                print(type(timestamp))
-                print(last_modified_time)
-                if last_modified_time is None or last_modified_time<timestamp:
+                #print(type(timestamp))
+                #print(last_modified_time)
+                if last_modified_time is None or last_modified_time < timestamp:
                     last_modified_time = timestamp
                 try:
                     _method = _json["METHOD"]               
@@ -246,7 +252,8 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
     custom_headers = {
         "Last-Modified": last_modified_datetime.strftime("%a, %d %b %Y %H:%M:%S GMT")
     }
-    response.headers.update(custom_headers)
+    #response.headers.update(custom_headers)
+    print(custom_headers)
     return {"template" : list(uuids.values())}
 
 @router.delete("/template/{uuid}",
