@@ -26,6 +26,7 @@ def process_error(perr,task,base_url,uuid):
 
 def process(_json,task,base_url,uuid):
     try:
+        print(_json)
         with open(os.path.join(TEMPLATE_DIR,f"{uuid}.json"), "w") as json_file:
             json.dump(_json, json_file, indent=4) 
         task.status="Completed"
