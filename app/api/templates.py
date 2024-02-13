@@ -219,7 +219,10 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
             if os.path.isfile(file_path):
                 _uuid = Path(file_path).stem.split("_")[0]
                 _json, _file_path = template_service.get_template_json(_uuid); 
-                timestamp = os.path.getmtime(file_path)
+                timestamp = get_last_modified(_file_path)
+
+                print(type(timestamp))
+                print(last_modified_time)
                 if last_modified_time is None or last_modified_time<timestamp:
                     last_modified_time = timestamp
                 try:
@@ -233,13 +236,13 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
                     uuids[_uuid]["uri"] =  uri
                     uuids[_uuid]["uuid"] = _uuid 
                     uuids[_uuid]["METHOD"] = _method
-                    uuids[_uuid]["timestamp"] = int(timestamp)
+                    uuids[_uuid]["timestamp"] = timestamp
                     for tag in ["PROTOCOL_CATEGORY_CODE","EXPERIMENT","template_name","template_status","template_author","template_acknowledgment"]:
                         try:
                             uuids[_uuid][tag] = _json[tag]
                         except:
                             uuids[_uuid][tag] = "DRAFT" if tag=="template_status" else "?"
-    last_modified_datetime = datetime.utcfromtimestamp(last_modified_time)
+    last_modified_datetime = last_modified_time
     custom_headers = {
         "Last-Modified": last_modified_datetime.strftime("%a, %d %b %Y %H:%M:%S GMT")
     }
