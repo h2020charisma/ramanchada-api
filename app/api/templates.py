@@ -206,7 +206,7 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
     try:
         list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
         latest_json_file = max(list_of_json_files, key=os.path.getmtime)
-        last_modified_time = os.path.getmtime(latest_json_file)
+        last_modified_time = get_last_modified(latest_json_file)
         if if_modified_since and if_modified_since >= last_modified_time:
             return JSONResponse(content=None, status_code=304)        
     except:
