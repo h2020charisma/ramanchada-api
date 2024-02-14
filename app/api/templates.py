@@ -95,6 +95,7 @@ async def convert(request: Request,
         task.error = f"Error storing template {perr}"
         task.errorCause = traceback.format_exc() 
         task.result = None
+        task.result_uuid = None
         response.status_code = status.HTTP_400_BAD_REQUEST
 
     return task
