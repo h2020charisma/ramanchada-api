@@ -103,7 +103,7 @@ async def convert(request: Request,
     
 
 @router.post("/template/{uuid}")  # Use router.post instead of app.post
-async def convert(request: Request,
+async def update(request: Request,
                     background_tasks: BackgroundTasks,
                     uuid: str
                 ):
@@ -129,7 +129,7 @@ async def convert(request: Request,
 
 
 @router.post("/template/{uuid}/copy")  # copy a template
-async def convert(request: Request,
+async def makecopy(request: Request,
                     background_tasks: BackgroundTasks,
                     uuid: str
                 ):
@@ -141,8 +141,10 @@ async def convert(request: Request,
     try:
         _json = await request.json()
         for tag in ["template_name","template_author","template_acknowledgment"]:
+            _label = "Copy of"
             if tag in _json:
-                json_data[tag] = "{} {}".format(_json[tag],json_data[tag])
+                _label = _json[tag]
+            json_data[tag] = "{} {}".format(_label,json_data[tag])
     except Exception as err:
         #empty body
         pass
@@ -160,7 +162,7 @@ async def convert(request: Request,
             errorCause=None
         )      
     tasks_db[task.id] = task
-    background_tasks.add_task(template_service.process,json_data,task,base_url,uuid)
+    background_tasks.add_task(template_service.process,json_data,task,base_url,result_uuid)
     return task
 
 
