@@ -128,6 +128,42 @@ async def convert(request: Request,
     return task
 
 
+@router.post("/template/{uuid}/copy")  # copy a template
+async def convert(request: Request,
+                    background_tasks: BackgroundTasks,
+                    uuid: str
+                ):
+    base_url = get_baseurl(request)
+    task_id = get_uuid()  
+    result_uuid = get_uuid()
+    json_data ,file_path = template_service.get_template_json(uuid) 
+    json_data["origin_uuid"] = uuid
+    try:
+        _json = await request.json()
+        for tag in ["template_name","template_author","template_acknowledgment"]:
+            if tag in _json:
+                json_data[tag] = "{} {}".format(_json[tag],json_data[tag])
+    except Exception as err:
+        #empty body
+        pass
+    task = Task(
+            uri=f"{base_url}task/{task_id}",
+            id=task_id,
+            name=f"Create copy of /template/{uuid}",
+            error=None,
+            policyError=None,
+            status="Running",
+            started=int(time.time() * 1000),
+            completed=None,
+            result=f"{base_url}template/{result_uuid}",
+            result_uuid = result_uuid,
+            errorCause=None
+        )      
+    tasks_db[task.id] = task
+    background_tasks.add_task(template_service.process,json_data,task,base_url,uuid)
+    return task
+
+
 @router.get("/template/{uuid}",
     responses={
     200: {
