@@ -1,6 +1,8 @@
 # ramanchada-api
 
-## Dev notes
+A web API for the RamanChada 2 Raman spectroscopy harmonisation library, incorporating the AMBIT/eNanoMapper data model.
+
+## Developer notes
 
 ### Installation
 
