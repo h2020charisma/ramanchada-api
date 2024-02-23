@@ -40,10 +40,11 @@ services:
         OPTIONS,
         POST
       traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowOriginList: >-
-        https://search-dev.data.enanomapper.net,
-        https://search-experimental.data.enanomapper.net,
-        https://search.charisma.ideaconsult.net,
-        https://search.data.enanomapper.net
+        https://enanomapper.adma.ai,
+        https://enm-dev.adma.ai,
+        https://enm-experimental.adma.ai,
+        https://h5web-comp.vercel.app,
+        https://search.charisma.ideaconsult.net
       traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlMaxAge: 1728000
       traefik.http.middlewares.ramanchada-api-prod-cors.headers.addVaryHeader: 'true'
       com.centurylinklabs.watchtower.enable: 'true'
@@ -79,10 +80,11 @@ services:
         OPTIONS,
         POST
       traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowOriginList: >-
-        https://search-dev.data.enanomapper.net,
-        https://search-experimental.data.enanomapper.net,
-        https://search.charisma.ideaconsult.net,
-        https://search.data.enanomapper.net
+        https://enanomapper.adma.ai,
+        https://enm-dev.adma.ai,
+        https://enm-experimental.adma.ai,
+        https://h5web-comp.vercel.app,
+        https://search.charisma.ideaconsult.net
       traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlMaxAge: 1728000
       traefik.http.middlewares.ramanchada-api-dev-cors.headers.addVaryHeader: 'true'
       com.centurylinklabs.watchtower.enable: 'true'
