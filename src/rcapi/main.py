@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
+from importlib.metadata import version
 import time
 from rcapi.api import upload, process, info, tasks, templates
 from rcapi.models.models import tasks_db
@@ -10,9 +11,14 @@ from .config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs(migrate=True)
 
+try:
+    package_version = version('ramanchada-api')
+except Exception:
+    package_version = 'Unknown'
+
 app = FastAPI(
      title="Ramanchada API",
-     version="0.0.1",
+     version=package_version,
      description = "A web API for the RamanChada 2 Raman spectroscopy harmonisation library, incorporating the AMBIT/eNanoMapper data model"
 )
 
