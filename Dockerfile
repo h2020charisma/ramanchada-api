@@ -1,4 +1,4 @@
-FROM python:3.9-slim as requirements-stage
+FROM python:3.11-slim as requirements-stage
 
 WORKDIR /tmp
 
@@ -10,7 +10,7 @@ COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
 
 RUN poetry export -f requirements.txt --output requirements.txt --without=dev --without-hashes
 
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.9-slim
+FROM tiangolo/uvicorn-gunicorn-fastapi:python3.11-slim
 
 LABEL maintainer="Luchesar ILIEV <luchesar.iliev@gmail.com>" \
       org.opencontainers.image.created=$BUILD_DATE \
