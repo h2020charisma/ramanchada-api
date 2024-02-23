@@ -1,15 +1,59 @@
 networks:
+  ramanchada_api_prod:
+    name: ramanchada-api-prod
   ramanchada_api_dev:
     name: ramanchada-api-dev
 
 volumes:
+  uploads-prod:
+    driver: zfs
+    name: ${ZFSROOT}/ramanchada-api-uploads-prod
   uploads-dev:
     driver: zfs
     name: ${ZFSROOT}/ramanchada-api-uploads-dev
 
 services:
 
-  develop:
+  prod:
+    image: ghcr.io/h2020charisma/ramanchada-api:stable
+    container_name: ramanchada-api-prod
+    hostname: ramanchada-api-prod
+    restart: unless-stopped
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.ramanchada-api-prod.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
+      traefik.http.routers.ramanchada-api-prod.rule: Host(`api.ramanchada.ideaconsult.net`)
+      traefik.http.routers.ramanchada-api-prod.middlewares: ramanchada-api-prod-cors
+      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowCredentials: 'true'
+      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowHeaders: >-
+        Authorization,
+        Cache-Control,
+        Content-Type,
+        DNT,
+        If-Modified-Since,
+        Keep-Alive,
+        User-Agent,
+        X-CustomHeader,
+        X-Requested-With
+      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowMethods: >-
+        GET,
+        OPTIONS,
+        POST
+      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowOriginList: >-
+        https://search-dev.data.enanomapper.net,
+        https://search-experimental.data.enanomapper.net,
+        https://search.charisma.ideaconsult.net,
+        https://search.data.enanomapper.net
+      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlMaxAge: 1728000
+      traefik.http.middlewares.ramanchada-api-prod-cors.headers.addVaryHeader: 'true'
+      com.centurylinklabs.watchtower.enable: 'true'
+      com.centurylinklabs.watchtower.scope: frequent
+    networks:
+      - ramanchada_api_prod
+    volumes:
+      - uploads-prod:/var/uploads
+
+  dev:
     image: ghcr.io/h2020charisma/ramanchada-api:develop
     container_name: ramanchada-api-dev
     hostname: ramanchada-api-dev
@@ -17,7 +61,7 @@ services:
     labels:
       traefik.enable: 'true'
       traefik.http.routers.ramanchada-api-dev.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
-      traefik.http.routers.ramanchada-api-dev.rule: Host(`api.ramanchada.ideaconsult.net`)
+      traefik.http.routers.ramanchada-api-dev.rule: Host(`api-dev.ramanchada.ideaconsult.net`)
       traefik.http.routers.ramanchada-api-dev.middlewares: ramanchada-api-dev-cors
       traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowCredentials: 'true'
       traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowHeaders: >-
