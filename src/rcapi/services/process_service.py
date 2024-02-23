@@ -1,5 +1,5 @@
 import time
-from app.models.models import Task  # Import your data models
+from rcapi.models.models import Task  # Import your data models
 
 async def process(task : Task,process_config : dict, nexus_dataset_url: str,base_url: str):
     try:

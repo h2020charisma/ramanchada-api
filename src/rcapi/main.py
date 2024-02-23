@@ -2,8 +2,8 @@ from fastapi import FastAPI
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 import time
-from app.api import upload, process, info, tasks, templates
-from app.models.models import tasks_db
+from rcapi.api import upload, process, info, tasks, templates
+from rcapi.models.models import tasks_db
 from pydantic import BaseSettings
 import os 
 from .config.app_config import initialize_dirs
