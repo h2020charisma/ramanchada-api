@@ -1,5 +1,6 @@
 import os
-from app.models.models import Task  # Import your data models
+from rcapi.config.app_config import initialize_dirs
+from rcapi.models.models import Task  # Import your data models
 from pathlib import Path
 import json 
 import nexusformat.nexus.tree as nx
@@ -10,7 +11,6 @@ import os
 from datetime import datetime, timedelta
 import glob 
 
-from ..config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
 

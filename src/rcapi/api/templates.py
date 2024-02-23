@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, status, Response, Header
 from fastapi import Request , Query , HTTPException, BackgroundTasks
 from fastapi.responses import JSONResponse, FileResponse
-from app.models.models import Task  # Import the Task model
-from app.services import template_service
+from rcapi.config.app_config import initialize_dirs
+from rcapi.models.models import Task  # Import the Task model
+from rcapi.models.models import tasks_db
+from rcapi.services import template_service
 import os
 import uuid
 import time
@@ -13,10 +15,6 @@ import hashlib
 import glob 
 
 router = APIRouter()
-
-from ..models.models import tasks_db
-
-from ..config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
 

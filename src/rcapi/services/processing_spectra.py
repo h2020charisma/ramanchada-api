@@ -1,8 +1,8 @@
 import os
-from app.models.models import Task
+from rcapi.config.app_config import initialize_dirs
+from rcapi.models.models import Task
 from pynanomapper.datamodel.nexus_parser import SpectrumParser
-from  pynanomapper.datamodel.nexus_spectra import peaks2nxdata
-from ..config.app_config import initialize_dirs
+from pynanomapper.datamodel.nexus_spectra import peaks2nxdata
 
 #from ramanchada2.protocols.calibration import CalibrationModel
 

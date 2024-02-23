@@ -2,20 +2,19 @@ import os
 import uuid
 import time
 import shutil
-from app.models.models import Task  # Import your data models
+from rcapi.models.models import Task  # Import your data models
 from pathlib import Path
 import requests
 import json 
-from  pynanomapper.datamodel.ambit import Substances,SubstanceRecord,CompositionEntry,Component, Compound
-from  pynanomapper.datamodel.nexus_writer import to_nexus
-from  pynanomapper.datamodel.nexus_spectra import spe2ambit
+from pynanomapper.datamodel.ambit import Substances, SubstanceRecord, CompositionEntry, Component, Compound
+from pynanomapper.datamodel.nexus_writer import to_nexus
+from pynanomapper.datamodel.nexus_spectra import spe2ambit
 import nexusformat.nexus.tree as nx
 import ramanchada2 as rc2 
 from fastapi import HTTPException
 import traceback
 import h5py
-
-from ..config.app_config import initialize_dirs
+from rcapi.config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
 
