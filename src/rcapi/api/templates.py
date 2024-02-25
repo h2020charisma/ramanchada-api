@@ -286,11 +286,12 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
                         except:
                             uuids[_uuid][tag] = "DRAFT" if tag=="template_status" else "?"
     last_modified_datetime = last_modified_time
-    custom_headers = {
-        "Last-Modified": last_modified_datetime.strftime("%a, %d %b %Y %H:%M:%S GMT")
-    }
-    #response.headers.update(custom_headers)
-    print(custom_headers)
+    if last_modified_datetime != None:
+        custom_headers = {
+            "Last-Modified": last_modified_datetime.strftime("%a, %d %b %Y %H:%M:%S GMT")
+        }
+        #response.headers.update(custom_headers)
+        print(custom_headers)
     return {"template" : list(uuids.values())}
 
 @router.delete("/template/{uuid}",
