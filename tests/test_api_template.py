@@ -112,3 +112,13 @@ def test_makecopy(setup_template_dir):
         expected_json = json.load(file)
         expected_json["origin_uuid"] = TEMPLATE_UUID
     assert retrieved_json == expected_json , retrieved_json      
+
+def test_delete(setup_template_dir):
+    # Step 1: make copy JSON
+    response_copy = client.delete("/template/{}".format(TEMPLATE_UUID))
+    result_uuid = get_task_result(response_copy)
+    assert result_uuid is None
+    response = client.get("/template")
+    assert response.status_code == 200
+    assert response.json() == {"template" : []}    
+    
