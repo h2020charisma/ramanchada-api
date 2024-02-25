@@ -202,31 +202,31 @@ async def get_template(request : Request, response : Response,
     if format is None:
         format = "json"
     
-    
     if format in format_supported:
+        json_blueprint ,file_path = template_service.get_template_json(uuid) 
+        last_modified_time = get_last_modified(file_path)
         if format=="json":
-            json_data ,file_path = template_service.get_template_json(uuid) 
             # Check Last-Modified header
-            last_modified_time = get_last_modified(file_path)
+            
             #if if_modified_since and if_modified_since >= last_modified_time:
             #    return JSONResponse(content=None, status_code=304)       
-            _etag = generate_etag(json_data)
+            _etag = generate_etag(json_blueprint)
             #if if_none_match and if_none_match == str(_etag):
             #    return JSONResponse(content=None, status_code=304)
 
             # Return the data with updated headers
             #custom_headers = { "ETag": _etag,    "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
             #response.headers.update(custom_headers)
-            return json_data
+            return json_blueprint
         elif format=="nmparser":             
-            file_path =  template_service.get_nmparser_config(uuid)
+            file_path =  template_service.get_nmparser_config(uuid,json_blueprint)
             _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}.json"'})
             custom_headers = {  "Last-Modified":  last_modified_time.strftime("%a, %d %b %Y %H:%M:%S GMT") }
             #_response.headers.update(custom_headers)
             return _response
         elif format=="xlsx":         
-            file_path =  template_service.get_template_xlsx(uuid)
+            file_path =  template_service.get_template_xlsx(uuid,json_blueprint)
             # Return the file using FileResponse
             _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})

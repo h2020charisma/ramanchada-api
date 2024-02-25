@@ -45,10 +45,11 @@ def setup_template_dir(config_dict):
     remove_files_in_folder(TEMPLATE_DIR)
     shutil.copy(TEST_JSON_PATH, os.path.join(TEMPLATE_DIR,"{}.json".format(TEMPLATE_UUID)))
     # Perform setup operations here, if any
-    yield  # This is where the test runs
+    #yield  # This is where the test runs
     #print("\nCleaning up resources after the test")
     #remove_files_in_folder(TEMPLATE_DIR)
     # Perform cleanup operations here, if any
+    return TEMPLATE_DIR
 
 def remove_files_in_folder(folder_path):
     folder_path = Path(folder_path)
@@ -115,10 +116,18 @@ def test_makecopy(setup_template_dir):
 
 def test_delete(setup_template_dir):
     # Step 1: make copy JSON
-    response_copy = client.delete("/template/{}".format(TEMPLATE_UUID))
-    result_uuid = get_task_result(response_copy)
-    assert result_uuid is None
+    response_delete = client.delete("/template/{}".format(TEMPLATE_UUID))
+    assert response_delete.status_code == 200, response_delete.status_code
+    task_json = response_delete.json()
+    result_uuid = task_json.get("result_uuid")
+    assert result_uuid is None, task_json
     response = client.get("/template")
-    assert response.status_code == 200
-    assert response.json() == {"template" : []}    
+    assert response.status_code == 200, response.status_code
+    assert response.json() == {"template" : []}, response.json() 
     
+def test_doseresponse_excel(setup_template_dir):
+    response_xlsx = client.get("/template/{}?format=xlsx".format(TEMPLATE_UUID))
+    assert response_xlsx.status_code == 200, response_xlsx.status_code
+    save_path = os.path.join(setup_template_dir, '{}.xlsx'.format(TEMPLATE_UUID))
+    with open(save_path, 'wb') as file:
+        file.write(response_xlsx.content)    

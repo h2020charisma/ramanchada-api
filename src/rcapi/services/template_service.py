@@ -50,35 +50,20 @@ def get_template_json(uuid):
 from pynanomapper.datamodel.templates import blueprint as bp
     
 
-def get_template_xlsx(uuid,force=True):
-    file_path_xlsx = os.path.join(TEMPLATE_DIR, f"{uuid}.xlsx")
-    
-    if force or not os.path.exists(file_path):
-        file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.json")
-        if os.path.exists(file_path):
-            with open(file_path, "r") as file:
-                json_blueprint = json.load(file)     
-            df_info,df_result,df_raw =bp.get_template_frame(json_blueprint)
-            bp.iom_format_2excel(file_path_xlsx,df_info,df_result,df_raw)
-        else:
-            raise FileNotFoundError(f"File not found {uuid}.json")
-    return file_path_xlsx       
 
-def get_nmparser_config(uuid,force=True):
+def get_template_xlsx(uuid,json_blueprint):
+    file_path_xlsx = os.path.join(TEMPLATE_DIR, f"{uuid}.xlsx")   
+    df_info,df_result,df_raw =bp.get_template_frame(json_blueprint)
+    bp.iom_format_2excel(file_path_xlsx,df_info,df_result,df_raw)
+    return file_path_xlsx  
+
+def get_nmparser_config(uuid,json_blueprint,force=True):
+    file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.json.nmparser")      
+    json_config = bp.get_nmparser_config(json_blueprint)
+    with open(file_path, 'w') as json_file:
+        json.dump(json_config, json_file, indent=2)            
+        return file_path   
     
-    if force or not os.path.exists(file_path):
-        file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.json")
-        if os.path.exists(file_path):
-            with open(file_path, "r") as file:
-                json_blueprint = json.load(file)     
-            file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.json.nmparser")      
-            json_config = bp.get_nmparser_config(json_blueprint)
-            with open(file_path, 'w') as json_file:
-                json.dump(json_config, json_file, indent=2)            
-            return file_path   
-        else:
-            raise Exception(f"No such file {uuid}.json")
-    raise Exception("")    
 
 # 8h is for a test 
 # otherwise we agreed on 1 month
