@@ -8,7 +8,10 @@ import pytest
 from importlib import resources
 import yaml
 import os.path 
+import shutil
+
 TEST_JSON_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
+TEMPLATE_UUID = "3c22a1f0-a933-4855-848d-05fcc26ceb7a"
 
 client = TestClient(app)
 #warnings.warn("test")
@@ -30,9 +33,21 @@ def clean_template_dir(config_dict):
     print(TEMPLATE_DIR)
     remove_files_in_folder(TEMPLATE_DIR)
     # Perform setup operations here, if any
-    yield  # This is where the test runs
-    print("\nCleaning up resources after the test")
+    #yield  # This is where the test runs
+    #print("\nCleaning up resources after the test")
+    #remove_files_in_folder(TEMPLATE_DIR)
+    # Perform cleanup operations here, if any
+
+@pytest.fixture
+def setup_template_dir(config_dict):
+    print("\nSetting up resources before the test")
+    TEMPLATE_DIR = os.path.join(config_dict["upload_dir"],"TEMPLATES")
     remove_files_in_folder(TEMPLATE_DIR)
+    shutil.copy(TEST_JSON_PATH, os.path.join(TEMPLATE_DIR,"{}.json".format(TEMPLATE_UUID)))
+    # Perform setup operations here, if any
+    yield  # This is where the test runs
+    #print("\nCleaning up resources after the test")
+    #remove_files_in_folder(TEMPLATE_DIR)
     # Perform cleanup operations here, if any
 
 def remove_files_in_folder(folder_path):
@@ -73,3 +88,27 @@ def test_upload_and_retrieve_json(clean_template_dir):
     with open(TEST_JSON_PATH, "r") as file:
         expected_json = json.load(file)
     assert retrieved_json == expected_json    
+
+def test_retrieve_json(setup_template_dir):
+    # Step 1: get predefined JSON
+    response_retrieve = client.get("/template/{}".format(TEMPLATE_UUID))
+    assert response_retrieve.status_code == 200, response_retrieve.status_code
+    retrieved_json = response_retrieve.json()
+    # Step 1: Compare predefined and retrieved JSON
+    with open(TEST_JSON_PATH, "r") as file:
+        expected_json = json.load(file)
+    assert retrieved_json == expected_json        
+
+def test_makecopy(setup_template_dir):
+    # Step 1: make copy JSON
+    response_copy = client.post("/template/{}/copy".format(TEMPLATE_UUID))
+    result_uuid = get_task_result(response_copy)
+    # Step 2: Retrieve JSON using the result_uuid
+    response_retrieve = client.get(f"/template/{result_uuid}")
+    assert response_retrieve.status_code == 200, response_retrieve.status_code
+    retrieved_json = response_retrieve.json()
+    # Step 3: Compare uploaded and retrieved JSON
+    with open(TEST_JSON_PATH, "r") as file:
+        expected_json = json.load(file)
+        expected_json["origin_uuid"] = TEMPLATE_UUID
+    assert retrieved_json == expected_json , retrieved_json      
