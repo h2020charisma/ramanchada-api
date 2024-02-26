@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Request, HTTPException, Response, status, Header
 from fastapi.responses import JSONResponse
 from datetime import datetime
+from rcapi.models.models import tasks_db
 
 router = APIRouter()
-
-from ..models.models import tasks_db
 
 @router.get("/task/{uuid}")
 async def get_task(request : Request, uuid: str, response: Response,

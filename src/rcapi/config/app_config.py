@@ -1,6 +1,7 @@
 from pydantic import BaseSettings
 import yaml
 import os 
+from importlib import resources
 from pathlib import Path 
 import shutil
 
@@ -12,14 +13,15 @@ class AppConfig(BaseSettings):
 #        env_file = ".env"  # Optional: Load configuration from an .env file
 
 def load_config():
-    config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),  "config.yaml")
-    print(config_path)
+    config_dict = {}
     yaml_config = os.environ.get("RAMANCHADA_API_CONFIG")
     if yaml_config is None:
-        yaml_config = "config/config.yaml"
-    config_dict = {}
-    with open(yaml_config, "r") as config_file:
-        config_dict = yaml.safe_load(config_file)
+        with resources.path('rcapi.config', 'config.yaml') as config_path:
+            with open(config_path, 'r') as config_file:
+                config_dict = yaml.safe_load(config_file)
+    else:
+        with open(yaml_config, "r") as config_file:
+            config_dict = yaml.safe_load(config_file)
     return AppConfig(**config_dict)
 
 def migrate_dir(UPLOAD_DIR,NEXUS_DIR):

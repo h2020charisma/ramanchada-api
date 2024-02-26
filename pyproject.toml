@@ -2,21 +2,55 @@
 name = "ramanchada-api"
 version = "0.1.0"
 description = "A web API for the RamanChada 2 Raman spectroscopy harmonisation library, incorporating the AMBIT/eNanoMapper data model"
-authors = ["Nina Jeliazkova <jeliazkova.nina@gmail.com>"]
+authors = [
+  "Nina Jeliazkova <jeliazkova.nina@gmail.com>",
+]
+maintainers = [
+  "Luchesar Iliev <luchesar.iliev@gmail.com>",
+  "Vedrin Jeliazkov <vedrin.jeliazkov@gmail.com>",
+]
 license = "MIT"
 readme = "README.md"
-#packages = [{include = "ramanchada_api"}]
+repository = "https://github.com/h2020charisma/ramanchada-api"
+packages = [
+  { include = "rcapi", from = "src" },
+]
+include = [
+  "src/rcapi/config/config.yaml",
+]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
+python = ">=3.9,<3.12"
 fastapi = "^0.101.0"
 python-multipart = "^0.0.6"
-pynanomapper = {path = "pynanomapper"}
-ramanchada2 = {path = "ramanchada2"}
+pynanomapper = { path = "extern/pynanomapper" }
+ramanchada2 = { path = "extern/ramanchada2" }
 apscheduler = "^3.10.1"
 h5grove = "^1.3.0"
 openpyxl = "^3.1.2"
 
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/h2020charisma/ramanchada-api/issues"
+
+[tool.poetry.scripts]
+dev = "scripts.dev_server:main"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.1"
+httpx = "^0.27.0"
+uvicorn = "^0.27.1"
+
+[tool.poetry.group.jupyter.dependencies]
+jupyter = "^1.0.0"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+minversion = "7.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+    "integration",
+]
 
 [build-system]
 requires = ["poetry-core"]

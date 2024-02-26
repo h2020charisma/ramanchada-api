@@ -1,17 +1,15 @@
 from fastapi import APIRouter
 from fastapi import Request , Form , HTTPException, BackgroundTasks
-from app.models.models import Task  # Import the Task model
-from app.services import  process_service
+from rcapi.models.models import Task  # Import the Task model
+from rcapi.models.models import tasks_db
+from rcapi.services import  process_service
+from rcapi.services import processing_spectra as ps
 import os
 import uuid
 import time
 import shutil
 
-from ..models.models import tasks_db
-from ..services import processing_spectra as ps
 router = APIRouter()
-
-
 
 config_processing = {
     "test" : { "class" : ps.ProcessMock },
