@@ -69,14 +69,15 @@ def get_nmparser_config(uuid,json_blueprint,force=True):
 # otherwise we agreed on 1 month
 def cleanup(age_hours = 8 ):
     current_time = datetime.now()
-    threshold_time = current_time - timedelta(hours=24)
+    threshold_time = current_time - timedelta(hours=age_hours)
     
     json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
     for file_name in json_files:
         last_modified_time = datetime.fromtimestamp(os.path.getmtime(file_name))
         # Check if the file is older than age_hours
         if last_modified_time < threshold_time:
-            delete_template(file_name)
+            task = Task()
+            delete_template(file_name,task=task)
 
 
 def delete_template(template_path,task,base_url,uuid):
