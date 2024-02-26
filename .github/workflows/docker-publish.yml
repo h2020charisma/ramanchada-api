@@ -3,11 +3,12 @@ name: Build and publish the Docker image
 
 on:  # yamllint disable-line rule:truthy
   push:
-    branches: ["develop"]
-    # Publish semver tags as releases.
-    tags: ['v*.*.*']
-  pull_request:
-    branches: ["develop"]
+    branches:
+      - main
+      - develop
+    tags:
+      - v*.*.*
+    workflow_dispatch:
 
 env:
   # Use docker.io for Docker Hub if empty
