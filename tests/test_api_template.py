@@ -9,6 +9,7 @@ from importlib import resources
 import yaml
 import os.path 
 import shutil
+from datetime import datetime, timedelta
 
 TEST_JSON_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
 TEMPLATE_UUID = "3c22a1f0-a933-4855-848d-05fcc26ceb7a"
@@ -30,7 +31,6 @@ def config_dict():
 def clean_template_dir(config_dict):
     print("\nSetting up resources before the test")
     TEMPLATE_DIR = os.path.join(config_dict["upload_dir"],"TEMPLATES")
-    print(TEMPLATE_DIR)
     remove_files_in_folder(TEMPLATE_DIR)
     # Perform setup operations here, if any
     #yield  # This is where the test runs
@@ -43,7 +43,15 @@ def setup_template_dir(config_dict):
     print("\nSetting up resources before the test")
     TEMPLATE_DIR = os.path.join(config_dict["upload_dir"],"TEMPLATES")
     remove_files_in_folder(TEMPLATE_DIR)
-    shutil.copy(TEST_JSON_PATH, os.path.join(TEMPLATE_DIR,"{}.json".format(TEMPLATE_UUID)))
+    file_path = os.path.join(TEMPLATE_DIR,"{}.json".format(TEMPLATE_UUID))
+    shutil.copy(TEST_JSON_PATH,file_path )
+    new_modified_date = datetime.now() - timedelta(hours=24)
+    timestamp = new_modified_date.timestamp()
+    os.utime(file_path, times=(timestamp, timestamp))
+    
+    now_date = datetime.utcnow() - timedelta(hours=12)
+    #headers = {"If-Modified-Since": now_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
+    assert new_modified_date <= now_date,new_modified_date
     # Perform setup operations here, if any
     #yield  # This is where the test runs
     #print("\nCleaning up resources after the test")
@@ -58,7 +66,7 @@ def remove_files_in_folder(folder_path):
         try:
             if file_path.is_file():
                 file_path.unlink()
-                print(f"Removed file: {file_path}")
+                #print(f"Removed file: {file_path}")
         except Exception as e:
             print(f"Error removing file {file_path}: {e}")
 
@@ -90,7 +98,7 @@ def test_upload_and_retrieve_json(clean_template_dir):
         expected_json = json.load(file)
     assert retrieved_json == expected_json    
 
-def test_retrieve_json(setup_template_dir):
+def test_gettemplate(setup_template_dir):
     # Step 1: get predefined JSON
     response_retrieve = client.get("/template/{}".format(TEMPLATE_UUID))
     assert response_retrieve.status_code == 200, response_retrieve.status_code
@@ -99,6 +107,18 @@ def test_retrieve_json(setup_template_dir):
     with open(TEST_JSON_PATH, "r") as file:
         expected_json = json.load(file)
     assert retrieved_json == expected_json        
+
+def test_gettemplate_notmodified(setup_template_dir):
+    modified_date = datetime.utcnow() - timedelta(hours=12)
+    headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
+    response_retrieve = client.get("/template",headers=headers)
+    assert response_retrieve.status_code == 304,response_retrieve.content
+
+def test_gettemplateuuid_notmodified(setup_template_dir):
+    modified_date = datetime.utcnow() - timedelta(hours=12)
+    headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
+    response_retrieve = client.get("/template/{}".format(TEMPLATE_UUID),headers=headers)
+    assert response_retrieve.status_code == 304,response_retrieve.content
 
 def test_makecopy(setup_template_dir):
     # Step 1: make copy JSON
@@ -126,8 +146,23 @@ def test_delete(setup_template_dir):
     assert response.json() == {"template" : []}, response.json() 
     
 def test_doseresponse_excel(setup_template_dir):
-    response_xlsx = client.get("/template/{}?format=xlsx".format(TEMPLATE_UUID))
-    assert response_xlsx.status_code == 200, response_xlsx.status_code
+    modified_date = datetime.utcnow() - timedelta(hours=12)
+    headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
+    #we ignore the header, want to generate the file on-the-fly
+    response_xlsx = client.get("/template/{}?format=xlsx".format(TEMPLATE_UUID),headers=headers)
+    assert response_xlsx.status_code == 200, response_xlsx.headers
+    print(response_xlsx.headers)
     save_path = os.path.join(setup_template_dir, '{}.xlsx'.format(TEMPLATE_UUID))
     with open(save_path, 'wb') as file:
         file.write(response_xlsx.content)    
+
+def test_doseresponse_nmparser(setup_template_dir):
+    modified_date = datetime.utcnow() - timedelta(hours=12)
+    headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
+    #we ignore the header, want to generate the file on-the-fly
+    response_nmparser = client.get("/template/{}?format=nmparser".format(TEMPLATE_UUID),headers=headers)
+    assert response_nmparser.status_code == 200, response_nmparser.headers
+    print(response_nmparser.headers)
+    save_path = os.path.join(setup_template_dir, '{}.json.nmparser'.format(TEMPLATE_UUID))
+    with open(save_path, 'wb') as file:
+        file.write(response_nmparser.content)          
