@@ -53,6 +53,7 @@ async def process_run(request: Request,
     if process_config is None:
         task.status = "Error"
         task.error = f"Invalid process_id {process_id}"    
+        task.completed=int(time.time() * 1000)
     else:
         background_tasks.add_task(process_service.process,task,process_config,dataset_uri,base_url)
     return {"task": [task.dict()]}

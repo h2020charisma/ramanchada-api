@@ -42,18 +42,21 @@ for route in app.routes:
 
 
 def cleanup_tasks():
-    current_time = int(time.time())  # Current time in seconds , milliseconds are fractional
-    two_hours_ago = current_time - (2 * 60 * 60 )  # Two hours in milliseconds
-    tasks_to_remove = [task_id for task_id, task_data in tasks_db.items() if task_data.started < two_hours_ago and task_data.status != "Running"]
+    current_time = int(time.time()*1000)  # Current time in seconds , milliseconds are fractional
+    two_hours_ago = current_time - (2 * 60 * 60 * 1000)  # Two hours in milliseconds
+    #two_hours_ago = current_time - (10 * 60 * 1000)  # 10 min  in milliseconds
+    #print(current_time,two_hours_ago)
+    tasks_to_remove = [task_id for task_id, task_data in tasks_db.items() if task_data.completed < two_hours_ago and task_data.status != "Running"]
+    #print(tasks_to_remove)
     for task_id in tasks_to_remove:
         tasks_db.pop(task_id)
 
 def cleanup_templates():
-    template_service.cleanup(age_hours = 24)
+    template_service.cleanup(timedelta(hours=24*7))
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(cleanup_tasks, 'interval', minutes=120)  # Clean up every 120 minutes
-scheduler.add_job(cleanup_templates, 'interval', hours=4)  # test, otherwise once a day would be ok
+scheduler.add_job(cleanup_templates, 'interval', hours=24)  # test, otherwise once a day would be ok
 scheduler.start()
 
 if __name__ == "__main__":
