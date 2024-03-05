@@ -88,13 +88,13 @@ async def convert(request: Request,
     except Exception as perr:
         print(f"Error parsing JSON: {perr}")
         print(f"Request body: {await request.body()}")           
-        task.result=f"{base_url}template/{template_uuid}",
         task.status="Error"
         task.error = f"Error storing template {perr}"
         task.errorCause = traceback.format_exc() 
         task.result = None
         task.result_uuid = None
         response.status_code = status.HTTP_400_BAD_REQUEST
+        task.completed=int(time.time() * 1000)
 
     return task
 

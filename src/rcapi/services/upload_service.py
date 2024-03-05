@@ -159,24 +159,29 @@ def parse_spectrum_files(task,base_url,file_path,jsonconfig):
         #study = mx.Study(study=studies)
     convert_to_nexus(Substances(substance=substances),task,base_url)       
 
-def convert_to_nexus(substances: Substances,task,base_url):
+def convert_to_nexus(substances: Substances,task,base_url,dataset_uuid):
     try:
         nxroot = substances.to_nexus(nx.NXroot())
-        nexus_file_path = os.path.join(NEXUS_DIR, f"{task.id}.nxs")   
+        nexus_file_path = os.path.join(NEXUS_DIR, f"{dataset_uuid}.nxs")   
         nxroot.save(nexus_file_path,mode="w")
         task.status="Completed"
-        task.result=f"{base_url}dataset/{task.id}?format=nxs"
+        task.result=f"{base_url}dataset/{dataset_uuid}?format=nxs"
+        task.result_uuid = dataset_uuid
+        task.completed =int(time.time() * 1000)
     except Exception as perr:
-        task.result=f"{base_url}dataset/{task.id}?format=json",
+        task.result_uuid = None
+        task.result=f"{base_url}dataset/{dataset_uuid}?format=json",
         task.status="Error"
         task.error = f"Error converting to hdf5 {perr}"
         task.errorCause = traceback.format_exc() 
+        task.completed =int(time.time() * 1000)
      
 
 def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=None):
     if jsonconfig is None:
         task.status="Error"
         task.error = "Missing jsonconfig"
+        task.result_uuid = None
     else:    
         json_file_path = os.path.join(UPLOAD_DIR, f"{task.id}_config.json")
         with open(json_file_path, "wb") as f:
@@ -190,9 +195,11 @@ def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=
             convert_to_nexus(substances,task,base_url)                
         except Exception as perr:    
             task.result=f"{base_url}dataset/{task.id}?format=json",
+            task.result_uuid = None
             task.status="Error"
             task.error = f"Error parsing template wizard files {perr}"   
             task.errorCause = traceback.format_exc() 
+    task.completed=int(time.time() * 1000)
 
 def nmparser(xfile,jsonconfig,expandfile=None):
     with open(xfile, 'rb') as fin:

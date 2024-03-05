@@ -56,7 +56,7 @@ async def convert(request: Request,
         )      
     #print(substances)
     tasks_db[task.id] = task
-    background_tasks.add_task(upload_service.convert_to_nexus,substances,task,base_url)
+    background_tasks.add_task(upload_service.convert_to_nexus,substances,task,base_url,dataset_uuid)
     return task
 
 
