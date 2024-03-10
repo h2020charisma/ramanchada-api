@@ -225,12 +225,15 @@ async def get_template(request : Request, response : Response,
             _response.headers.update(custom_headers)
             return _response
         elif format=="xlsx":         
-            file_path =  template_service.get_template_xlsx(uuid,json_blueprint)
-            # Return the file using FileResponse
-            _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
+            try:
+                file_path =  template_service.get_template_xlsx(uuid,json_blueprint)
+                # Return the file using FileResponse
+                _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
-            _response.headers.update(custom_headers)
-            return _response
+                _response.headers.update(custom_headers)
+                return _response
+            except Exception as err:
+                raise HTTPException(status_code=400, detail="The blueprint may not be complete. {}".format(err))
     else:
             raise HTTPException(status_code=400, detail="Format not supported")
 
