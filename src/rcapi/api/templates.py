@@ -249,6 +249,7 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
     last_modified_time = None
     try:
         list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
+        print(os.path.abspath(TEMPLATE_DIR))
         latest_json_file = max(list_of_json_files, key=os.path.getmtime)
         last_modified_time = get_last_modified(latest_json_file)
         if if_modified_since and last_modified_time <= datetime.strptime(if_modified_since,DATE_FORMAT):
