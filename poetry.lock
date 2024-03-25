@@ -2448,7 +2448,7 @@ description = "eNanoMapper API client"
 optional = false
 python-versions = "^3.9"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 jproperties = "^2.1.1"
@@ -2791,7 +2791,7 @@ description = "Harmonising Raman Spectroscopy"
 optional = false
 python-versions = ">=3.9"
 files = []
-develop = false
+develop = true
 
 [package.dependencies]
 brukeropusreader = "*"
