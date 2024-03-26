@@ -205,7 +205,7 @@ async def get_template(request : Request, response : Response,
         "nmparser" : {"mime" : "application/json" , "ext" : "nmparser.json" }
     }
     if not is_valid_uuid(uuid):
-        raise HTTPException(status_code=400, detail="Format not supported")
+        raise HTTPException(status_code=400, detail="Invalid UUID")
     _response = None
     if format is None:
         format = "json"
