@@ -113,7 +113,8 @@ def delete_template(template_path,task,base_url=None,uuid=None):
                 json_data = json.load(json_file)
             if json_data is None:
                 task.status="Error"
-                task.error = f"Can't load template {template_path}"                    
+                task.error = f"Can't load template {template_path}, likely invalid json. Deleting anyway."     
+                os.remove(template_path)               
             else:    
                 template_status = json_data.get('template_status') if "template_status" in json_data else "DRAFT"
                 if template_status == 'DRAFT':
