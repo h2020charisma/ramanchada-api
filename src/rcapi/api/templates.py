@@ -33,6 +33,13 @@ def get_baseurl(request : Request):
 def get_uuid():
     return str(uuid.uuid4())
 
+def is_valid_uuid(s):
+    try:
+        uuid_obj = uuid.UUID(str(s))
+        return str(uuid_obj) == s
+    except ValueError:
+        return False
+
 def generate_etag(data):
     data_str = str(data)
     return hashlib.md5(data_str.encode()).hexdigest()
@@ -197,7 +204,8 @@ async def get_template(request : Request, response : Response,
         "json" : {"mime" : "application/json" , "ext" : "json" },
         "nmparser" : {"mime" : "application/json" , "ext" : "nmparser.json" }
     }
-
+    if not is_valid_uuid(uuid):
+        raise HTTPException(status_code=400, detail="Format not supported")
     _response = None
     if format is None:
         format = "json"
