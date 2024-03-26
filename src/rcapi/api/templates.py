@@ -225,12 +225,15 @@ async def get_template(request : Request, response : Response,
             _response.headers.update(custom_headers)
             return _response
         elif format=="xlsx":         
-            file_path =  template_service.get_template_xlsx(uuid,json_blueprint)
-            # Return the file using FileResponse
-            _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
+            try:
+                file_path =  template_service.get_template_xlsx(uuid,json_blueprint)
+                # Return the file using FileResponse
+                _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
-            _response.headers.update(custom_headers)
-            return _response
+                _response.headers.update(custom_headers)
+                return _response
+            except Exception as err:
+                raise HTTPException(status_code=400, detail="The blueprint may not be complete. {}".format(err))
     else:
             raise HTTPException(status_code=400, detail="Format not supported")
 
@@ -246,6 +249,7 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
     last_modified_time = None
     try:
         list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
+        print(os.path.abspath(TEMPLATE_DIR))
         latest_json_file = max(list_of_json_files, key=os.path.getmtime)
         last_modified_time = get_last_modified(latest_json_file)
         if if_modified_since and last_modified_time <= datetime.strptime(if_modified_since,DATE_FORMAT):

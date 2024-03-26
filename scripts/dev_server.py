@@ -5,4 +5,4 @@ import subprocess
 
 def main():
     os.chdir('src')
-    subprocess.run(['uvicorn', 'rcapi.main:app', '--reload'])
+    subprocess.run(['uvicorn', 'rcapi.main:app', '--reload', '--reload-dir', '.', '--reload-dir', '../extern'])
