@@ -50,8 +50,12 @@ def get_template_json(uuid):
     file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.json")
     json_data = None
     if os.path.exists(file_path):
-        with open(file_path, "r") as file:
-            json_data = json.load(file)
+        try:
+            with open(file_path, "r") as file:
+                json_data = json.load(file)
+        except Exception as err:
+            print(uuid,err)
+            return None,None        
     else:
         file_path = None
     return json_data ,file_path
