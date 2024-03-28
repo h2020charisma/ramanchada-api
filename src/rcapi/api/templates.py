@@ -194,7 +194,7 @@ async def makecopy(request: Request,
 async def get_template(request : Request, response : Response,
                         uuid: str,
                         format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"]),
-                        #if_none_match: str = Header(None, alias="If-None-Match"),
+                        if_none_match: str = Header(None, alias="If-None-Match"),
                         if_modified_since: str = Header(None, alias="If-Modified-Since")
                         ):
     # Construct the file path based on the provided UUID
@@ -214,6 +214,8 @@ async def get_template(request : Request, response : Response,
         json_blueprint ,file_path = template_service.get_template_json(uuid) 
         if file_path is None:
             raise HTTPException(status_code=404, detail="Not found")
+        if json_blueprint is None:
+            raise HTTPException(status_code=404, detail="Not found")        
         last_modified_time = get_last_modified(file_path)
         custom_headers = {  "Last-Modified":  last_modified_time.strftime(DATE_FORMAT) }
         if format=="json":
@@ -221,9 +223,9 @@ async def get_template(request : Request, response : Response,
             if if_modified_since and last_modified_time <= datetime.strptime(if_modified_since,DATE_FORMAT):
                 return JSONResponse(status_code=304, content=None)            
    
-            #_etag = generate_etag(json_blueprint)
-            #if if_none_match and if_none_match == str(_etag):
-            #    return JSONResponse(content=None, status_code=304)
+            _etag = generate_etag(json_blueprint)
+            if if_none_match and if_none_match == str(_etag):
+                return JSONResponse(content=None, status_code=304)
             # Return the data with updated headers
             response.headers.update(custom_headers)
             return json_blueprint
@@ -248,9 +250,17 @@ async def get_template(request : Request, response : Response,
         raise HTTPException(status_code=400, detail="Format not supported")
 
 
+def generate_etag_for_response(uuids):
+    """Generate a single ETag for the entire response based on UUIDs."""
+    concatenated_values = ''.join(str(value) for value in uuids.values())
+    sha256 = hashlib.sha256()
+    sha256.update(concatenated_values.encode('utf-8'))
+    return sha256.hexdigest()
+
 @router.get("/template")
 async def get_templates(request : Request,q:str = Query(None), response: Response = None,
-                    if_modified_since: str = Header(None, alias="If-Modified-Since")
+                    if_modified_since: str = Header(None, alias="If-Modified-Since"),
+                    if_none_match: str = Header(None, alias="If-None-Match")
                     ):
     #print("Received Headers:", request.headers)
     #print("if_modified_since",if_modified_since)
@@ -259,12 +269,10 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
     last_modified_time = None
     try:
         list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
-        print(os.path.abspath(TEMPLATE_DIR))
         latest_json_file = max(list_of_json_files, key=os.path.getmtime)
         last_modified_time = get_last_modified(latest_json_file)
         if if_modified_since and last_modified_time <= datetime.strptime(if_modified_since,DATE_FORMAT):
             return JSONResponse(status_code=304, content=None)
-
     except Exception as err:
         print(err)
         pass
@@ -294,6 +302,11 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
                             uuids[_uuid][tag] = _json[tag]
                         except:
                             uuids[_uuid][tag] = "DRAFT" if tag=="template_status" else "?"
+    
+    response_etag = generate_etag_for_response(uuids)
+    if if_none_match and if_none_match == response_etag:
+       print(if_none_match,response_etag)
+       return JSONResponse(status_code=304, content=None)        
 
     if last_modified_time != None:
         custom_headers = {
