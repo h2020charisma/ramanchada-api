@@ -12,16 +12,18 @@ from datetime import datetime, timedelta
 import glob 
 import time
 import uuid
+import asyncio
+
 config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
 
 # Create a lock object
-#lock = asyncio.Lock()
+lock = asyncio.Lock()
 
-def write_to_json(data, filename):
-    #async with lock:
-    with open(filename, "w") as json_file:
-        json.dump(data, json_file, indent=4)
-        return filename   
+async def write_to_json(data, filename):
+    async with lock:
+        with open(filename, "w") as json_file:
+            json.dump(data, json_file, indent=4)
+            return filename   
 
 
 def process_error(perr,task,base_url,uuid):
@@ -36,12 +38,12 @@ def process_error(perr,task,base_url,uuid):
         task.errorCause = traceback.format_exc()
 
 
-def process(_json,task,base_url,uuid):
+async def process(_json,task,base_url,uuid):
     try:
         if json is None:
             print(_json,task,base_url,uuid)
             raise ValueError("Empty JSON!")
-        write_to_json(_json,os.path.join(TEMPLATE_DIR,f"{uuid}.json"))
+        await write_to_json(_json,os.path.join(TEMPLATE_DIR,f"{uuid}.json"))
         task.status="Completed"
         task.result=f"{base_url}template/{uuid}"
         task.result_uuid = uuid
@@ -75,7 +77,7 @@ from pynanomapper.datamodel.templates import blueprint as bp
     
 
 
-def get_template_xlsx(uuid,json_blueprint):
+async def get_template_xlsx(uuid,json_blueprint):
     try:
         file_path_xlsx = os.path.join(TEMPLATE_DIR, f"{uuid}.xlsx")   
         df_info,df_result,df_raw,df_conditions =bp.get_template_frame(json_blueprint)
@@ -84,10 +86,11 @@ def get_template_xlsx(uuid,json_blueprint):
     except Exception as err:
         raise err
 
-def get_nmparser_config(uuid,json_blueprint,force=True):
+async def get_nmparser_config(uuid,json_blueprint,force=True):
     file_path = os.path.join(TEMPLATE_DIR, f"{uuid}.json.nmparser")      
     json_config = bp.get_nmparser_config(json_blueprint)
-    return write_to_json(json_config,file_path) 
+    await write_to_json(json_config,file_path) 
+    return file_path
         
     
 

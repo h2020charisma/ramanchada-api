@@ -231,14 +231,14 @@ async def get_template(request : Request, response : Response,
             return json_blueprint
             #response = JSONResponse(content=json_blueprint, headers=custom_headers)
         elif format=="nmparser":             
-            file_path =  template_service.get_nmparser_config(uuid,json_blueprint)
+            file_path =  await template_service.get_nmparser_config(uuid,json_blueprint)
             _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}.json"'})
             _response.headers.update(custom_headers)
             return _response
         elif format=="xlsx":         
             try:
-                file_path =  template_service.get_template_xlsx(uuid,json_blueprint)
+                file_path =  await template_service.get_template_xlsx(uuid,json_blueprint)
                 # Return the file using FileResponse
                 _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
