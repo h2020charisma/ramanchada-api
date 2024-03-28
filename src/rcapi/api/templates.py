@@ -276,7 +276,6 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
     except Exception as err:
         print(err)
         pass
-
          
     for filename in os.listdir(TEMPLATE_DIR):
         if filename.endswith(".json"):
@@ -284,7 +283,11 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
             if os.path.isfile(file_path):
                 _uuid = Path(file_path).stem.split("_")[0]
                 _json, _file_path = template_service.get_template_json(_uuid); 
-                timestamp = get_last_modified(_file_path)
+                if _file_path is None:
+                    continue
+                if _json is None:
+                    _json = {}               
+                timestamp =  get_last_modified(_file_path)
                 try:
                     _method = _json["METHOD"]               
                 except:
