@@ -52,6 +52,8 @@ def get_template_json(uuid):
     if os.path.exists(file_path):
         with open(file_path, "r") as file:
             json_data = json.load(file)
+    else:
+        file_path = None
     return json_data ,file_path
 
 

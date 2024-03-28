@@ -1,0 +1,236 @@
+{
+    "newtemplate": "create_new",
+    "PROTOCOL_TOP_CATEGORY": "TOX",
+    "pageNo": 0,
+    "user_role": [
+        "role_lab"
+    ],
+    "templates": "c5dd3ac9-9340-44b0-9be8-6724c5e34c99",
+    "METHOD": "Dose response ",
+    "EXPERIMENT": "Generic dose response template",
+    "conditions": [
+        {
+            "conditon_name": "concentration",
+            "condition_unit": "ug/ml",
+            "condition_type": "c_concentration "
+        },
+        {
+            "conditon_name": "time",
+            "condition_unit": "h",
+            "condition_type": "c_time "
+        },
+        {
+            "conditon_name": "Replicate",
+            "condition_type": "c_replicate_tech "
+        },
+        {
+            "conditon_name": "Experiment",
+            "condition_type": "c_replicate_bio "
+        }
+    ],
+    "PROTOCOL_CATEGORY_CODE": "ENM_0000068_SECTION",
+    "raw_data": true,
+    "RESULTS": "raw data ( absorbance) \ncell viability  (%)",
+    "raw_data_report": [
+        {
+            "raw_conditions": [
+                "concentration",
+                "time",
+                "Experiment",
+                "Replicate"
+            ],
+            "raw_endpoint": "Absorbance",
+            "raw_unit": "A.U.",
+            "raw_type": "value_num"
+        }
+    ],
+    "question3": [
+        {
+            "results_conditions": [
+                "concentration",
+                "time",
+                "Experiment"
+            ],
+            "result_name": "Cell viability",
+            "result_unit": "%",
+            "result_type": "value_num"
+        }
+    ],
+    "METADATA_PARAMETERS": [
+        {
+            "param_name": "Serum concentration in culture medium"
+        },
+        {
+            "param_name": "Detailed cell type/line specification",
+            "param_group": "CELL LINE DETAILS",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Cell line short-name",
+            "param_group": "CELL LINE DETAILS",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Supplier",
+            "param_group": "CELL LINE DETAILS",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Passage no",
+            "param_group": "CELL LINE DETAILS",
+            "param_type": "value_num"
+        },
+        {
+            "param_name": "Plate details as applic.",
+            "param_group": "CULTURE CONDITIONS",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Make / type",
+            "param_group": "CULTURE CONDITIONS",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Number of cells per well",
+            "param_group": "CULTURE CONDITIONS",
+            "param_type": "value_num"
+        },
+        {
+            "param_name": "Total volume per well",
+            "param_group": "CULTURE CONDITIONS",
+            "param_type": "value_num"
+        },
+        {
+            "param_name": "Medium (Supplier/Lot No.)",
+            "param_group": "MEDIUM",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Serum (inc. supplier/Lot No.)",
+            "param_group": "CULTURE CONDITIONS",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Serum concentration in treatment medium",
+            "param_group": "CULTURE CONDITIONS",
+            "param_type": "value_num"
+        },
+        {
+            "param_name": "Was serum heat inactivated? If app.",
+            "param_group": "CULTURE CONDITIONS",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Submerged, ALI, or semi-ALI",
+            "param_group": "CULTURE CONDITIONS",
+            "param_type": "value_text "
+        },
+        {
+            "param_name": "Exposure method",
+            "param_group": "ENVIRONMENT",
+            "param_type": "value_text "
+        }
+    ],
+    "METADATA_SAMPLE_INFO": [
+        {
+            "param_sample_name": "ID",
+            "param_sample_group": "ID"
+        },
+        {
+            "param_sample_name": "Name",
+            "param_sample_group": "NAME"
+        },
+        {
+            "param_sample_name": "CAS No",
+            "param_sample_group": "CASRN"
+        },
+        {
+            "param_sample_name": "Nanomaterial Supplier",
+            "param_sample_group": "SUPPLIER"
+        },
+        {
+            "param_sample_name": "Material State",
+            "param_sample_group": "OTHER_METADATA"
+        },
+        {
+            "param_sample_name": "Batch",
+            "param_sample_group": "BATCH"
+        },
+        {
+            "param_sample_name": "Vial",
+            "param_sample_group": "BATCH"
+        }
+    ],
+    "METADATA_SAMPLE_PREP": [
+        {
+            "param_sampleprep_name": "Date of preparation (YYYY-MM-DD)",
+            "param_sampleprep_group": "OTHER_METADATA",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Endotoxin confirmed as absent?",
+            "param_sampleprep_group": "OTHER_METADATA",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Effective concentration range used lowest-to-highest, inc units",
+            "param_sampleprep_group": "OTHER_METADATA",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Specify standard dispersion protocol used",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Dispersion agent",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": " Additives used? If yes, specify which & conc. used:",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Dispersed in cell culture medium",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Aids used to disperse",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Sonication-Bath",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Sonication-tip",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Vortexing",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Stirring",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Specify time-duration",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        },
+        {
+            "param_sampleprep_name": "Energy (for sonication)",
+            "param_sampleprep_group": "DISPERSION",
+            "param_type": "value_text "
+        }
+    ]
+}

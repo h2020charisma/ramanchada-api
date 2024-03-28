@@ -11,8 +11,17 @@ import os.path
 import shutil
 from datetime import datetime, timedelta
 
-TEST_JSON_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
+TEST_DEFAULT_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
+TEST_INVALID_PATH = Path(__file__).parent / "resources/templates/null.json"
+TEST_NONAME_PATH = Path(__file__).parent / "resources/templates/dose_response_noname.json"
 TEMPLATE_UUID = "3c22a1f0-a933-4855-848d-05fcc26ceb7a"
+TEMPLATE_UUID_invalid = "3c22a1f0-a933-4855-848d-05fcc26ceb7b"
+TEMPLATE_UUID_noname = "3c22a1f0-a933-4855-848d-05fcc26ceb7c"
+
+_TEMPLATES =  [ (TEST_DEFAULT_PATH,TEMPLATE_UUID),
+                (TEST_INVALID_PATH,TEMPLATE_UUID_invalid),
+                (TEST_NONAME_PATH,TEMPLATE_UUID_noname)
+               ]
 
 client = TestClient(app)
 #warnings.warn("test")
@@ -26,6 +35,14 @@ def config_dict():
             CONFIG_DICT = yaml.safe_load(config_file)
             assert "upload_dir" in CONFIG_DICT,CONFIG_DICT
     return CONFIG_DICT
+
+@pytest.fixture(scope="module")
+def get_good_templates():
+    return [(TEST_DEFAULT_PATH,TEMPLATE_UUID)]
+
+@pytest.fixture(scope="module")
+def get_bad_templates():
+    return [(TEST_INVALID_PATH,TEMPLATE_UUID_invalid),(TEST_NONAME_PATH,TEMPLATE_UUID_noname)]
 
 @pytest.fixture
 def clean_template_dir(config_dict):
@@ -43,21 +60,23 @@ def setup_template_dir(config_dict):
     print("\nSetting up resources before the test")
     TEMPLATE_DIR = os.path.join(config_dict["upload_dir"],"TEMPLATES")
     remove_files_in_folder(TEMPLATE_DIR)
-    file_path = os.path.join(TEMPLATE_DIR,"{}.json".format(TEMPLATE_UUID))
-    shutil.copy(TEST_JSON_PATH,file_path )
-    new_modified_date = datetime.now() - timedelta(hours=24)
-    timestamp = new_modified_date.timestamp()
-    os.utime(file_path, times=(timestamp, timestamp))
-    
-    now_date = datetime.utcnow() - timedelta(hours=12)
-    #headers = {"If-Modified-Since": now_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
-    assert new_modified_date <= now_date,new_modified_date
+    for TEST_JSON_PATH,TEMPLATE_UUID in _TEMPLATES:
+        print(TEST_JSON_PATH)
+        file_path = os.path.join(TEMPLATE_DIR,"{}.json".format(TEMPLATE_UUID))
+        shutil.copy(TEST_JSON_PATH,file_path )
+        new_modified_date = datetime.now() - timedelta(hours=24)
+        timestamp = new_modified_date.timestamp()
+        os.utime(file_path, times=(timestamp, timestamp))
+        now_date = datetime.utcnow() - timedelta(hours=12)
+        #headers = {"If-Modified-Since": now_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
+        assert new_modified_date <= now_date,new_modified_date
     # Perform setup operations here, if any
     #yield  # This is where the test runs
     #print("\nCleaning up resources after the test")
     #remove_files_in_folder(TEMPLATE_DIR)
     # Perform cleanup operations here, if any
     return TEMPLATE_DIR
+
 
 def remove_files_in_folder(folder_path):
     folder_path = Path(folder_path)
@@ -85,7 +104,7 @@ def get_task_result(response_post):
 def test_upload_and_retrieve_json(clean_template_dir):
     # Step 1: Upload JSON
     json_content = {}
-    with open(TEST_JSON_PATH, "rb") as file:
+    with open(TEST_DEFAULT_PATH, "rb") as file:
         json_content = json.load(file)
     response_upload = client.post("/template", json=json_content)
     result_uuid = get_task_result(response_upload)
@@ -94,9 +113,10 @@ def test_upload_and_retrieve_json(clean_template_dir):
     assert response_retrieve.status_code == 200, response_retrieve.status_code
     retrieved_json = response_retrieve.json()
     # Step 3: Compare uploaded and retrieved JSON
-    with open(TEST_JSON_PATH, "r") as file:
+    with open(TEST_DEFAULT_PATH, "r") as file:
         expected_json = json.load(file)
     assert retrieved_json == expected_json    
+
 
 def test_gettemplate(setup_template_dir):
     # Step 1: get predefined JSON
@@ -104,15 +124,17 @@ def test_gettemplate(setup_template_dir):
     assert response_retrieve.status_code == 200, response_retrieve.status_code
     retrieved_json = response_retrieve.json()
     # Step 1: Compare predefined and retrieved JSON
-    with open(TEST_JSON_PATH, "r") as file:
+    with open(TEST_DEFAULT_PATH, "r") as file:
         expected_json = json.load(file)
     assert retrieved_json == expected_json        
+
 
 def test_gettemplate_notmodified(setup_template_dir):
     modified_date = datetime.utcnow() - timedelta(hours=12)
     headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
     response_retrieve = client.get("/template",headers=headers)
     assert response_retrieve.status_code == 304,response_retrieve.content
+
 
 def test_gettemplateuuid_notmodified(setup_template_dir):
     modified_date = datetime.utcnow() - timedelta(hours=12)
@@ -129,22 +151,14 @@ def test_makecopy(setup_template_dir):
     assert response_retrieve.status_code == 200, response_retrieve.status_code
     retrieved_json = response_retrieve.json()
     # Step 3: Compare uploaded and retrieved JSON
-    with open(TEST_JSON_PATH, "r") as file:
+    with open(TEST_DEFAULT_PATH, "r") as file:
         expected_json = json.load(file)
         expected_json["origin_uuid"] = TEMPLATE_UUID
     assert retrieved_json == expected_json , retrieved_json      
 
-def test_delete(setup_template_dir):
-    # Step 1: make copy JSON
-    response_delete = client.delete("/template/{}".format(TEMPLATE_UUID))
-    assert response_delete.status_code == 200, response_delete.status_code
-    task_json = response_delete.json()
-    result_uuid = task_json.get("result_uuid")
-    assert result_uuid is None, task_json
-    response = client.get("/template")
-    assert response.status_code == 200, response.status_code
-    assert response.json() == {"template" : []}, response.json() 
     
+     
+
 def test_doseresponse_excel(setup_template_dir):
     modified_date = datetime.utcnow() - timedelta(hours=12)
     headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
@@ -166,3 +180,24 @@ def test_doseresponse_nmparser(setup_template_dir):
     save_path = os.path.join(setup_template_dir, '{}.json.nmparser'.format(TEMPLATE_UUID))
     with open(save_path, 'wb') as file:
         file.write(response_nmparser.content)          
+
+def delete_template(_uuid):
+    _template = "/template/{}".format(_uuid)
+    response_delete = client.delete(_template)
+    assert response_delete.status_code == 200, response_delete.status_code
+    task_json = response_delete.json()
+    result_uuid = task_json.get("result_uuid")
+    assert result_uuid is None, task_json
+    response = client.get(_template)
+    assert response.status_code == 404, response.status_code
+    #assert response.json() == {"template" : []}, response.json() 
+
+
+def test_delete(setup_template_dir):
+    delete_template(TEMPLATE_UUID)
+
+def test_delete_invalidjson(setup_template_dir):
+    delete_template(TEMPLATE_UUID_invalid)
+
+def test_delete_noname(setup_template_dir):
+    delete_template(TEMPLATE_UUID_noname)

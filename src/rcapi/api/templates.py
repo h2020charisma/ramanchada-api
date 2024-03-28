@@ -212,6 +212,8 @@ async def get_template(request : Request, response : Response,
     
     if format in format_supported:
         json_blueprint ,file_path = template_service.get_template_json(uuid) 
+        if file_path is None:
+            raise HTTPException(status_code=404, detail="Not found")
         last_modified_time = get_last_modified(file_path)
         custom_headers = {  "Last-Modified":  last_modified_time.strftime(DATE_FORMAT) }
         if format=="json":
@@ -243,7 +245,7 @@ async def get_template(request : Request, response : Response,
             except Exception as err:
                 raise HTTPException(status_code=400, detail="The blueprint may not be complete. {}".format(err))
     else:
-            raise HTTPException(status_code=400, detail="Format not supported")
+        raise HTTPException(status_code=400, detail="Format not supported")
 
 
 @router.get("/template")
