@@ -33,6 +33,13 @@ def get_baseurl(request : Request):
 def get_uuid():
     return str(uuid.uuid4())
 
+def is_valid_uuid(s):
+    try:
+        uuid_obj = uuid.UUID(str(s))
+        return str(uuid_obj) == s
+    except ValueError:
+        return False
+
 def generate_etag(data):
     data_str = str(data)
     return hashlib.md5(data_str.encode()).hexdigest()
@@ -197,13 +204,16 @@ async def get_template(request : Request, response : Response,
         "json" : {"mime" : "application/json" , "ext" : "json" },
         "nmparser" : {"mime" : "application/json" , "ext" : "nmparser.json" }
     }
-
+    if not is_valid_uuid(uuid):
+        raise HTTPException(status_code=400, detail="Invalid UUID")
     _response = None
     if format is None:
         format = "json"
     
     if format in format_supported:
         json_blueprint ,file_path = template_service.get_template_json(uuid) 
+        if file_path is None:
+            raise HTTPException(status_code=404, detail="Not found")
         last_modified_time = get_last_modified(file_path)
         custom_headers = {  "Last-Modified":  last_modified_time.strftime(DATE_FORMAT) }
         if format=="json":
@@ -235,7 +245,7 @@ async def get_template(request : Request, response : Response,
             except Exception as err:
                 raise HTTPException(status_code=400, detail="The blueprint may not be complete. {}".format(err))
     else:
-            raise HTTPException(status_code=400, detail="Format not supported")
+        raise HTTPException(status_code=400, detail="Format not supported")
 
 
 @router.get("/template")
