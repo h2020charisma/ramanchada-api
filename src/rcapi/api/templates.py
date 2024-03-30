@@ -146,6 +146,8 @@ async def makecopy(request: Request,
     #copy should be always in a draft stage
     if "confirm_statuschange" in json_data:
         json_data["confirm_statuschange"] = ["DRAFT"]
+    if "template_status" in json_data:
+        json_data["template_status"] = "DRAFT"
     try:
         _json = await request.json()
         for tag in ["template_name","template_author","template_acknowledgment"]:

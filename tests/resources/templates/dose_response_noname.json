@@ -233,6 +233,7 @@
             "param_type": "value_text "
         }
     ],
+    "template_status" : "FINALIZED",
     "confirm_statuschange": [
         "FINALIZED"
         ],
