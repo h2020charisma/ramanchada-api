@@ -10,6 +10,7 @@ import yaml
 import os.path 
 import shutil
 from datetime import datetime, timedelta
+#from unittest import TestCase
 
 TEST_DEFAULT_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
 TEST_INVALID_PATH = Path(__file__).parent / "resources/templates/null.json"
@@ -155,6 +156,28 @@ def test_makecopy(setup_template_dir):
         expected_json = json.load(file)
         expected_json["origin_uuid"] = TEMPLATE_UUID
     assert retrieved_json == expected_json , retrieved_json      
+
+def test_makecopy_finalized(setup_template_dir):
+    tag_finalized="confirm_statuschange"
+    # Step 1: make copy JSON
+    response_copy = client.post("/template/{}/copy".format(TEMPLATE_UUID_noname))
+    result_uuid = get_task_result(response_copy)
+    # Step 2: Retrieve JSON using the result_uuid
+    response_retrieve = client.get(f"/template/{result_uuid}")
+    assert response_retrieve.status_code == 200, response_retrieve.status_code
+    retrieved_json = response_retrieve.json()
+    assert tag_finalized in retrieved_json
+    assert "DRAFT" in retrieved_json[tag_finalized]
+    # Step 3: Compare uploaded and retrieved JSON
+    expected_json = None
+    with open(TEST_NONAME_PATH, "r") as file:
+        expected_json = json.load(file)
+        expected_json["origin_uuid"] = TEMPLATE_UUID_noname
+        assert tag_finalized in expected_json
+        assert "FINALIZED" in expected_json[tag_finalized], f"{tag_finalized} should be in the original file"
+        expected_json[tag_finalized] = ["DRAFT"]
+    assert expected_json == retrieved_json 
+    #TestCase().assertDictEqual(retrieved_json, expected_json) 
 
     
      

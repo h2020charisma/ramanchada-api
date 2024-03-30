@@ -232,5 +232,9 @@
             "param_sampleprep_group": "DISPERSION",
             "param_type": "value_text "
         }
-    ]
+    ],
+    "confirm_statuschange": [
+        "FINALIZED"
+        ],
+    "template_author_orcid": "0000-0000-0000-0000"
 }
