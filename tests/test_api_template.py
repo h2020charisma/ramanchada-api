@@ -10,6 +10,7 @@ import yaml
 import os.path 
 import shutil
 from datetime import datetime, timedelta
+#from unittest import TestCase
 
 TEST_DEFAULT_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
 TEST_INVALID_PATH = Path(__file__).parent / "resources/templates/null.json"
@@ -156,8 +157,32 @@ def test_makecopy(setup_template_dir):
         expected_json["origin_uuid"] = TEMPLATE_UUID
     assert retrieved_json == expected_json , retrieved_json      
 
+def test_makecopy_finalized(setup_template_dir):
+    tag_finalized="confirm_statuschange"
+    # Step 1: make copy JSON
+    response_copy = client.post("/template/{}/copy".format(TEMPLATE_UUID_noname))
+    result_uuid = get_task_result(response_copy)
+    # Step 2: Retrieve JSON using the result_uuid
+    response_retrieve = client.get(f"/template/{result_uuid}")
+    assert response_retrieve.status_code == 200, response_retrieve.status_code
+    retrieved_json = response_retrieve.json()
+    assert tag_finalized in retrieved_json
+    assert "DRAFT" in retrieved_json[tag_finalized]
+    assert "DRAFT" == retrieved_json["template_status"]
+    # Step 3: Compare uploaded and retrieved JSON
+    expected_json = None
+    with open(TEST_NONAME_PATH, "r") as file:
+        expected_json = json.load(file)
+        expected_json["origin_uuid"] = TEMPLATE_UUID_noname
+        assert tag_finalized in expected_json
+        assert "FINALIZED" in expected_json[tag_finalized], f"{tag_finalized} should be in the original file"
+        assert "FINALIZED" in expected_json["template_status"]
+        expected_json[tag_finalized] = ["DRAFT"]
+        expected_json["template_status"] = "DRAFT"
+    assert expected_json == retrieved_json 
+    #TestCase().assertDictEqual(retrieved_json, expected_json) 
+
     
-     
 
 def test_doseresponse_excel(setup_template_dir):
     modified_date = datetime.utcnow() - timedelta(hours=12)
@@ -181,7 +206,7 @@ def test_doseresponse_nmparser(setup_template_dir):
     with open(save_path, 'wb') as file:
         file.write(response_nmparser.content)          
 
-def delete_template(_uuid):
+def delete_template(_uuid,expected_response=404):
     _template = "/template/{}".format(_uuid)
     response_delete = client.delete(_template)
     assert response_delete.status_code == 200, response_delete.status_code
@@ -189,7 +214,7 @@ def delete_template(_uuid):
     result_uuid = task_json.get("result_uuid")
     assert result_uuid is None, task_json
     response = client.get(_template)
-    assert response.status_code == 404, response.status_code
+    assert response.status_code == expected_response, response.status_code
     #assert response.json() == {"template" : []}, response.json() 
 
 
@@ -200,4 +225,5 @@ def test_delete_invalidjson(setup_template_dir):
     delete_template(TEMPLATE_UUID_invalid)
 
 def test_delete_noname(setup_template_dir):
-    delete_template(TEMPLATE_UUID_noname)
+    #this is a finalized template, should not be deleted
+    delete_template(TEMPLATE_UUID_noname,200)

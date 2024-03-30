@@ -143,6 +143,11 @@ async def makecopy(request: Request,
     result_uuid = get_uuid()
     json_data ,file_path = template_service.get_template_json(uuid) 
     json_data["origin_uuid"] = uuid
+    #copy should be always in a draft stage
+    if "confirm_statuschange" in json_data:
+        json_data["confirm_statuschange"] = ["DRAFT"]
+    if "template_status" in json_data:
+        json_data["template_status"] = "DRAFT"
     try:
         _json = await request.json()
         for tag in ["template_name","template_author","template_acknowledgment"]:
