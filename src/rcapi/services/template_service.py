@@ -75,14 +75,17 @@ def get_template_json(uuid):
 
 from pynanomapper.datamodel.templates import blueprint as bp
     
-
-
 async def get_template_xlsx(uuid,json_blueprint):
     try:
-        file_path_xlsx = os.path.join(TEMPLATE_DIR, f"{uuid}.xlsx")   
-        df_info,df_result,df_raw,df_conditions =bp.get_template_frame(json_blueprint)
-        bp.iom_format_2excel(file_path_xlsx,df_info,df_result,df_raw,df_conditions)
-        return file_path_xlsx  
+        file_path_xlsx = os.path.join(TEMPLATE_DIR, f"{uuid}.xlsx")  
+        layout = json_blueprint.get("template_layout","dose_response")
+        if layout == "dose_response": 
+            df_info,df_result,df_raw,df_conditions =bp.get_template_frame(json_blueprint)
+            bp.iom_format_2excel(file_path_xlsx,df_info,df_result,df_raw,df_conditions)
+            return file_path_xlsx  
+        else:
+            bp.pchem_format_2excel(file_path_xlsx,json_blueprint)
+       
     except Exception as err:
         raise err
 
