@@ -3,6 +3,8 @@ networks:
     name: ramanchada-api-prod
   ramanchada_api_dev:
     name: ramanchada-api-dev
+  ramanchada_api_test:
+    name: ramanchada-api-test
 
 volumes:
   uploads-prod:
@@ -11,6 +13,9 @@ volumes:
   uploads-dev:
     driver: zfs
     name: ${ZFSROOT}/ramanchada-api-uploads-dev
+  uploads-test:
+    driver: zfs
+    name: ${ZFSROOT}/ramanchada-api-uploads-test
 
 services:
 
@@ -93,3 +98,43 @@ services:
       - ramanchada_api_dev
     volumes:
       - uploads-dev:/var/uploads
+
+  test:
+    image: ghcr.io/h2020charisma/ramanchada-api:stable
+    container_name: ramanchada-api-test
+    hostname: ramanchada-api-test
+    restart: unless-stopped
+    labels:
+      traefik.enable: 'true'
+      traefik.http.routers.ramanchada-api-test.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
+      traefik.http.routers.ramanchada-api-test.rule: Host(`api-test.ramanchada.ideaconsult.net`)
+      traefik.http.routers.ramanchada-api-test.middlewares: ramanchada-api-test-cors
+      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlAllowCredentials: 'true'
+      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlAllowHeaders: >-
+        Authorization,
+        Cache-Control,
+        Content-Type,
+        DNT,
+        If-Modified-Since,
+        Keep-Alive,
+        User-Agent,
+        X-CustomHeader,
+        X-Requested-With
+      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlAllowMethods: >-
+        GET,
+        OPTIONS,
+        POST
+      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlAllowOriginList: >-
+        https://enanomapper.adma.ai,
+        https://enm-dev.adma.ai,
+        https://enm-experimental.adma.ai,
+        https://h5web-comp.vercel.app,
+        https://search.charisma.ideaconsult.net
+      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlMaxAge: 1728000
+      traefik.http.middlewares.ramanchada-api-test-cors.headers.addVaryHeader: 'true'
+      com.centurylinklabs.watchtower.enable: 'true'
+      com.centurylinklabs.watchtower.scope: frequent
+    networks:
+      - ramanchada_api_test
+    volumes:
+      - uploads-test:/var/uploads
