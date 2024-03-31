@@ -13,6 +13,8 @@ import traceback
 from datetime import datetime
 import hashlib
 import glob 
+import traceback
+
 
 router = APIRouter()
 
@@ -250,7 +252,9 @@ async def get_template(request : Request, response : Response,
                 _response.headers.update(custom_headers)
                 return _response
             except Exception as err:
+                traceback.print_exc()
                 raise HTTPException(status_code=400, detail="The blueprint may not be complete. {}".format(err))
+                                    #,traceback.format_exc()))
     else:
         raise HTTPException(status_code=400, detail="Format not supported")
 
