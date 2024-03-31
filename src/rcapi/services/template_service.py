@@ -85,7 +85,7 @@ async def get_template_xlsx(uuid,json_blueprint):
             return file_path_xlsx  
         else:
             bp.pchem_format_2excel(file_path_xlsx,json_blueprint)
-       
+            return file_path_xlsx  
     except Exception as err:
         raise err
 
