@@ -84,10 +84,13 @@ async def get_template_xlsx(uuid,json_blueprint):
             bp.iom_format_2excel(file_path_xlsx,df_info,df_result,df_raw,df_conditions)
             try:
                 bp.add_plate_layout(file_path_xlsx,json_blueprint)
+                json_blueprint["template_uuid"] = uuid            
+                bp.add_hidden_jsondef(file_path_xlsx,json_blueprint)                
             except:
                 pass
             return file_path_xlsx  
         else:
+            json_blueprint["template_uuid"] = uuid
             bp.pchem_format_2excel(file_path_xlsx,json_blueprint)
             return file_path_xlsx  
     except Exception as err:
