@@ -1,5 +1,5 @@
 ---
-name: Build and publish the Docker image
+name: Test, build, publish Docker image
 
 on:  # yamllint disable-line rule:truthy
   push:
@@ -8,19 +8,75 @@ on:  # yamllint disable-line rule:truthy
       - develop
     tags:
       - v*.*.*
-    workflow_dispatch:
+  pull_request:
+  workflow_dispatch:
 
 env:
-  # Use docker.io for Docker Hub if empty
+  POETRY_VERSION: 1.8.2
   REGISTRY: ghcr.io
-  # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
 
 
 jobs:
+
+  test:
+
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - '3.9'
+          - '3.10'
+          - '3.11'
+          - '3.12'
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Load the cached Poetry installation
+        id: cached-poetry
+        uses: actions/cache@v4
+        with:
+          path: ~/.local
+          key: poetry-${{ env.POETRY_VERSION }}-0
+
+      - name: Install Poetry
+        if: steps.cached-poetry.outputs.cache-hit != 'true'
+        uses: snok/install-poetry@v1
+        with:
+          version: ${{ env.POETRY_VERSION }}
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load the cached dependencies
+        id: cached-deps
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: py${{ matrix.python-version }}-deps-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install dependencies
+        if: steps.cached-deps.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root
+
+      - name: Perform package installation
+        run: poetry install --no-interaction
+
+      - name: Run tests
+        run: poetry run pytest
+
   build:
 
     runs-on: ubuntu-latest
+    needs: test
     permissions:
       contents: read
       packages: write
