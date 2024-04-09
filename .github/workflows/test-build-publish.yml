@@ -41,12 +41,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Get the precise Python version
+        run: echo "PYTHON_ID=$( python -VV | sha256sum | awk '{ print $1 }' )" >> "$GITHUB_ENV"
+
       - name: Load the cached Poetry installation
         id: cached-poetry
         uses: actions/cache@v4
         with:
           path: ~/.local
-          key: poetry-${{ env.POETRY_VERSION }}-0
+          key: poetry-${{ env.POETRY_VERSION }}-py_${{ env.PYTHON_ID}}-0
 
       - name: Install Poetry
         if: steps.cached-poetry.outputs.cache-hit != 'true'
