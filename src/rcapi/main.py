@@ -52,7 +52,7 @@ def cleanup_tasks():
         tasks_db.pop(task_id)
 
 def cleanup_templates():
-    template_service.cleanup(timedelta(hours=24*7))
+    template_service.cleanup(timedelta(hours=24*30*6))
 
 scheduler = BackgroundScheduler()
 scheduler.add_job(cleanup_tasks, 'interval', minutes=120)  # Clean up every 120 minutes
