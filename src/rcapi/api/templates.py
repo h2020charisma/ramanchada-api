@@ -202,7 +202,7 @@ async def makecopy(request: Request,
 async def get_template(request : Request, response : Response,
                         uuid: str,
                         format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"]),
-                        project:str = None,
+                        project:str = Query(None, description="project"),
                         if_none_match: str = Header(None, alias="If-None-Match"),
                         if_modified_since: str = Header(None, alias="If-Modified-Since")
                         ):
