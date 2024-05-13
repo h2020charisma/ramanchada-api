@@ -14,7 +14,8 @@ from datetime import datetime
 import hashlib
 import glob 
 import traceback
-
+import requests
+import pandas as pd
 
 router = APIRouter()
 
@@ -201,6 +202,7 @@ async def makecopy(request: Request,
 async def get_template(request : Request, response : Response,
                         uuid: str,
                         format:str = Query(None, description="format",enum=["xlsx", "json", "nmparser", "h5", "nxs"]),
+                        project:str = None,
                         if_none_match: str = Header(None, alias="If-None-Match"),
                         if_modified_since: str = Header(None, alias="If-Modified-Since")
                         ):
@@ -246,6 +248,8 @@ async def get_template(request : Request, response : Response,
         elif format=="xlsx":         
             try:
                 file_path =  await template_service.get_template_xlsx(uuid,json_blueprint)
+                if project is not None:
+                    template_service.add_materials(file_path,fetch_materials(project))
                 # Return the file using FileResponse
                 _response =  FileResponse(file_path, media_type=format_supported[format]["mime"], 
                                     headers={"Content-Disposition": f'attachment; filename="{uuid}.{format}"'})
@@ -356,3 +360,14 @@ async def delete_template(request: Request,
     tasks_db[task.id] = task
     background_tasks.add_task(template_service.delete_template,template_path,task,base_url,task_id)
     return task
+
+def fetch_materials(project):
+    try:
+        response = requests.get(f'https://enanomapper.adma.ai/api/projects/{project}/materials.json')
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print("Failed to fetch materials:", response.status_code)
+            return []
+    except Exception as err:
+        return []
