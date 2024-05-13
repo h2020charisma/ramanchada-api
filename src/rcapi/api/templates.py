@@ -280,15 +280,13 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
     base_url = get_baseurl(request) 
     uuids = {}
     last_modified_time = None
-    try:
-        list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
-        latest_json_file = max(list_of_json_files, key=os.path.getmtime)
-        last_modified_time = get_last_modified(latest_json_file)
-        if if_modified_since and last_modified_time <= datetime.strptime(if_modified_since,DATE_FORMAT):
-            return JSONResponse(status_code=304, content=None)
-    except Exception as err:
-        print(err)
-        pass
+    list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
+    if not list_of_json_files:
+        return {"template": []}
+    latest_json_file = max(list_of_json_files, key=os.path.getmtime)
+    last_modified_time = get_last_modified(latest_json_file)
+    if if_modified_since and last_modified_time <= datetime.strptime(if_modified_since,DATE_FORMAT):
+        return JSONResponse(status_code=304, content=None)
          
     for filename in os.listdir(TEMPLATE_DIR):
         if filename.endswith(".json"):
