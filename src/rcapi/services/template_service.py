@@ -13,6 +13,8 @@ import glob
 import time
 import uuid
 import asyncio
+import pandas as pd
+from openpyxl import load_workbook
 
 config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
 
@@ -159,3 +161,29 @@ def delete_template(template_path,task,base_url=None,uuid=None):
         task.status="Error"
         task.error = f"Template not found"
     task.completed =int(time.time() * 1000)
+
+def add_materials(file_path,materials):
+    column_mapping = {
+        "ERM": "ERM identifiers",
+        "id": "ID",
+        "name": "Name",
+        "casrn": "CAS",
+        "type": "type",
+        "supplier": "Supplier",
+        "supplier_code": "Supplier code",
+        "batch": "Batch",
+        "core": "Core",
+        "BET surface in m²/g": "BET"
+    }
+    # Extract keys from materials that are present in the default column mapping
+    valid_keys = [key for key in column_mapping.keys() if key in set().union(*[material.keys() for material in materials])]
+    
+    # Create column mapping based on default mapping and valid keys
+    column_mapping = {key: column_mapping[key] for key in valid_keys}
+   
+    # Rearrange data to match the desired order and rename columns
+    materials_df = pd.DataFrame([{column_mapping[key]: value for key, value in row.items() if key in valid_keys} for row in materials])
+    
+        
+    with pd.ExcelWriter(file_path,engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
+        materials_df.to_excel(writer, startcol=1, startrow=1, sheet_name='Materials',index=False, header=False)

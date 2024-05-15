@@ -27,6 +27,8 @@ COPY --from=requirements-stage /tmp/requirements.txt /app/requirements.txt
 COPY ./extern/pynanomapper /tmp/extern/pynanomapper
 COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
 
+RUN sed -i 's/^-e //' /app/requirements.txt
+
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
 RUN find /tmp -mindepth 1 -delete

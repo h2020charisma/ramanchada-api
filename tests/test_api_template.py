@@ -1,5 +1,4 @@
 from fastapi.testclient import TestClient
-import re
 from rcapi.main import app
 from pathlib import Path
 import json
@@ -10,6 +9,9 @@ import yaml
 import os.path 
 import shutil
 from datetime import datetime, timedelta
+import pandas as pd
+from rcapi.api.templates import fetch_materials
+
 #from unittest import TestCase
 
 TEST_DEFAULT_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
@@ -188,12 +190,15 @@ def test_doseresponse_excel(setup_template_dir):
     modified_date = datetime.utcnow() - timedelta(hours=12)
     headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
     #we ignore the header, want to generate the file on-the-fly
-    response_xlsx = client.get("/template/{}?format=xlsx".format(TEMPLATE_UUID),headers=headers)
+    response_xlsx = client.get("/template/{}?format=xlsx&project=nanoreg".format(TEMPLATE_UUID),headers=headers)
     assert response_xlsx.status_code == 200, response_xlsx.headers
-    print(response_xlsx.headers)
+    #print(response_xlsx.headers)
     save_path = os.path.join(setup_template_dir, '{}.xlsx'.format(TEMPLATE_UUID))
     with open(save_path, 'wb') as file:
         file.write(response_xlsx.content)    
+    df = pd.read_excel(save_path, sheet_name='Materials')
+    assert df.shape[0]>0,"materials"
+
 
 def test_doseresponse_nmparser(setup_template_dir):
     modified_date = datetime.utcnow() - timedelta(hours=12)
@@ -227,3 +232,7 @@ def test_delete_invalidjson(setup_template_dir):
 def test_delete_noname(setup_template_dir):
     #this is a finalized template, should not be deleted
     delete_template(TEMPLATE_UUID_noname,200)
+
+def test_getmaterials():
+    materials = fetch_materials("nanoreg")
+    assert len(materials)>0
