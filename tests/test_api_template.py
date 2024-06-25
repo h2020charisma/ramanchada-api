@@ -17,6 +17,9 @@ from rcapi.api.templates import fetch_materials
 TEST_DEFAULT_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
 TEST_INVALID_PATH = Path(__file__).parent / "resources/templates/null.json"
 TEST_NONAME_PATH = Path(__file__).parent / "resources/templates/dose_response_noname.json"
+TEST_RAMAN_PATH = Path(__file__).parent / "resources/templates/raman.json"
+
+TEMPLATE_UUID_RAMAN = "a282b2c4-8dfe-4cca-9bcd-1d276a23bb4e"
 TEMPLATE_UUID = "3c22a1f0-a933-4855-848d-05fcc26ceb7a"
 TEMPLATE_UUID_invalid = "3c22a1f0-a933-4855-848d-05fcc26ceb7b"
 TEMPLATE_UUID_noname = "3c22a1f0-a933-4855-848d-05fcc26ceb7c"
