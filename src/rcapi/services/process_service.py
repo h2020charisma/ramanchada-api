@@ -2,7 +2,7 @@ import os
 import uuid
 import time
 import shutil
-from app.models.models import Task  # Import your data models
+from rcapi.models.models import Task  # Import your data models
 import h5py
 from ..config.app_config import load_config
 from pynanomapper.datamodel.nexus_parser import SpectrumParser

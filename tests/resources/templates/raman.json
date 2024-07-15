@@ -54,7 +54,8 @@
             "raw_conditions": [
                 "Replicate",
                 "Laser power",
-                "Time"
+                "Time",
+                "smthextra4test"
             ],
             "raw_endpoint": "Spectrum file",
             "raw_aggregate": "RAW_DATA",

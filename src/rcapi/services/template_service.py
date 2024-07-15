@@ -77,10 +77,13 @@ def get_template_json(uuid):
 
 from pynanomapper.datamodel.templates import blueprint as bp
     
-async def get_template_xlsx(uuid,json_blueprint):
+async def get_template_xlsx(uuid,json_blueprint,project):
     try:
         file_path_xlsx = os.path.join(TEMPLATE_DIR, f"{uuid}.xlsx")  
+        json_blueprint = clean_blueprint_json(json_blueprint)
+        print(json_blueprint)
         layout = json_blueprint.get("template_layout","dose_response")
+        
         if layout == "dose_response": 
             df_info,df_result,df_raw,df_conditions =bp.get_template_frame(json_blueprint)
             bp.iom_format_2excel(file_path_xlsx,df_info,df_result,df_raw,df_conditions)
@@ -88,6 +91,10 @@ async def get_template_xlsx(uuid,json_blueprint):
                 bp.add_plate_layout(file_path_xlsx,json_blueprint)
                 json_blueprint["template_uuid"] = uuid            
                 bp.add_hidden_jsondef(file_path_xlsx,json_blueprint)                
+            except:
+                pass
+            try:
+                add_project(file_path_xlsx,project)
             except:
                 pass
             return file_path_xlsx  
@@ -187,3 +194,27 @@ def add_materials(file_path,materials):
         
     with pd.ExcelWriter(file_path,engine="openpyxl", mode="a",if_sheet_exists='overlay') as writer:
         materials_df.to_excel(writer, startcol=1, startrow=1, sheet_name='Materials',index=False, header=False)
+
+
+def add_project(file_path,project):
+    if project is None:
+        return
+    try:
+        workbook = load_workbook(file_path)
+        sheet = workbook.active
+        sheet['A1'] = project.upper()
+        workbook.save(file_path)
+    except Exception as err:
+        print(err)
+
+def clean_blueprint_json(data):
+    valid_conditions = {condition['conditon_name'] for condition in data['conditions']}
+    for report in data['raw_data_report']:
+        report['raw_conditions'] = [
+            condition for condition in report['raw_conditions'] if condition in valid_conditions
+        ]
+    for report in data['question3']:
+        report['results_conditions'] = [
+            condition for condition in report['results_conditions'] if condition in valid_conditions
+        ]    
+    return data    

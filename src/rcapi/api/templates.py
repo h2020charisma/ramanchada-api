@@ -247,7 +247,7 @@ async def get_template(request : Request, response : Response,
             return _response
         elif format=="xlsx":         
             try:
-                file_path =  await template_service.get_template_xlsx(uuid,json_blueprint)
+                file_path =  await template_service.get_template_xlsx(uuid,json_blueprint,project)
                 if project is not None:
                     template_service.add_materials(file_path,fetch_materials(project))
                 # Return the file using FileResponse
