@@ -210,11 +210,13 @@ def add_project(file_path,project):
 def clean_blueprint_json(data):
     valid_conditions = {condition['conditon_name'] for condition in data['conditions']}
     for report in data['raw_data_report']:
-        report['raw_conditions'] = [
-            condition for condition in report['raw_conditions'] if condition in valid_conditions
-        ]
+        if "raw_conditions" in report:
+            report['raw_conditions'] = [
+                condition for condition in report['raw_conditions'] if condition in valid_conditions
+            ]
     for report in data['question3']:
-        report['results_conditions'] = [
-            condition for condition in report['results_conditions'] if condition in valid_conditions
-        ]    
+        if "results_conditions" in report:
+            report['results_conditions'] = [
+                condition for condition in report['results_conditions'] if condition in valid_conditions
+            ]    
     return data    
