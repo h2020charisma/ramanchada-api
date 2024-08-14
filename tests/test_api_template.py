@@ -17,13 +17,17 @@ from rcapi.api.templates import fetch_materials
 TEST_DEFAULT_PATH = Path(__file__).parent / "resources/templates/dose_response.json"
 TEST_INVALID_PATH = Path(__file__).parent / "resources/templates/null.json"
 TEST_NONAME_PATH = Path(__file__).parent / "resources/templates/dose_response_noname.json"
+TEST_RAMAN_PATH = Path(__file__).parent / "resources/templates/raman.json"
+
+TEMPLATE_UUID_RAMAN = "a282b2c4-8dfe-4cca-9bcd-1d276a23bb4e"
 TEMPLATE_UUID = "3c22a1f0-a933-4855-848d-05fcc26ceb7a"
 TEMPLATE_UUID_invalid = "3c22a1f0-a933-4855-848d-05fcc26ceb7b"
 TEMPLATE_UUID_noname = "3c22a1f0-a933-4855-848d-05fcc26ceb7c"
 
 _TEMPLATES =  [ (TEST_DEFAULT_PATH,TEMPLATE_UUID),
                 (TEST_INVALID_PATH,TEMPLATE_UUID_invalid),
-                (TEST_NONAME_PATH,TEMPLATE_UUID_noname)
+                (TEST_NONAME_PATH,TEMPLATE_UUID_noname),
+                (TEST_RAMAN_PATH,TEMPLATE_UUID_RAMAN)
                ]
 
 client = TestClient(app)
@@ -199,6 +203,18 @@ def test_doseresponse_excel(setup_template_dir):
     df = pd.read_excel(save_path, sheet_name='Materials')
     assert df.shape[0]>0,"materials"
 
+def test_raman_excel(setup_template_dir):
+    modified_date = datetime.utcnow() - timedelta(hours=12)
+    headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
+    #we ignore the header, want to generate the file on-the-fly
+    response_xlsx = client.get("/template/{}?format=xlsx&project=charisma".format(TEMPLATE_UUID_RAMAN),headers=headers)
+    assert response_xlsx.status_code == 200, response_xlsx.headers
+    #print(response_xlsx.headers)
+    save_path = os.path.join(setup_template_dir, '{}.xlsx'.format(TEMPLATE_UUID_RAMAN))
+    with open(save_path, 'wb') as file:
+        file.write(response_xlsx.content)    
+    df = pd.read_excel(save_path, sheet_name='Materials')
+    assert df.shape[0]>0,"materials"
 
 def test_doseresponse_nmparser(setup_template_dir):
     modified_date = datetime.utcnow() - timedelta(hours=12)

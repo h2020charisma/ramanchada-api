@@ -1,0 +1,141 @@
+{
+    "SOP": "protocol_research",
+    "conditions": [
+        {
+            "conditon_name": "Replicate",
+            "condition_type": "c_replicate"
+        },
+        {
+            "conditon_name": "Laser power",
+            "condition_unit": "mW",
+            "condition_type": "c_experiment"
+        },
+        {
+            "conditon_name": "Time",
+            "condition_unit": "min",
+            "condition_type": "c_experiment"
+        }
+    ],
+    "PROTOCOL_TOP_CATEGORY": "P-CHEM",
+    "data_sheets": [
+        "data_raw",
+        "data_processed"
+    ],
+    "plate_format": "96",
+    "METADATA_SAMPLE_INFO": [
+        {
+            "param_sample_name": "Material ID",
+            "param_sample_group": "ID"
+        },
+        {
+            "param_sample_name": "Material name",
+            "param_sample_group": "NAME"
+        },
+        {
+            "param_sample_name": "Material supplier",
+            "param_sample_group": "SUPPLIER"
+        }
+    ],
+    "template_layout": "dose_response",
+    "template_date": "2024-05-10",
+    "template_status": "DRAFT",
+    "template_name": "Raman spectra",
+    "template_acknowledgment": "CHARISMA",
+    "template_author": "Nina Jeliazkova",
+    "user_role": [
+        "role_datamgr"
+    ],
+    "METHOD": "Raman spectrum",
+    "EXPERIMENT": "CHARISMA ",
+    "EXPERIMENT_PROTOCOL": "CHARISMA",
+    "PROTOCOL_CATEGORY_CODE": "ANALYTICAL_METHODS_SECTION",
+    "raw_data_report": [
+        {
+            "raw_conditions": [
+                "Replicate",
+                "Laser power",
+                "Time",
+                "smthextra4test"
+            ],
+            "raw_endpoint": "Spectrum file",
+            "raw_aggregate": "RAW_DATA",
+            "raw_type": "value_spectrum"
+        }
+    ],
+    "question3": [
+        {
+            "result_name": "peak",
+            "result_unit": "nm",
+            "result_type": "value_num"
+        }
+    ],
+    "METADATA_PARAMETERS": [
+        {
+            "param_name": "Instrument make",
+            "param_group": "INSTRUMENT",
+            "param_type": "value_text"
+        },
+        {
+            "param_name": "Instrument model",
+            "param_group": "INSTRUMENT",
+            "param_type": "value_text"
+        },
+        {
+            "param_name": "Wavelength",
+            "param_unit": "nm",
+            "param_group": "INSTRUMENT",
+            "param_type": "value_num"
+        },
+        {
+            "param_subgroup": "Optical path",
+            "param_name": "Collection optics",
+            "param_group": "INSTRUMENT",
+            "param_type": "value_text"
+        },
+        {
+            "param_subgroup": "Optical path",
+            "param_name": "Slit Size",
+            "param_group": "INSTRUMENT",
+            "param_type": "value_text"
+        },
+        {
+            "param_subgroup": "Optical path",
+            "param_name": "Grating",
+            "param_group": "INSTRUMENT",
+            "param_type": "value_text"
+        },
+        {
+            "param_subgroup": "Optical path",
+            "param_name": "Pin hole",
+            "param_group": "INSTRUMENT"
+        },
+        {
+            "param_subgroup": "Optical path",
+            "param_name": "Collection Fibre Diameter",
+            "param_group": "INSTRUMENT"
+        },
+        {
+            "param_subgroup": "Optical path",
+            "param_name": "Notes",
+            "param_group": "INSTRUMENT"
+        },
+        {
+            "param_name": "Humidity during acquisitions",
+            "param_group": "ENVIRONMENT"
+        },
+        {
+            "param_name": "Temperature during acquistions",
+            "param_unit": "C",
+            "param_group": "ENVIRONMENT"
+        }
+    ],
+    "METADATA_SAMPLE_PREP": [
+        {
+            "param_sampleprep_name": "Notes",
+            "param_sampleprep_group": "OTHER_SAMPLEPREP",
+            "param_type": "value_num"
+        }
+    ],
+    "provenance_project": "CHARISMA",
+    "provenance_workpackage": "WP3"
+}
