@@ -1,4 +1,4 @@
-FROM python:3.11-slim as requirements-stage
+FROM python:3.11-slim AS requirements-stage
 
 WORKDIR /tmp
 
@@ -10,6 +10,7 @@ COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
 
 RUN poetry export -f requirements.txt --output requirements.txt --without=dev --without-hashes
 
+
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.11-slim
 
 RUN apt-get update && apt-get install -y \
@@ -20,7 +21,7 @@ COPY --from=requirements-stage /tmp/requirements.txt /app/requirements.txt
 COPY ./extern/pynanomapper /tmp/extern/pynanomapper
 COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
 
-RUN sed -i 's/^-e //' /app/requirements.txt
+RUN sed -Ei -e 's|^-e ||' -e 's|(/pyambit.git)@\S+|\1|' /app/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
