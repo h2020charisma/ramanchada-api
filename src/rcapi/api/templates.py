@@ -192,7 +192,7 @@ async def makecopy(request: Request,
                 "example": "see Template Wizard data entry templates"
             },
             "application/x-hdf5": {
-                "example": "pynanomapper.datamodel.ambit.Substances converted to Nexus format"
+                "example": "pyambit.datamodel.Substances converted to Nexus format"
             }            
         }
     },
