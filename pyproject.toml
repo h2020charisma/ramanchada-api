@@ -26,7 +26,7 @@ python-multipart = "^0.0.6"
 pynanomapper = { path = "extern/pynanomapper", develop = true }
 ramanchada2 = { path = "extern/ramanchada2", develop = true }
 apscheduler = "^3.10.1"
-h5grove = "^1.3.0"
+h5grove = "^2.0.0"
 openpyxl = "^3.1.2"
 pydantic-settings = "^2.4.0"
 

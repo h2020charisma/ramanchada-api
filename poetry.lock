@@ -868,24 +868,25 @@ files = [
 
 [[package]]
 name = "h5grove"
-version = "1.3.0"
+version = "2.2.0"
 description = "Core utilities to serve HDF5 file contents"
 optional = false
-python-versions = ">=3.6"
+python-versions = ">=3.8"
 files = [
-    {file = "h5grove-1.3.0-py3-none-any.whl", hash = "sha256:340d7b47e9957bd666b92712d62d0841797449774a738ec8f519ed80ba9a13fb"},
-    {file = "h5grove-1.3.0.tar.gz", hash = "sha256:e8f052ff497f0ff42477a24511bbf0d8a1cf0b6e7aea31957bdec7b4baae2c9a"},
+    {file = "h5grove-2.2.0-py3-none-any.whl", hash = "sha256:6320d688c0235edadf9116392491a476fd1a5363668110e85591870f6722bfcd"},
+    {file = "h5grove-2.2.0.tar.gz", hash = "sha256:4ff4aed7166931ed71466ebe6ef49871a8ae76d85e4084601362c8a2b7af0c5d"},
 ]
 
 [package.dependencies]
-h5py = ">=2.9"
+h5py = ">=3"
 numpy = "*"
 orjson = "*"
 tifffile = "*"
+typing-extensions = "*"
 
 [package.extras]
-dev = ["black", "bump2version", "check-manifest", "flake8", "h5grove[fastapi]", "h5grove[flask]", "h5grove[tornado]", "httpx (>=0.23)", "invoke", "mypy", "myst-parser", "pytest", "pytest-benchmark", "pytest-cov", "pytest-tornado", "sphinx", "sphinx-argparse", "types-contextvars", "types-dataclasses", "types-orjson", "types-pkg-resources"]
-fastapi = ["fastapi", "uvicorn"]
+dev = ["black", "bump2version", "check-manifest", "flake8", "h5grove[fastapi]", "h5grove[flask]", "h5grove[tornado]", "httpx (>=0.23)", "invoke", "mypy", "myst-parser", "pytest", "pytest-benchmark", "pytest-cov", "pytest-tornado", "sphinx", "sphinx-argparse", "sphinx-autobuild", "types-contextvars", "types-dataclasses", "types-orjson", "types-pkg-resources"]
+fastapi = ["fastapi", "pydantic (>2)", "pydantic-settings", "uvicorn"]
 flask = ["Flask", "Flask-Compress", "Flask-Cors"]
 tornado = ["tornado"]
 
@@ -3802,13 +3803,13 @@ test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,
 
 [[package]]
 name = "types-python-dateutil"
-version = "2.9.0.20240316"
+version = "2.9.0.20240821"
 description = "Typing stubs for python-dateutil"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "types-python-dateutil-2.9.0.20240316.tar.gz", hash = "sha256:5d2f2e240b86905e40944dd787db6da9263f0deabef1076ddaed797351ec0202"},
-    {file = "types_python_dateutil-2.9.0.20240316-py3-none-any.whl", hash = "sha256:6b8cb66d960771ce5ff974e9dd45e38facb81718cc1e208b10b1baccbfdbee3b"},
+    {file = "types-python-dateutil-2.9.0.20240821.tar.gz", hash = "sha256:9649d1dcb6fef1046fb18bebe9ea2aa0028b160918518c34589a46045f6ebd98"},
+    {file = "types_python_dateutil-2.9.0.20240821-py3-none-any.whl", hash = "sha256:f5889fcb4e63ed4aaa379b44f93c32593d50b9a94c9a60a0c854d8cc3511cd57"},
 ]
 
 [[package]]
@@ -4010,4 +4011,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<3.13"
-content-hash = "51513fe4151bcfa89750a9db85b4b76787591b08bea7e47726e1222b24a246c7"
+content-hash = "e0163c31d8403734270fccdc2cc8a4fba5bba65813d976d15c3b1057258a1808"
