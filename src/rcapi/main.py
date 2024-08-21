@@ -5,7 +5,6 @@ from importlib.metadata import version
 import time
 from rcapi.api import upload, process, info, tasks, templates
 from rcapi.models.models import tasks_db
-from pydantic import BaseSettings
 import os 
 from .config.app_config import initialize_dirs
 from rcapi.services import template_service
