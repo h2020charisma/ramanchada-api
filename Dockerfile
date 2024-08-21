@@ -12,16 +12,9 @@ RUN poetry export -f requirements.txt --output requirements.txt --without=dev --
 
 FROM tiangolo/uvicorn-gunicorn-fastapi:python3.11-slim
 
-LABEL maintainer="Luchesar ILIEV <luchesar.iliev@gmail.com>" \
-      org.opencontainers.image.created=$BUILD_DATE \
-      org.opencontainers.image.description="RamanChada 2 API service" \
-      org.opencontainers.image.revision=$VCS_REF \
-      org.opencontainers.image.schema-version="1.0" \
-      org.opencontainers.image.source="https://github.com/h2020charisma/ramanchada-api" \
-      org.opencontainers.image.title="ramanchada-api" \
-      org.opencontainers.image.url="https://github.com/h2020charisma/ramanchada-api/blob/main/README.md" \
-      org.opencontainers.image.vendor="IDEAconsult" \
-      org.opencontainers.image.version="latest"
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=requirements-stage /tmp/requirements.txt /app/requirements.txt
 COPY ./extern/pynanomapper /tmp/extern/pynanomapper
