@@ -36,6 +36,7 @@ async def get_query(request : Request,
             img=img
         )
     except Exception as err:
+        print(traceback.exc)
         raise HTTPException(status_code=400, detail=str(err))
 
     return results

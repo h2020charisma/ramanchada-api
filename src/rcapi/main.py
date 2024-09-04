@@ -1,13 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 from importlib.metadata import version
 import time
-from rcapi.api import upload, process, info, tasks, templates, query, download
+from rcapi.api import convertor, upload, process, info, tasks, templates, query
 from rcapi.models.models import tasks_db
 import os 
 from .config.app_config import initialize_dirs
 from rcapi.services import template_service
+from fastapi.responses import JSONResponse
+import logging
+import traceback
 
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs(migrate=True)
 
@@ -16,11 +19,30 @@ try:
 except Exception:
     package_version = 'Unknown'
 
+
 app = FastAPI(
      title="Ramanchada API",
      version=package_version,
      description = "A web API for the RamanChada 2 Raman spectroscopy harmonisation library, incorporating the AMBIT/eNanoMapper data model"
 )
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Get the stack trace
+    stack_trace = traceback.format_exc()
+    
+    # Log the stack trace
+    logging.error(f"Unhandled exception: {str(exc)}\nStack trace:\n{stack_trace}")
+
+    # Optionally print the stack trace to the console (for development purposes)
+    print(f"Unhandled exception: {str(exc)}\nStack trace:\n{stack_trace}")
+
+    # Return a generic error response
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error"}
+    )
+
 
 # Include your application configuration here if needed
 
@@ -31,7 +53,7 @@ app.include_router(tasks.router, prefix="", tags=["task"])
 app.include_router(info.router, prefix="", tags=["info"])
 app.include_router(templates.router, prefix="", tags=["templates"])
 app.include_router(query.router, prefix="", tags=["query"])
-app.include_router(download.router, prefix="", tags=["download"])
+app.include_router(convertor.router, prefix="", tags=["download"])
 
 from h5grove import fastapi_utils
 fastapi_utils.settings.base_dir = os.path.abspath(NEXUS_DIR)
