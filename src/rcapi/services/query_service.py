@@ -1,9 +1,8 @@
 import requests
 from typing import Optional, Literal
 from fastapi import Request, HTTPException
-
-# Define the Solr base URL and core
-SOLR_URL = "http://your-solr-server/solr/charisma/select"
+from numcompress import compress, decompress
+import traceback 
 
 def process(
     request: Request,
@@ -17,41 +16,40 @@ def process(
     pagesize: Optional[int] = 10,
     img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail"
 ):
-    if query_type == "knnquery":
-        knnQuery = ann
-        if (knnQuery is None) or (knnQuery ==""):
-            raise HTTPException(status_code=400, detail="?ann parameter missing")
-    
-        else:
-            #knnQuery = ','.join(map(str, decompress(knnQuery)))
-            #rs = self.knn(solr_url,textQuery,q_reference,q_provider,knnQuery,topk=40,page=0 if page is None else page,pagesize = 10 if pagesize is None else pagesize)
-
-            pass
-    else:
-        textQuery = q
-        textQuery = "*" if textQuery is None or textQuery=="" else textQuery
-    # Map the incoming query to the Solr query parameters
-
-    solr_params = {
-        "query": textQuery, 
-        "filter" : [
-            "type_s:study",
-            "reference_s:{}".format(q_reference),"reference_owner_s:{}".format(q_provider)], 
-            "fields" : "id,score,name_s,textValue_s"}
     #tbd
     headers = {}
     #_token = self.h5service.tokenservice.api_key()
     #if _token != None:
     #    headers["Authorization"] = "Bearer {}".format(_token);
     #url = "{}?start={}&rows={}".format(solrUrl,page,pagesize)
-
+ 
     embedded_images = img=="embedded"
     thumbnail = "image" if img=="original" else "thumbnail"
-
-    # Query the Solr server
     url = "{}?start={}&rows={}".format(solr_url,page,pagesize)
-    response = requests.post(url, json=solr_params)
-    response_data = response.json()
+    
+    response_data = []
+    if query_type == "knnquery":
+        knnQuery = ann
+        if (knnQuery is None) or (knnQuery ==""):
+            raise HTTPException(status_code=400, detail="?ann parameter missing")
+    
+        else:
+            knnQuery = ','.join(map(str, decompress(knnQuery)))
+            response = knn(url,q_reference,q_provider,knnQuery,topk=40,headers=headers)
+            response_data = response.json()
+    else:
+        textQuery = q
+        textQuery = "*" if textQuery is None or textQuery=="" else textQuery
+        # Map the incoming query to the Solr query parameters
+
+        solr_params = {
+            "query": textQuery, 
+            "filter" : [
+                "type_s:study",
+                "reference_s:{}".format(q_reference),"reference_owner_s:{}".format(q_provider)], 
+                "fields" : "id,score,name_s,textValue_s"}
+        response = requests.post(url, json=solr_params)
+        response_data = response.json()
 
     # Process Solr response and construct the output
     results = []
@@ -78,3 +76,18 @@ def process(
         })
 
     return results
+
+def knn(url,q_reference="*",q_provider="*",knnQuery=None,topk=20,headers={}):
+    try:
+
+        query = "!knn f=spectrum_p1024 topK={}".format(topk)
+        data= {"query": "{"+query+"}[" + knnQuery + "]", 
+               "filter" : ["type_s:study",
+                           "reference_s:{}".format(q_reference),
+                           "reference_owner_s:{}".format(q_provider)  ], 
+                           "fields" : "id,score,name_s,textValue_s"}
+        rs =  requests.post(url, json = data, headers= headers)
+        return rs
+    except Exception as err:
+        traceback.print_exc()
+        raise err
