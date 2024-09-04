@@ -3,7 +3,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 from importlib.metadata import version
 import time
-from rcapi.api import upload, process, info, tasks, templates, query
+from rcapi.api import upload, process, info, tasks, templates, query, download
 from rcapi.models.models import tasks_db
 import os 
 from .config.app_config import initialize_dirs
@@ -31,6 +31,7 @@ app.include_router(tasks.router, prefix="", tags=["task"])
 app.include_router(info.router, prefix="", tags=["info"])
 app.include_router(templates.router, prefix="", tags=["templates"])
 app.include_router(query.router, prefix="", tags=["query"])
+app.include_router(download.router, prefix="", tags=["download"])
 
 from h5grove import fastapi_utils
 fastapi_utils.settings.base_dir = os.path.abspath(NEXUS_DIR)

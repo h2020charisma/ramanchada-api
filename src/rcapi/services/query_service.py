@@ -1,7 +1,7 @@
 import requests
 from typing import Optional, Literal
 from fastapi import Request, HTTPException
-from numcompress import compress, decompress
+from numcompress import  decompress
 import traceback 
 
 def process(
@@ -64,7 +64,7 @@ def process(
                 #FigureCanvas(fig).print_png(output)
                 #base64_bytes = base64.b64encode(output.getvalue())
                 #image_link = "data:image/png;base64,{}".format(str(base64_bytes,'utf-8'))
-                image_link = "tbdembedded"
+                image_link = "tbd"
             except Exception as err:
                 print(err)    
         else:    
