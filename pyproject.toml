@@ -29,6 +29,7 @@ apscheduler = "^3.10.1"
 h5grove = "^2.0.0"
 openpyxl = "^3.1.2"
 pydantic-settings = "^2.4.0"
+numcompress = "^0.1.2"
 
 [tool.poetry.urls]
 "Bug Tracker" = "https://github.com/h2020charisma/ramanchada-api/issues"
