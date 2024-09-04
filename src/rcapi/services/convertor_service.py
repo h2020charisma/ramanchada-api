@@ -10,6 +10,8 @@ import numpy as np
 from numcompress import compress
 from pynanomapper.clients.datamodel_simple import StudyRaman
 import h5pyd 
+import requests
+from .kc import AuthenticatedRequest
 
 def empty_figure(figsize,title,label):
     fig = Figure(figsize=figsize)
@@ -112,3 +114,37 @@ def knnquery(domain,dataset="raw"):
             return result_json
     except Exception as err:
         raise(err)
+    
+def thumbnail(solr_url,domain,figsize=(6,4),extraprm=""):
+    rs = None
+    try:
+        query="textValue_s:\"{}\"".format(domain.replace(" ","\ "))
+        params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,spectrum_p1024"}
+        rs =  solrquery_get(solr_url, params = params)
+        if rs.status_code==200:
+            x = StudyRaman.x4search()
+            for doc in rs.json()["response"]["docs"]:
+                y = doc["spectrum_p1024"]
+                fig = Figure(figsize=figsize)
+                axis = fig.add_subplot(1, 1, 1)
+                axis.plot(x, y)
+                axis.set_ylabel("a.u.")
+                axis.set_xlabel("Raman shift [1/cm]")
+                axis.title.set_text("{} {} {} ({})".format(extraprm,doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
+                return fig
+        else:
+            return empty_figure(figsize,"{} {}".format(rs.status_code,rs.reason),"{}".format(domain.split("/")[-1]))
+
+    except Exception as err:
+        raise(err)
+    finally:
+        if not (rs is None):
+            rs.close    
+
+def solrquery_get(solr_url, params):
+    headers = {}
+
+    with AuthenticatedRequest(get_token):
+        requests.get()
+
+        return requests.get(solr_url, params = params, headers= headers)            
