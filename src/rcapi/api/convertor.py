@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Query, Depends
 from fastapi.responses import Response
 from typing import Optional, Literal
 import matplotlib.pyplot as plt
@@ -11,7 +11,9 @@ import os.path
 import ramanchada2 as rc2
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from numcompress import compress
-from rcapi.services.convertor_service import empty_figure,dict2figure, image, thumbnail, knnquery, download
+from rcapi.services.convertor_service import empty_figure,dict2figure, image, thumbnail, knnquery, recursive_copy
+from rcapi.services.kc import inject_api_key_h5pyd, inject_api_key_into_requests, get_api_key
+import h5py, h5pyd 
 
 router = APIRouter()
 
@@ -25,9 +27,8 @@ async def convert_get(
     dataset: Optional[str] = "raw",
     w: Optional[int] = 300,
     h: Optional[int] = 200,
-    extra: Optional[str] = None) :
-
-    
+    extra: Optional[str] = None,
+    api_key: Optional[str] = Depends(get_api_key)) :
     if not domain:
         #tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
@@ -46,43 +47,51 @@ async def convert_get(
             FigureCanvas(fig).print_png(output)
             return Response(content=output.getvalue(), media_type='image/png')
         
-        if what == "dict":
-            prm = dict(request.query_params)
-            prm["what"] = None
-            fig = dict2figure(prm, figsize)
-            output = io.BytesIO()
-            FigureCanvas(fig).print_png(output)
-            return Response(content=output.getvalue(), media_type='image/png')
-        
-        if what == "image":
-            fig = image(domain, dataset, figsize, extra)
-            output = io.BytesIO()
-            FigureCanvas(fig).print_png(output)
-            return Response(content=output.getvalue(), media_type='image/png')
-        
-        if what == "thumbnail":
-            fig = thumbnail(solr_url, domain, figsize, extra)
-            output = io.BytesIO()
-            FigureCanvas(fig).print_png(output)
-            return Response(content=output.getvalue(), media_type='image/png')
-        
-        if what == "b64png":
-            fig = image(domain, dataset)
-            output = io.BytesIO()
-            FigureCanvas(fig).print_png(output)
-            base64_bytes = base64.b64encode(output.getvalue())
-            return Response(content=base64_bytes, media_type='text/plain')
-        
-        if what == "knnquery":
-            return knnquery(domain, dataset)
-        
-        if what == "h5":
-            with io.BytesIO() as tmpfile:
-                download(domain, tmpfile)
-                tmpfile.seek(0)
-                return Response(content=tmpfile.read(), media_type="application/x-hdf5", headers={"Content-Disposition": "attachment; filename=download.h5"})
-        
-        raise HTTPException(status_code=500, detail=f"Unsupported 'what' parameter: {what}")
+        if what in ["dict","thumbnail"]: #solr query
+            if what == "dict":
+                prm = dict(request.query_params)
+                prm["what"] = None
+                fig = dict2figure(prm, figsize)
+                output = io.BytesIO()
+                FigureCanvas(fig).print_png(output)
+                return Response(content=output.getvalue(), media_type='image/png')
+            if what == "thumbnail":
+                with inject_api_key_into_requests(api_key):
+                    fig = thumbnail(solr_url, domain, figsize, extra)
+                    output = io.BytesIO()
+                    FigureCanvas(fig).print_png(output)
+                    return Response(content=output.getvalue(), media_type='image/png')
+            
+
+        elif what in ["knnquery","h5","b64png","image"]:  # h5 query
+            try:
+                with inject_api_key_h5pyd(api_key):
+                    if what == "b64png":
+                        fig = image(domain, dataset)
+                        output = io.BytesIO()
+                        FigureCanvas(fig).print_png(output)
+                        base64_bytes = base64.b64encode(output.getvalue())
+                        return Response(content=base64_bytes, media_type='text/plain')
+                    elif what == "image":
+                        fig = image(domain, dataset, figsize, extra)
+                        output = io.BytesIO()
+                        FigureCanvas(fig).print_png(output)
+                        return Response(content=output.getvalue(), media_type='image/png')                    
+                    elif what == "knnquery":
+                        return knnquery(domain, dataset)
+                    elif what == "h5":
+                        try:
+                            with io.BytesIO() as tmpfile:
+                                with h5pyd.File(domain,mode="r") as fin:   
+                                    with h5py.File(tmpfile,"w") as fout:
+                                        recursive_copy(fin,fout)                         
+                                tmpfile.seek(0)
+                                return Response(content=tmpfile.read(), media_type="application/x-hdf5", headers={"Content-Disposition": "attachment; filename=download.h5"})
+                        except Exception as e:
+                            raise HTTPException(status_code=400, detail=f" error: {str(e)}")
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f" error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Unsupported 'what' parameter: {what}")
     
     except HTTPException as err:
         raise err
@@ -93,8 +102,8 @@ async def convert_get(
 @router.post("/download")
 async def convert_post(
         what: Literal["knnquery", "b64png" ]  = Query("knnquery") ,
-        files: list[UploadFile] = File(...)
-        #, auth=Depends(pass_auth)
+        files: list[UploadFile] = File(...),
+        api_key: Optional[str] = Depends(get_api_key)
     ):
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")

@@ -9,9 +9,10 @@ import base64
 import numpy as np
 from numcompress import compress
 from pynanomapper.clients.datamodel_simple import StudyRaman
-import h5pyd 
+import h5py, h5pyd 
 import requests
 from .kc import AuthenticatedRequest
+import traceback
 
 def empty_figure(figsize,title,label):
     fig = Figure(figsize=figsize)
@@ -141,10 +142,30 @@ def thumbnail(solr_url,domain,figsize=(6,4),extraprm=""):
         if not (rs is None):
             rs.close    
 
-def solrquery_get(solr_url, params):
-    headers = {}
 
-    with AuthenticatedRequest(get_token):
-        requests.get()
-
-        return requests.get(solr_url, params = params, headers= headers)            
+def recursive_copy(src_group : h5py.Group, dst_group : h5py.Group,level=0):
+    # every File instance is also an HDF5 group
+    # Copy attributes of the current group
+    for attr_name, attr_value in src_group.attrs.items():
+        dst_group.attrs[attr_name] = attr_value    
+    for index,key in enumerate(src_group):
+        try:
+            item = src_group[key]
+            if isinstance(item, h5py.Group):
+                # Create the group in the destination file
+                new_group = dst_group.create_group(key)
+                recursive_copy(item, new_group,level+1)
+            elif isinstance(item, h5py.Dataset):
+                if item.shape == ():  # Scalar dataset
+                    # Copy the scalar value directly
+                    dst_dataset = dst_group.create_dataset(key, data=item[()])
+                else:
+                    # Copy the dataset to the destination file
+                    dst_dataset = dst_group.create_dataset(key, data=item[:])
+                for attr_name, attr_value in item.attrs.items():
+                    dst_dataset.attrs[attr_name] = attr_value  
+                #dst_dataset.flush()     
+        except Exception as err:
+            print(traceback.format_exc())
+        #if level == 0 and index>25:
+        #    break              
