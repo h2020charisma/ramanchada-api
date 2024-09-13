@@ -47,15 +47,15 @@ async def convert_get(
             FigureCanvas(fig).print_png(output)
             return Response(content=output.getvalue(), media_type='image/png')
         
-        if what in ["dict","thumbnail","b64png","image"]: #solr query
-            if what == "dict":
-                prm = dict(request.query_params)
-                prm["what"] = None
-                fig = dict2figure(prm, figsize)
-                output = io.BytesIO()
-                FigureCanvas(fig).print_png(output)
-                return Response(content=output.getvalue(), media_type='image/png')
-            else:
+        
+        if what == "dict":
+            prm = dict(request.query_params)
+            prm["what"] = None
+            fig = dict2figure(prm, figsize)
+            output = io.BytesIO()
+            FigureCanvas(fig).print_png(output)
+            return Response(content=output.getvalue(), media_type='image/png')
+        elif what in ["thumbnail","b64png","image"]: #solr query
                 async with inject_api_key_into_httpx(api_key):
                     fig = await solr2image(solr_url, domain, figsize, extra)
                     output = io.BytesIO()
