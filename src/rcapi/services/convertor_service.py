@@ -91,7 +91,7 @@ def knnquery(domain,dataset="raw"):
 async def solr2image(solr_url,domain,figsize=(6,4),extraprm=None):
     rs = None
     try:
-        query="textValue_s:\"{}\"".format(domain.replace(" ","\ "))
+        query="textValue_s:{}{}{}".format('"',domain,'"')
         params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,{}".format(SOLR_VECTOR)}
         rs =  await solr_query_get(solr_url, params)
         if rs.status_code==200:
