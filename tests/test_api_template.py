@@ -9,6 +9,7 @@ import yaml
 import os.path 
 import shutil
 from datetime import datetime, timedelta
+from datetime import timezone as tz
 import pandas as pd
 from rcapi.api.templates import fetch_materials
 
@@ -74,10 +75,10 @@ def setup_template_dir(config_dict):
         print(TEST_JSON_PATH)
         file_path = os.path.join(TEMPLATE_DIR,"{}.json".format(TEMPLATE_UUID))
         shutil.copy(TEST_JSON_PATH,file_path )
-        new_modified_date = datetime.now() - timedelta(hours=24)
+        new_modified_date = datetime.now(tz.utc) - timedelta(hours=24)
         timestamp = new_modified_date.timestamp()
         os.utime(file_path, times=(timestamp, timestamp))
-        now_date = datetime.utcnow() - timedelta(hours=12)
+        now_date = datetime.now(tz.utc) - timedelta(hours=12)
         #headers = {"If-Modified-Since": now_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
         assert new_modified_date <= now_date,new_modified_date
     # Perform setup operations here, if any
@@ -140,14 +141,14 @@ def test_gettemplate(setup_template_dir):
 
 
 def test_gettemplate_notmodified(setup_template_dir):
-    modified_date = datetime.utcnow() - timedelta(hours=12)
+    modified_date = datetime.now(tz.utc) - timedelta(hours=12)
     headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
     response_retrieve = client.get("/template",headers=headers)
     assert response_retrieve.status_code == 304,response_retrieve.content
 
 
 def test_gettemplateuuid_notmodified(setup_template_dir):
-    modified_date = datetime.utcnow() - timedelta(hours=12)
+    modified_date = datetime.now(tz.utc) - timedelta(hours=12)
     headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
     response_retrieve = client.get("/template/{}".format(TEMPLATE_UUID),headers=headers)
     assert response_retrieve.status_code == 304,response_retrieve.content
@@ -194,7 +195,7 @@ def test_makecopy_finalized(setup_template_dir):
     
 
 def test_doseresponse_excel(setup_template_dir):
-    modified_date = datetime.utcnow() - timedelta(hours=12)
+    modified_date = datetime.now(tz.utc) - timedelta(hours=12)
     headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
     #we ignore the header, want to generate the file on-the-fly
     response_xlsx = client.get("/template/{}?format=xlsx&project=nanoreg".format(TEMPLATE_UUID),headers=headers)
@@ -207,7 +208,7 @@ def test_doseresponse_excel(setup_template_dir):
     assert df.shape[0]>0,"materials"
 
 def test_raman_excel(setup_template_dir):
-    modified_date = datetime.utcnow() - timedelta(hours=12)
+    modified_date = datetime.now(tz.utc) - timedelta(hours=12)
     headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
     #we ignore the header, want to generate the file on-the-fly
     response_xlsx = client.get("/template/{}?format=xlsx&project=charisma".format(TEMPLATE_UUID_RAMAN),headers=headers)
@@ -220,7 +221,7 @@ def test_raman_excel(setup_template_dir):
     assert df.shape[0]>0,"materials"
 
 def test_doseresponse_nmparser(setup_template_dir):
-    modified_date = datetime.utcnow() - timedelta(hours=12)
+    modified_date = datetime.now(tz.utc) - timedelta(hours=12)
     headers = {"If-Modified-Since": modified_date.strftime("%a, %d %b %Y %H:%M:%S GMT")}
     #we ignore the header, want to generate the file on-the-fly
     response_nmparser = client.get("/template/{}?format=nmparser".format(TEMPLATE_UUID),headers=headers)
