@@ -10,8 +10,7 @@ import numpy as np
 from numcompress import compress
 from pynanomapper.clients.datamodel_simple import StudyRaman
 import h5py, h5pyd 
-import requests
-from .kc import AuthenticatedRequest
+from rcapi.services.solr_query import solr_query_post,solr_query_get,SOLR_ROOT,SOLR_COLLECTION,SOLR_VECTOR
 import traceback
 
 def empty_figure(figsize,title,label):
@@ -60,33 +59,6 @@ def dict2figure(pm,figsize):
     axis.set_title(pm["domain"])
     return fig
 
-def image(domain,dataset="raw",figsize=(6,4),extraprm=""):
-    try:
-        with h5pyd.File(domain,mode="r") as h5:
-            x = h5[dataset][0]
-            y = h5[dataset][1]
-            try:
-                _sample = h5["annotation_sample"].attrs["sample"]
-            except:
-                _sample = None
-            try:
-                _provider = h5["annotation_study"].attrs["provider"]
-            except:
-                _provider = None
-            try:
-                _wavelength = h5["annotation_study"].attrs["wavelength"]
-            except:
-                _wavelength = None
-            fig = Figure(figsize=figsize)
-            axis = fig.add_subplot(1, 1, 1)
-            axis.plot(x, y, color='black')
-            axis.set_ylabel(h5[dataset].dims[1].label)
-            axis.set_xlabel(h5[dataset].dims[0].label)
-            axis.title.set_text("{} {} ({}) {}".format(extraprm,_sample,_provider,_wavelength))
-            #domain.split("/")[-1],dataset))
-            return fig
-    except Exception as err:
-        return empty_figure(figsize,"Error","{}".format(domain.split("/")[-1]))
 
 def knnquery(domain,dataset="raw"):
     try:
@@ -116,22 +88,25 @@ def knnquery(domain,dataset="raw"):
     except Exception as err:
         raise(err)
     
-def thumbnail(solr_url,domain,figsize=(6,4),extraprm=""):
+async def solr2image(solr_url,domain,figsize=(6,4),extraprm=None):
     rs = None
     try:
         query="textValue_s:\"{}\"".format(domain.replace(" ","\ "))
-        params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,spectrum_p1024"}
-        rs =  solrquery_get(solr_url, params = params)
+        params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,{}".format(SOLR_VECTOR)}
+        rs =  await solr_query_get(solr_url, params)
         if rs.status_code==200:
-            x = StudyRaman.x4search()
+            x = None
             for doc in rs.json()["response"]["docs"]:
-                y = doc["spectrum_p1024"]
+                y = doc[SOLR_VECTOR]
+                if x is None:
+                    x = StudyRaman.x4search(len(y))
                 fig = Figure(figsize=figsize)
                 axis = fig.add_subplot(1, 1, 1)
                 axis.plot(x, y)
                 axis.set_ylabel("a.u.")
-                axis.set_xlabel("Raman shift [1/cm]")
-                axis.title.set_text("{} {} {} ({})".format(extraprm,doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
+                axis.set_xlabel("Wavenumber [1/cm]")
+                axis.title.set_text("{} {} {} ({})".format("" if extraprm is None else extraprm,
+                            doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
                 return fig
         else:
             return empty_figure(figsize,"{} {}".format(rs.status_code,rs.reason),"{}".format(domain.split("/")[-1]))

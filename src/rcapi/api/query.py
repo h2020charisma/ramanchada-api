@@ -3,10 +3,9 @@ from fastapi import Request , HTTPException, Header, Depends
 from typing import Optional, Literal
 from rcapi.services import query_service
 import traceback 
-router = APIRouter()
+from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION
 
-solr_root = "https://solr-kc.ideaconsult.net/solr/"
-solr_vector_field = "spectrum_p1024"
+router = APIRouter()
 
 @router.get("/query", )
 async def get_query(
@@ -18,7 +17,7 @@ async def get_query(
                     page : Optional[int] = 0, pagesize : Optional[int] = 10,
                     img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
                     ):
-    solr_url = "{}charisma/select".format(solr_root)
+    solr_url = "{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION)
 
     textQuery = q
     textQuery = "*" if textQuery is None or textQuery=="" else textQuery
@@ -36,7 +35,7 @@ async def get_query(
             page=page,
             pagesize=pagesize,
             img=img,
-            vector_field=solr_vector_field
+            vector_field=SOLR_VECTOR
         )
         return results
     except Exception as err:

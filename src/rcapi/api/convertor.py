@@ -11,13 +11,13 @@ import os.path
 import ramanchada2 as rc2
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from numcompress import compress
-from rcapi.services.convertor_service import empty_figure,dict2figure, image, thumbnail, knnquery, recursive_copy
-from rcapi.services.kc import inject_api_key_h5pyd, inject_api_key_into_requests, get_api_key
+from rcapi.services.convertor_service import empty_figure,dict2figure,  solr2image, knnquery, recursive_copy
+from rcapi.services.kc import inject_api_key_h5pyd, inject_api_key_into_httpx, get_api_key
 import h5py, h5pyd 
+from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION
 
 router = APIRouter()
 
-solr_root = "https://solr-kc.ideaconsult.net/solr/"
 
 @router.get("/download", )
 async def convert_get(
@@ -33,7 +33,7 @@ async def convert_get(
         #tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
     
-    solr_url = "{}charisma/select".format(solr_root)
+    solr_url = "{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION)
 
     width = w
     height = h
@@ -47,7 +47,7 @@ async def convert_get(
             FigureCanvas(fig).print_png(output)
             return Response(content=output.getvalue(), media_type='image/png')
         
-        if what in ["dict","thumbnail"]: #solr query
+        if what in ["dict","thumbnail","b64png","image"]: #solr query
             if what == "dict":
                 prm = dict(request.query_params)
                 prm["what"] = None
@@ -55,29 +55,22 @@ async def convert_get(
                 output = io.BytesIO()
                 FigureCanvas(fig).print_png(output)
                 return Response(content=output.getvalue(), media_type='image/png')
-            if what == "thumbnail":
-                with inject_api_key_into_requests(api_key):
-                    fig = thumbnail(solr_url, domain, figsize, extra)
+            else:
+                async with inject_api_key_into_httpx(api_key):
+                    fig = await solr2image(solr_url, domain, figsize, extra)
                     output = io.BytesIO()
                     FigureCanvas(fig).print_png(output)
-                    return Response(content=output.getvalue(), media_type='image/png')
-            
+                    if what == "b64png":
+                        base64_bytes = base64.b64encode(output.getvalue())
+                        return Response(content=base64_bytes, media_type='text/plain')         
+                    else:
+                        return Response(content=output.getvalue(), media_type='image/png')
+       
 
-        elif what in ["knnquery","h5","b64png","image"]:  # h5 query
+        elif what in ["knnquery","h5"]:  # h5 query
             try:
                 with inject_api_key_h5pyd(api_key):
-                    if what == "b64png":
-                        fig = image(domain, dataset)
-                        output = io.BytesIO()
-                        FigureCanvas(fig).print_png(output)
-                        base64_bytes = base64.b64encode(output.getvalue())
-                        return Response(content=base64_bytes, media_type='text/plain')
-                    elif what == "image":
-                        fig = image(domain, dataset, figsize, extra)
-                        output = io.BytesIO()
-                        FigureCanvas(fig).print_png(output)
-                        return Response(content=output.getvalue(), media_type='image/png')                    
-                    elif what == "knnquery":
+                    if what == "knnquery":
                         return knnquery(domain, dataset)
                     elif what == "h5":
                         try:
@@ -88,6 +81,7 @@ async def convert_get(
                                 tmpfile.seek(0)
                                 return Response(content=tmpfile.read(), media_type="application/x-hdf5", headers={"Content-Disposition": "attachment; filename=download.h5"})
                         except Exception as e:
+                            print(traceback.format_exc())
                             raise HTTPException(status_code=400, detail=f" error: {str(e)}")
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f" error: {str(e)}")
@@ -121,7 +115,6 @@ async def convert_post(
             
             if file_extension != ".cha":
                 x, y, _meta = rc2.spectrum.from_local_file(file=uf.file, f_name=f_name)
-                print(x)
                 if what == "knnquery":
                     _cdf, pdf = StudyRaman.xy2embedding(x, y, StudyRaman.x4search(dim=2048))
                     result_json = {"cdf": compress(pdf.tolist(), precision=6)}
