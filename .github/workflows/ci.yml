@@ -75,6 +75,10 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Run tests
+        env:
+          HS_ENDPOINT: ${{ secrets.HS_ENDPOINT }}
+          HS_USERNAME: ${{ secrets.HS_USERNAME }}
+          HS_PASSWORD: ${{ secrets.HS_PASSWORD }}
         run: poetry run pytest
 
   build:
