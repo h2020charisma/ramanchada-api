@@ -23,7 +23,7 @@ router = APIRouter()
 async def convert_get(
     request: Request,
     domain: str,    
-    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail","b64png","knnquery"]] = "h5",
+    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail","b64png"]] = "h5",
     dataset: Optional[str] = "raw",
     w: Optional[int] = 300,
     h: Optional[int] = 200,
@@ -65,14 +65,10 @@ async def convert_get(
                         return Response(content=base64_bytes, media_type='text/plain')         
                     else:
                         return Response(content=output.getvalue(), media_type='image/png')
-       
-
-        elif what in ["knnquery","h5"]:  # h5 query
+        elif what  == "h5":  # h5 query
             try:
                 with inject_api_key_h5pyd(api_key):
-                    if what == "knnquery":
-                        return knnquery(domain, dataset)
-                    elif what == "h5":
+                    if what == "h5":
                         try:
                             with io.BytesIO() as tmpfile:
                                 with h5pyd.File(domain,mode="r") as fin:   
@@ -97,7 +93,7 @@ async def convert_get(
 async def convert_post(
         what: Literal["knnquery", "b64png" ]  = Query("knnquery") ,
         files: list[UploadFile] = File(...),
-        api_key: Optional[str] = Depends(get_api_key)
+        api_key: Optional[str] = Depends(get_api_key) 
     ):
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")

@@ -4,6 +4,7 @@ import pytest
 import h5py, h5pyd
 import tempfile
 from os import remove
+import base64
 
 client = TestClient(app)
 
@@ -65,3 +66,21 @@ def test_download_domain_image(domain):
     # Check if the response content starts with PNG header bytes
     png_signature = b'\x89PNG\r\n\x1a\n'
     assert response.content.startswith(png_signature), "Response content is not a valid PNG image"
+
+def test_download_domain_b64png(domain):
+    print(domain)
+    params = { "domain" : domain , "what" : "b64png"} 
+    response = client.get("/download",params=params)
+    assert response.status_code == 200, f"Expected status code 200 but got {response.status_code}"
+    # Assert that the Content-Type is "image/png"
+    assert response.headers["Content-Type"].startswith("text/plain"), "Response is not Base64-encoded PNG but {}".format(response.headers["Content-Type"])
+     # Extract the base64-encoded data from the response
+    b64_data = response.text
+    # Try decoding the Base64 string
+    try:
+        decoded_data = base64.b64decode(b64_data)
+    except Exception as e:
+        assert False, f"Failed to decode Base64 data: {e}"
+    # Check if the decoded data starts with the PNG signature
+    png_signature = b'\x89PNG\r\n\x1a\n'
+    assert decoded_data.startswith(png_signature), "Decoded data is not a valid PNG image"
