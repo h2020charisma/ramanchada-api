@@ -37,9 +37,12 @@ client = TestClient(app)
 @pytest.fixture(scope="module")
 def config_dict():
     print("\nModule-level setup: Loading config or other resources")
-    with resources.path('rcapi.config', 'config.yaml') as config_path:
-        with open(config_path, 'r') as config_file:
-            CONFIG_DICT = yaml.safe_load(config_file)
+    config_path = resources.as_file(
+        resources.files('rcapi.config').joinpath('config.yaml')
+    )
+    with config_path as p:
+        with p.open() as f:
+            CONFIG_DICT = yaml.safe_load(f)
             assert "upload_dir" in CONFIG_DICT,CONFIG_DICT
     return CONFIG_DICT
 
