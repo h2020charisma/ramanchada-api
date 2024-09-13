@@ -139,12 +139,14 @@ def inject_api_key_h5pyd(api_key):
 
     def patched_h5pyd_file( *args, **kwargs):
         # Inject the thread-local API key into the h5pyd.File call
-        kwargs['api_key'] = thread_local.api_key
+        if thread_local.api_key is not None:
+            kwargs['api_key'] = thread_local.api_key
         return original_h5pyd_file( *args, **kwargs)
 
     def patched_h5pyd_folder(*args, **kwargs):
         # Inject the thread-local API key into the h5pyd.Folder call
-        kwargs['api_key'] = thread_local.api_key
+        if thread_local.api_key is not None:
+            kwargs['api_key'] = thread_local.api_key
         return original_h5pyd_folder( *args, **kwargs)
 
     # Temporarily patch the h5pyd.File and h5pyd.Folder methods
