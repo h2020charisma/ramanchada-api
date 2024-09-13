@@ -6,6 +6,7 @@ import traceback
 router = APIRouter()
 
 solr_root = "https://solr-kc.ideaconsult.net/solr/"
+solr_vector_field = "spectrum_p1024"
 
 @router.get("/query", )
 async def get_query(
@@ -34,7 +35,8 @@ async def get_query(
             ann=ann,
             page=page,
             pagesize=pagesize,
-            img=img
+            img=img,
+            vector_field=solr_vector_field
         )
         return results
     except Exception as err:

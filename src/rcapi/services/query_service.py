@@ -41,9 +41,14 @@ async def process(request: Request,
     ann: Optional[str] = None,
     page: Optional[int] = 0,
     pagesize: Optional[int] = 10,
-    img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail"):
+    img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
+    vector_field="spectrum_p1024"):
 
+    query_fields = "id,name_s,textValue_s"
     embedded_images = img=="embedded"
+    if embedded_images:
+        query_fields = "{},{}".format(query_fields,vector_field)
+
     thumbnail = "image" if img=="original" else "thumbnail"
     query_params = { "start" : page, "rows" : pagesize}
 
@@ -55,28 +60,29 @@ async def process(request: Request,
             "filter" : [
                 "type_s:study",
                 "reference_s:{}".format(q_reference),"reference_owner_s:{}".format(q_provider)], 
-                "fields" : "id,score,name_s,textValue_s"}
+                "fields" : query_fields}
         response = await solr_query_post(solr_url,query_params,solr_params)
         response_data = response.json()
-        return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail)
+        return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field)
     else:
+        query_fields = "{},score".format(query_fields)
         knnQuery = ann
         if (knnQuery is None) or (knnQuery ==""):
             raise HTTPException(status_code=400, detail="?ann parameter missing")
         else:
             knnQuery = ','.join(map(str, decompress(knnQuery)))
-            query = "!knn f=spectrum_p1024 topK={}".format(40)
+            query = "!knn f={} topK={}".format(vector_field,40)
             solr_params= {"query": "{"+query+"}[" + knnQuery + "]", 
                 "filter" : ["type_s:study",
                             "reference_s:{}".format(q_reference),
                             "reference_owner_s:{}".format(q_provider)  ], 
-                            "fields" : "id,score,name_s,textValue_s"}
+                            "fields" : query_fields}
             response = await solr_query_post(solr_url,query_params,solr_params)
             response_data = response.json()
-            return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail)
+            return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field)
 
 
-def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image"):
+def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field="spectrum_p1024"):
 
 # Process Solr response and construct the output
     results = []
@@ -96,11 +102,18 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
                 print(err)    
         else:    
             image_link = f"{base_url}download?what={thumbnail}&domain={value}&extra="
-        results.append({
+        _tmp = {
             "value": value,
             "text": text,
             "imageLink": image_link
-        })
+        }            
+        _score = doc.get("score", None)
+        if _score is not None:
+            _tmp["score"] = _score
+        #_vector_value = doc.get(vector_field, None)    
+        #if _vector_value is not None:
+        #    _tmp[vector_field] = _vector_value
+        results.append(_tmp)
 
     return results
     
