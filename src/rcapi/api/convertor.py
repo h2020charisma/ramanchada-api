@@ -98,7 +98,6 @@ async def convert_post(
         files: list[UploadFile] = File(...),
         api_key: Optional[str] = Depends(get_api_key) 
     ):
-    print(what)
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")
     logging.info(f"Number of files received: {len(files)}")    
