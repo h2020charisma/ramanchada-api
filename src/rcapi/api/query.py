@@ -16,6 +16,7 @@ async def get_query(
                     ann : Optional[str] = None,
                     page : Optional[int] = 0, pagesize : Optional[int] = 10,
                     img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
+                    vector_field : Optional[str] = None,
                     ):
     solr_url = "{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION)
 
@@ -35,7 +36,7 @@ async def get_query(
             page=page,
             pagesize=pagesize,
             img=img,
-            vector_field=SOLR_VECTOR
+            vector_field=SOLR_VECTOR if vector_field is None else vector_field
         )
         return results
     except Exception as err:

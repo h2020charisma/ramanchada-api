@@ -7,6 +7,7 @@ from os import remove
 import base64
 import importlib.resources
 from ramanchada2.spectrum import from_local_file 
+from numcompress import  decompress
 
 client = TestClient(app)
 
@@ -103,6 +104,10 @@ def test_convert_post_files2knnquery():
     response_json = response.json()
     assert "cdf" in response_json
     assert "imageLink" in response_json
+    knnQuery = response_json["cdf"]
+    knnQuery = ','.join(map(str, decompress(knnQuery)))
+    # with open("pdf2knnquery.txt", "w") as outfile:
+    #    outfile.write(knnQuery)
 
 def test_convert_post_files2b64png(test_spectrum):
     # simulate file upload

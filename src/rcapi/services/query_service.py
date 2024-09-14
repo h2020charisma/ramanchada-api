@@ -35,7 +35,7 @@ async def process(request: Request,
                 "fields" : query_fields}
         response = await solr_query_post(solr_url,query_params,solr_params)
         response_data = response.json()
-        return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field)
+        return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field=None)
     else:
         query_fields = "{},score".format(query_fields)
         knnQuery = ann
@@ -54,8 +54,7 @@ async def process(request: Request,
             return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field)
 
 
-def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field="spectrum_p1024"):
-
+def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field=None):
 # Process Solr response and construct the output
     results = []
     for doc in response_data.get("response", {}).get("docs", []):
@@ -82,9 +81,10 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
         _score = doc.get("score", None)
         if _score is not None:
             _tmp["score"] = _score
-        #_vector_value = doc.get(vector_field, None)    
-        #if _vector_value is not None:
-        #    _tmp[vector_field] = _vector_value
+        if vector_field is not None:
+            _vector_value = doc.get(vector_field, None)    
+            if _vector_value is not None:
+                _tmp[vector_field] = _vector_value
         results.append(_tmp)
 
     return results
