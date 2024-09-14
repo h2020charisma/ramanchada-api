@@ -11,10 +11,13 @@ import os.path
 import ramanchada2 as rc2
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from numcompress import compress
-from rcapi.services.convertor_service import empty_figure,dict2figure,  solr2image, knnquery, recursive_copy
+from rcapi.services.convertor_service import empty_figure,dict2figure,  solr2image, knnquery, recursive_copy,read_spectrum_native
 from rcapi.services.kc import inject_api_key_h5pyd, inject_api_key_into_httpx, get_api_key
 import h5py, h5pyd 
 from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION
+import tempfile
+import shutil
+
 
 router = APIRouter()
 
@@ -95,6 +98,7 @@ async def convert_post(
         files: list[UploadFile] = File(...),
         api_key: Optional[str] = Depends(get_api_key) 
     ):
+    print(files)
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")
     logging.info(f"Number of files received: {len(files)}")    
@@ -106,18 +110,24 @@ async def convert_post(
     try:
         result = ""
         for uf in files:
+            print(uf.filename)
             f_name = uf.filename
             _filename, file_extension = os.path.splitext(f_name)
             
-            if file_extension != ".cha":
-                x, y, _meta = rc2.spectrum.from_local_file(file=uf.file, f_name=f_name)
+            if file_extension not in (".cha",".nxs"):
+                with tempfile.NamedTemporaryFile(delete=False,prefix="charisma_",suffix=file_extension) as tmp:
+                    shutil.copyfileobj(uf.file,tmp)
+                native_filename = tmp.name
+                print(tmp.name)
+                spe = read_spectrum_native(uf.file, native_filename)
+                print(spe.meta)
                 if what == "knnquery":
                     _cdf, pdf = StudyRaman.xy2embedding(x, y, StudyRaman.x4search(dim=2048))
                     result_json = {"cdf": compress(pdf.tolist(), precision=6)}
                     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
                     fig = plt.Figure(figsize=(300 * px, 200 * px))
                     axis = fig.add_subplot(1, 1, 1)
-                    axis.plot(x, y, color='green')
+                    axis.plot(spe.x, spe.y, color='green')
                     output = io.BytesIO()
                     FigureCanvas(fig).print_png(output)
                     base64_bytes = base64.b64encode(output.getvalue())
@@ -127,22 +137,19 @@ async def convert_post(
                 elif what == "b64png":
                     fig = plt.Figure(figsize=(2, 1))
                     axis = fig.add_subplot(1, 1, 1)
-                    axis.plot(x, y)
+                    axis.plot(spe.x, spe.y)
                     output = io.BytesIO()
                     FigureCanvas(fig).print_png(output)
                     base64_bytes = base64.b64encode(output.getvalue())
                     return Response(content=base64_bytes, media_type='text/plain')
                 else:
                     raise HTTPException(status_code=500, detail=f"Unsupported 'what' parameter: {what}")
-        #tr.set_completed(result)
-        #return tr.to_dict()
-
-    
+   
     except HTTPException as err:
-        print(traceback.format_exc())
         logging.error(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(traceback.format_exc()))
     except Exception as err:
-        logging.error(traceback.format_exc())
         print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(traceback.format_exc()))
+    
+    

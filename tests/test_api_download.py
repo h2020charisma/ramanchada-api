@@ -5,6 +5,7 @@ import h5py, h5pyd
 import tempfile
 from os import remove
 import base64
+from io import BytesIO
 
 client = TestClient(app)
 
@@ -26,7 +27,6 @@ def test_access_domain(domain):
             print(index,key)
 
 def test_download_domain(domain):
-    print(domain)
     params = { "domain" : domain , "what" : "h5"} 
     response = client.get("/download",params=params)
     assert response.status_code == 200
@@ -68,7 +68,6 @@ def test_download_domain_image(domain):
     assert response.content.startswith(png_signature), "Response content is not a valid PNG image"
 
 def test_download_domain_b64png(domain):
-    print(domain)
     params = { "domain" : domain , "what" : "b64png"} 
     response = client.get("/download",params=params)
     assert response.status_code == 200, f"Expected status code 200 but got {response.status_code}"
@@ -84,3 +83,34 @@ def test_download_domain_b64png(domain):
     # Check if the decoded data starts with the PNG signature
     png_signature = b'\x89PNG\r\n\x1a\n'
     assert decoded_data.startswith(png_signature), "Decoded data is not a valid PNG image"
+
+def test_convert_post_files():
+    # Create in-memory files to simulate file upload
+    file1 = BytesIO(b"Fake file content 1")
+    file2 = BytesIO(b"Fake file content 2")
+
+    # Files should be sent as a list of tuples (field_name, file_object)
+    files = [
+        ('files', ('file1.txt', file1, 'text/plain')),
+        ('files', ('file2.txt', file2, 'text/plain'))
+    ]
+
+    # Make the POST request to the `/download` endpoint with the 'files' parameter
+    response = client.post(
+        "/download", 
+        data={"what": "knnquery"},  # Send the "what" query parameter
+        files=files  # Send the files as multipart form-data
+    )
+
+    # Check if the request was successful (status code 200)
+    assert response.status_code == 200, f"Expected status code 200 but got {response.status_code}"
+
+    # Parse the JSON response
+    response_json = response.json()
+
+    # Check that the files were received correctly
+    assert "files_received" in response_json, "'files_received' key missing in response"
+    assert response_json["files_received"] == ["file1.txt", "file2.txt"], "File names do not match"
+    assert response_json["operation"] == "b64png", "Incorrect operation value"
+
+    print(response_json)

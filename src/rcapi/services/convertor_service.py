@@ -12,6 +12,10 @@ from pynanomapper.clients.datamodel_simple import StudyRaman
 import h5py, h5pyd 
 from rcapi.services.solr_query import solr_query_post,solr_query_get,SOLR_ROOT,SOLR_COLLECTION,SOLR_VECTOR
 import traceback
+import tempfile
+import shutil
+from ramanchada2.spectrum import Spectrum, from_local_file
+import os
 
 def empty_figure(figsize,title,label):
     fig = Figure(figsize=figsize)
@@ -146,3 +150,19 @@ def recursive_copy(
             print(traceback.format_exc())
         #if level == 0 and index>25:
         #    break              
+
+
+def read_spectrum_native(file,f_name):
+    native_filename=None
+    try:
+        filename, file_extension = os.path.splitext(f_name)
+        #all this is because ramanchada works fith file paths only, no url nor file objects
+        with tempfile.NamedTemporaryFile(delete=False,prefix="charisma_",suffix=file_extension) as tmp:
+            shutil.copyfileobj(file,tmp)
+            native_filename = tmp.name
+        return from_local_file(native_filename)
+    except Exception as err:
+        raise err
+    finally:
+        if native_filename!=None:
+            os.remove(native_filename)
