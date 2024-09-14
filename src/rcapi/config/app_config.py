@@ -16,9 +16,12 @@ def load_config():
     config_dict = {}
     yaml_config = os.environ.get("RAMANCHADA_API_CONFIG")
     if yaml_config is None:
-        with resources.path('rcapi.config', 'config.yaml') as config_path:
-            with open(config_path, 'r') as config_file:
-                config_dict = yaml.safe_load(config_file)
+        config_path = resources.as_file(
+            resources.files('rcapi.config').joinpath('config.yaml')
+        )
+        with config_path as p:
+            with p.open() as f:
+                config_dict = yaml.safe_load(f)
     else:
         with open(yaml_config, "r") as config_file:
             config_dict = yaml.safe_load(config_file)
