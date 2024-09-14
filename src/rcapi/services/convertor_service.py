@@ -118,7 +118,9 @@ async def solr2image(solr_url,domain,figsize=(6,4),extraprm=None):
             rs.close    
 
 
-def recursive_copy(src_group : h5py.Group, dst_group : h5py.Group,level=0):
+def recursive_copy(
+    src_group: h5py.Group | h5pyd.Group, dst_group: h5py.Group | h5pyd.Group, level=0
+):
     # every File instance is also an HDF5 group
     # Copy attributes of the current group
     for attr_name, attr_value in src_group.attrs.items():
@@ -126,11 +128,11 @@ def recursive_copy(src_group : h5py.Group, dst_group : h5py.Group,level=0):
     for index,key in enumerate(src_group):
         try:
             item = src_group[key]
-            if isinstance(item, h5pyd.Group):
+            if isinstance(item, (h5py.Group, h5pyd.Group)):
                 # Create the group in the destination file
                 new_group = dst_group.create_group(key)
                 recursive_copy(item, new_group,level+1)
-            elif isinstance(item, h5pyd.Dataset):
+            elif isinstance(item, (h5py.Dataset, h5pyd.Dataset)):
                 if item.shape == ():  # Scalar dataset
                     # Copy the scalar value directly
                     dst_dataset = dst_group.create_dataset(key, data=item[()])
