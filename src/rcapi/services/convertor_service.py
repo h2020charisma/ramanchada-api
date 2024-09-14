@@ -148,19 +148,19 @@ def recursive_copy(
                 #dst_dataset.flush()     
         except Exception as err:
             print(traceback.format_exc())
-        #if level == 0 and index>25:
-        #    break              
+             
 
 
-def read_spectrum_native(file,f_name):
+def read_spectrum_native(file,file_name,prefix="rcapi_"):
     native_filename=None
     try:
-        filename, file_extension = os.path.splitext(f_name)
-        #all this is because ramanchada works fith file paths only, no url nor file objects
-        with tempfile.NamedTemporaryFile(delete=False,prefix="charisma_",suffix=file_extension) as tmp:
+        filename, file_extension = os.path.splitext(file_name)
+        # because rc2 works with file paths only, no url nor file objects
+        with tempfile.NamedTemporaryFile(delete=False,prefix=prefix,suffix=file_extension) as tmp:
             shutil.copyfileobj(file,tmp)
             native_filename = tmp.name
-        return from_local_file(native_filename)
+        spe =  from_local_file(native_filename)
+        return spe
     except Exception as err:
         raise err
     finally:

@@ -6,6 +6,8 @@ import tempfile
 from os import remove
 import base64
 from io import BytesIO
+import importlib.resources
+from ramanchada2.spectrum import from_local_file 
 
 client = TestClient(app)
 
@@ -84,15 +86,15 @@ def test_download_domain_b64png(domain):
     png_signature = b'\x89PNG\r\n\x1a\n'
     assert decoded_data.startswith(png_signature), "Decoded data is not a valid PNG image"
 
-def test_convert_post_files():
-    # Create in-memory files to simulate file upload
-    file1 = BytesIO(b"Fake file content 1")
-    file2 = BytesIO(b"Fake file content 2")
-
+def test_convert_post_files2knnquery():
+    # simulate file upload
+    file_path = importlib.resources.files('ramanchada2.auxiliary.spectra.datasets2.FMNT-M_BW532').joinpath('nCAL10_iR532_Probe_100_2500msx3.txt')
+    with open(str(file_path), 'r') as f:
+        file_content = f.read()
+    
     # Files should be sent as a list of tuples (field_name, file_object)
     files = [
-        ('files', ('file1.txt', file1, 'text/plain')),
-        ('files', ('file2.txt', file2, 'text/plain'))
+        ('files', (str(file_path), file_content, 'text/plain'))
     ]
 
     # Make the POST request to the `/download` endpoint with the 'files' parameter
@@ -101,16 +103,41 @@ def test_convert_post_files():
         data={"what": "knnquery"},  # Send the "what" query parameter
         files=files  # Send the files as multipart form-data
     )
-
-    # Check if the request was successful (status code 200)
     assert response.status_code == 200, f"Expected status code 200 but got {response.status_code}"
-
-    # Parse the JSON response
     response_json = response.json()
+    assert "cdf" in response_json
+    assert "imageLink" in response_json
 
-    # Check that the files were received correctly
-    assert "files_received" in response_json, "'files_received' key missing in response"
-    assert response_json["files_received"] == ["file1.txt", "file2.txt"], "File names do not match"
-    assert response_json["operation"] == "b64png", "Incorrect operation value"
+def test_convert_post_files2b64png():
+    # simulate file upload
+    file_path = importlib.resources.files('ramanchada2.auxiliary.spectra.datasets2.FMNT-M_BW532').joinpath('nCAL10_iR532_Probe_100_2500msx3.txt')
+    with open(str(file_path), 'r') as f:
+        file_content = f.read()
+    
+    # Files should be sent as a list of tuples (field_name, file_object)
+    files = [
+        ('files', (str(file_path), file_content, 'text/plain'))
+    ]
 
-    print(response_json)
+    response = client.post(
+        "/download", 
+        # data={"what": "b64png"},  #do we want query param or form data?
+        params={"what": "b64png"}, 
+        files=files  # Send the files as multipart form-data
+    )
+    assert response.headers["Content-Type"].startswith("text/plain"), "Response is not Base64-encoded PNG but {}".format(response.headers["Content-Type"])
+    b64_data = response.text
+    try:
+        decoded_data = base64.b64decode(b64_data)
+    except Exception as e:
+        assert False, f"Failed to decode Base64 data: {e}"
+    # Check if the decoded data starts with the PNG signature
+    png_signature = b'\x89PNG\r\n\x1a\n'
+    assert decoded_data.startswith(png_signature), "Decoded data is not a valid PNG image"
+
+
+def test_access_resource():
+    # Access the resource from rc2
+    file_path = importlib.resources.files('ramanchada2.auxiliary.spectra.datasets2.FMNT-M_BW532').joinpath('nCAL10_iR532_Probe_100_2500msx3.txt')
+    from_local_file(str(file_path))
+    

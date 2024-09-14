@@ -98,7 +98,7 @@ async def convert_post(
         files: list[UploadFile] = File(...),
         api_key: Optional[str] = Depends(get_api_key) 
     ):
-    print(files)
+    print(what)
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")
     logging.info(f"Number of files received: {len(files)}")    
@@ -115,14 +115,9 @@ async def convert_post(
             _filename, file_extension = os.path.splitext(f_name)
             
             if file_extension not in (".cha",".nxs"):
-                with tempfile.NamedTemporaryFile(delete=False,prefix="charisma_",suffix=file_extension) as tmp:
-                    shutil.copyfileobj(uf.file,tmp)
-                native_filename = tmp.name
-                print(tmp.name)
-                spe = read_spectrum_native(uf.file, native_filename)
-                print(spe.meta)
+                spe = read_spectrum_native(uf.file, uf.filename)
                 if what == "knnquery":
-                    _cdf, pdf = StudyRaman.xy2embedding(x, y, StudyRaman.x4search(dim=2048))
+                    _cdf, pdf = StudyRaman.xy2embedding(spe.x, spe.y, StudyRaman.x4search(dim=2048))
                     result_json = {"cdf": compress(pdf.tolist(), precision=6)}
                     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
                     fig = plt.Figure(figsize=(300 * px, 200 * px))
