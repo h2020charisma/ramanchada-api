@@ -4,7 +4,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
 from importlib.metadata import version
 import time
-from rcapi.api import convertor, upload, process, info, tasks, templates, query
+from rcapi.api import convertor, upload, process, info, tasks, templates, query , hsds_dataset
 from rcapi.models.models import tasks_db
 import os 
 from .config.app_config import initialize_dirs
@@ -49,7 +49,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 # Include your application configuration here if needed
 
-# Include your API endpoint routers here
+# tags is
 app.include_router(upload.router, prefix="", tags=["dataset"])
 app.include_router(process.router, prefix="", tags=["process"])
 app.include_router(tasks.router, prefix="", tags=["task"])
@@ -57,6 +57,7 @@ app.include_router(info.router, prefix="", tags=["info"])
 app.include_router(templates.router, prefix="", tags=["templates"])
 app.include_router(query.router, prefix="", tags=["query"])
 app.include_router(convertor.router, prefix="", tags=["download"])
+app.include_router(hsds_dataset.router, prefix="/hsds", tags=["hsds"])
 
 from h5grove import fastapi_utils
 fastapi_utils.settings.base_dir = os.path.abspath(NEXUS_DIR)
