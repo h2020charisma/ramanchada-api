@@ -36,5 +36,6 @@ COPY ./tests/resources/templates/dose_response.json /var/uploads/TEMPLATES/3c22a
 
 ENV RAMANCHADA_API_CONFIG="/app/rcapi/config/config.yaml"
 EXPOSE 80
+WORKDIR /app
 
 CMD ["uvicorn", "rcapi.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "4"]
