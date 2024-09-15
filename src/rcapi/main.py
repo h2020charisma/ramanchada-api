@@ -55,9 +55,9 @@ app.include_router(process.router, prefix="", tags=["process"])
 app.include_router(tasks.router, prefix="", tags=["task"])
 app.include_router(info.router, prefix="", tags=["info"])
 app.include_router(templates.router, prefix="", tags=["templates"])
-app.include_router(query.router, prefix="", tags=["query"])
-app.include_router(convertor.router, prefix="", tags=["download"])
-app.include_router(hsds_dataset.router, prefix="/hsds", tags=["hsds"])
+app.include_router(query.router, prefix="/query", tags=["hsds"])
+app.include_router(convertor.router, prefix="", tags=["hsds"])
+app.include_router(hsds_dataset.router, prefix="", tags=["hsds"])
 
 from h5grove import fastapi_utils
 fastapi_utils.settings.base_dir = os.path.abspath(NEXUS_DIR)

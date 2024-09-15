@@ -3,15 +3,15 @@ from fastapi import Request , HTTPException, Header, Depends
 from typing import Optional, Literal
 from rcapi.services import query_service
 import traceback 
-from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION
+from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION, solr_query_get
 
 router = APIRouter()
 
-@router.get("/query", )
+@router.get("/", )
 async def get_query(
                     request: Request,
                     q: Optional[str] = "*", 
-                    query_type : Optional[Literal["metadata","knnquery"]] = "metadata", 
+                    query_type : Optional[Literal["metadata","text","knnquery"]] = "text", 
                     q_reference : Optional[str] = "*", q_provider : Optional[str] = "*", 
                     ann : Optional[str] = None,
                     page : Optional[int] = 0, pagesize : Optional[int] = 10,
@@ -44,3 +44,27 @@ async def get_query(
         raise HTTPException(status_code=400, detail=str(err))
 
     
+
+@router.get("/field", )
+async def get_field(
+    request: Request,
+    name: str = "publicname_s"
+    ):
+    solr_url = "{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION)
+    try:
+        params= {"q" : "*", "rows" : 0, "facet.field": name, "facet" : "true"}
+        rs =  await solr_query_get(solr_url, params)
+        result = []
+        # Extract the facet field values
+        facet_field_values = rs.json()["facet_counts"]["facet_fields"][name]
+        # Convert to an array of objects with name and count properties
+        result = []
+        for i in range(0, len(facet_field_values), 2):
+            result.append({"value": facet_field_values[i], "count": facet_field_values[i + 1]})
+        return result
+    except HTTPException as err:
+        raise
+    except Exception as err:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(err))
+

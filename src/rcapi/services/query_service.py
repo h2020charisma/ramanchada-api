@@ -2,7 +2,7 @@ import requests
 from typing import Optional, Literal
 from fastapi import Request, HTTPException
 from numcompress import  decompress
-from rcapi.services.solr_query import solr_query_post,solr_query_get
+from rcapi.services.solr_query import solr_query_post
 
 async def process(request: Request,
     solr_url: str,
