@@ -11,7 +11,7 @@ COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
 RUN poetry export -f requirements.txt --output requirements.txt --without=dev --without-hashes
 
 
-FROM tiangolo/uvicorn-gunicorn-fastapi:python3.11-slim
+FROM python:3.11-slim
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -36,4 +36,5 @@ RUN mkdir -p /var/uploads/TEMPLATES
 COPY ./tests/resources/templates/dose_response.json /var/uploads/TEMPLATES/3c22a1f0-a933-4855-848d-05fcc26ceb7a.json
 
 ENV RAMANCHADA_API_CONFIG="/app/rcapi/config/config.yaml"
-ENV MODULE_NAME="rcapi.main"
+
+CMD ["uvicorn", "rcapi.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "4"]
