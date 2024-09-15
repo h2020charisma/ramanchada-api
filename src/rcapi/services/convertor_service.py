@@ -1,21 +1,19 @@
-from matplotlib.patches import Rectangle
-from matplotlib.collections import PatchCollection
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
-import io
 from io import BytesIO
 import base64
 import numpy as np
 from numcompress import compress
 from pynanomapper.clients.datamodel_simple import StudyRaman
 import h5py, h5pyd 
-from rcapi.services.solr_query import solr_query_post,solr_query_get,SOLR_ROOT,SOLR_COLLECTION,SOLR_VECTOR
+from rcapi.services.solr_query import solr_query_get,SOLR_VECTOR
 import traceback
 import tempfile
 import shutil
-from ramanchada2.spectrum import Spectrum, from_local_file
+from ramanchada2.spectrum import from_local_file
 import os
+import hashlib
 
 def empty_figure(figsize,title,label):
     fig = Figure(figsize=figsize)
@@ -82,7 +80,7 @@ def knnquery(domain,dataset="raw"):
                 axis.set_ylabel(h5[dataset].dims[1].label)
                 axis.set_xlabel(h5[dataset].dims[0].label)
                 axis.title.set_text("query")
-                output = io.BytesIO()
+                output = BytesIO()
                 FigureCanvas(fig).print_png(output)
                 base64_bytes = base64.b64encode(output.getvalue())
                 result_json["imageLink"] = "data:image/png;base64,{}".format(str(base64_bytes,'utf-8'))
@@ -92,11 +90,14 @@ def knnquery(domain,dataset="raw"):
     except Exception as err:
         raise(err)
     
+def generate_etag(content: str) -> str:
+    return hashlib.md5(content.encode()).hexdigest()
+    
 async def solr2image(solr_url,domain,figsize=(6,4),extraprm=None):
     rs = None
     try:
         query="textValue_s:{}{}{}".format('"',domain,'"')
-        params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,{}".format(SOLR_VECTOR)}
+        params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,{},updated_s,_version_".format(SOLR_VECTOR)}
         rs =  await solr_query_get(solr_url, params)
         if rs.status_code==200:
             x = None
@@ -111,7 +112,8 @@ async def solr2image(solr_url,domain,figsize=(6,4),extraprm=None):
                 axis.set_xlabel("Wavenumber [1/cm]")
                 axis.title.set_text("{} {} {} ({})".format("" if extraprm is None else extraprm,
                             doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
-                return fig
+                etag = generate_etag("{}{}{}".format(doc["textValue_s"],doc["updated_s"],doc["_version_"]))
+                return fig,etag
         else:
             return empty_figure(figsize,"{} {}".format(rs.status_code,rs.reason),"{}".format(domain.split("/")[-1]))
 

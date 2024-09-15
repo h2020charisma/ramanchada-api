@@ -62,14 +62,18 @@ async def convert_get(
         elif what in ["thumbnail","b64png","image"]: #solr query
                 #async with inject_api_key_into_httpx(api_key):
                 try:
-                    fig = await solr2image(solr_url, domain, figsize, extra)
+                    fig,etag = await solr2image(solr_url, domain, figsize, extra)
+                    # Check if ETag matches the client's If-None-Match header
+                    if request.headers.get("if-none-match") == etag:
+                        # Return 304 Not Modified if the resource hasn't changed
+                        return Response(status_code=304)                    
                     output = io.BytesIO()
                     FigureCanvas(fig).print_png(output)
                     if what == "b64png":
                         base64_bytes = base64.b64encode(output.getvalue())
-                        return Response(content=base64_bytes, media_type='text/plain')         
+                        return Response(content=base64_bytes, media_type='text/plain',headers={"ETag": etag})         
                     else:
-                        return Response(content=output.getvalue(), media_type='image/png')
+                        return Response(content=output.getvalue(), media_type='image/png',headers={"ETag": etag})
                 except Exception as err:
                     raise HTTPException(status_code=500, detail=f" error: {str(err)}")
         elif what  == "h5":  # h5 query
