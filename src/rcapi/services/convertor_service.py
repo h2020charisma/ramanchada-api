@@ -100,7 +100,7 @@ async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None) ->
         
         query="textValue_s:{}{}{}".format('"',domain,'"')
         params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,{},updated_s,_version_".format(SOLR_VECTOR)}
-        print(query)
+        
         rs =  await solr_query_get(solr_url, params)
         if rs is not None and rs.status_code == 200:
             response_json = rs.json()
@@ -121,7 +121,7 @@ async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None) ->
                     axis.set_xlabel("Wavenumber [1/cm]")
                     axis.title.set_text("{} {} {} ({})".format("" if extraprm is None else extraprm,
                                 doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
-                    etag = generate_etag("{}{}{}".format(doc["textValue_s"],doc["updated_s"],doc["_version_"]))
+                    etag = generate_etag("{}{}{}".format(doc["textValue_s"],doc.get("updated_s",""),doc.get("_version_","")))
                     return fig,etag
         
         return empty_figure(figsize,"{} {}".format(rs.status_code,rs.reason),"{}".format(domain.split("/")[-1])),None

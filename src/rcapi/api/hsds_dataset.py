@@ -39,27 +39,26 @@ async def get_dataset(
     values: Optional[bool] = Query(None, description="Whether to include values or not"),
     bucket: str = Query(None, description="The HSDS bucket"),
 ):
-    if domain.endswith(".cha"):
+    if domain.endswith(".chaold"):  # all goes through solr now
         result = {"subdomains": [], "domain": domain, "annotation": [], "datasets": []}
         return read_cha(domain,result,read_values=values)
     else: # resort to solr index
         escaped_value = solr_escape(domain)
-        query = f'textValue_s:{escaped_value}*'
+        query = f'textValue_s:"{domain}"'
         fields = "name_s,reference_s,reference_owner_s,document_uuid_s,updated_s,_version_"
         if values:
             fields = "{},{}".format(fields,SOLR_VECTOR)
         params = {"q": query, "fq" : ["type_s:study"], "fl" : fields}
-        print(params)
         try:
             rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params)
             return await read_solr_study4dataset(domain,rs.json(),values)
         except HTTPException as err:
-            raise
+            raise err
         finally:
             await rs.aclose()
         
 async def read_solr_study4dataset(domain, response_data,with_values=False):
-    
+    #print(response_data)
     _domain = domain.split('#', 1)[0] if '#' in domain else domain
 
     result = {"subdomains": [], "domain": _domain, "annotation": [], "datasets": []}
@@ -78,9 +77,9 @@ async def read_solr_study4dataset(domain, response_data,with_values=False):
             dim = len(y)
             dataset["shape"] =  [2,dim]
             dataset["size"]  = dim 
-            dataset["values"] = []
-            dataset["values"].append(StudyRaman.x4search(dim).tolist())
-            dataset["values"].append(y)
+            dataset["value"] = []
+            dataset["value"].append(StudyRaman.x4search(dim).tolist())
+            dataset["value"].append(y)
 
         result["datasets"].append(dataset)
 

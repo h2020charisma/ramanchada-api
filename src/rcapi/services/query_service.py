@@ -3,6 +3,7 @@ from typing import Optional, Literal
 from fastapi import Request, HTTPException
 from numcompress import  decompress
 from rcapi.services.solr_query import solr_query_post
+import urllib.parse
 
 async def process(request: Request,
     solr_url: str,
@@ -82,7 +83,8 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
             except Exception as err:
                 print(err)    
         else:    
-            image_link = f"{base_url}download?what={thumbnail}&domain={value}&extra="
+            encoded_domain = urllib.parse.quote(value)
+            image_link = f"{base_url}download?what={thumbnail}&domain={encoded_domain}&extra="
         _tmp = {
             "value": value,
             "text": text,

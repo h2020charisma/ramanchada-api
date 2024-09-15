@@ -63,7 +63,6 @@ async def convert_get(
                 #async with inject_api_key_into_httpx(api_key):
                 try:
                     fig,etag = await solr2image(solr_url, domain, figsize, extra)
-                    print(etag)
                     # Check if ETag matches the client's If-None-Match header
                     _headers = {}
                     if etag is not None:
