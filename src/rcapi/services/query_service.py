@@ -33,9 +33,14 @@ async def process(request: Request,
                 "type_s:study",
                 "reference_s:{}".format(q_reference),"reference_owner_s:{}".format(q_provider)], 
                 "fields" : query_fields}
-        response = await solr_query_post(solr_url,query_params,solr_params)
-        response_data = response.json()
-        return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field=None)
+        try:
+            response = await solr_query_post(solr_url,query_params,solr_params)
+            response_data = response.json()
+            return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field=None)
+        except Exception as err:
+            raise
+        finally:
+            await response.aclose()
     else:
         query_fields = "{},score".format(query_fields)
         knnQuery = ann
@@ -49,9 +54,14 @@ async def process(request: Request,
                             "reference_s:{}".format(q_reference),
                             "reference_owner_s:{}".format(q_provider)  ], 
                             "fields" : query_fields}
-            response = await solr_query_post(solr_url,query_params,solr_params)
-            response_data = response.json()
-            return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field)
+            try:
+                response = await solr_query_post(solr_url,query_params,solr_params)
+                response_data = response.json()
+                return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field)
+            except Exception as err:
+                raise
+            finally:
+                await response.aclose()        
 
 
 def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field=None):

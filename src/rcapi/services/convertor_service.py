@@ -14,8 +14,9 @@ import shutil
 from ramanchada2.spectrum import from_local_file
 import os
 import hashlib
+from typing import Tuple
 
-def empty_figure(figsize,title,label):
+def empty_figure(figsize,title,label) -> Figure:
     fig = Figure(figsize=figsize)
     axis = fig.add_subplot(1, 1, 1)
     axis.axis('off')
@@ -27,7 +28,7 @@ def empty_figure(figsize,title,label):
     axis.set_title(title)
     return fig
 
-def dict2figure(pm,figsize):
+def dict2figure(pm,figsize) -> Figure:
     fig = Figure(figsize=figsize)
     axis = fig.add_subplot(1, 1, 1)
     n = 0
@@ -93,35 +94,44 @@ def knnquery(domain,dataset="raw"):
 def generate_etag(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
     
-async def solr2image(solr_url,domain,figsize=(6,4),extraprm=None):
+async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None) -> Tuple[Figure, str]:
     rs = None
     try:
+        
         query="textValue_s:{}{}{}".format('"',domain,'"')
         params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,{},updated_s,_version_".format(SOLR_VECTOR)}
+        print(query)
         rs =  await solr_query_get(solr_url, params)
-        if rs.status_code==200:
-            x = None
-            for doc in rs.json()["response"]["docs"]:
-                y = doc[SOLR_VECTOR]
-                if x is None:
-                    x = StudyRaman.x4search(len(y))
-                fig = Figure(figsize=figsize)
-                axis = fig.add_subplot(1, 1, 1)
-                axis.plot(x, y)
-                axis.set_ylabel("a.u.")
-                axis.set_xlabel("Wavenumber [1/cm]")
-                axis.title.set_text("{} {} {} ({})".format("" if extraprm is None else extraprm,
-                            doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
-                etag = generate_etag("{}{}{}".format(doc["textValue_s"],doc["updated_s"],doc["_version_"]))
-                return fig,etag
-        else:
-            return empty_figure(figsize,"{} {}".format(rs.status_code,rs.reason),"{}".format(domain.split("/")[-1]))
+        if rs is not None and rs.status_code == 200:
+            response_json = rs.json()
+            if "response" in response_json:
+                if response_json["response"]["numFound"] == 0:
+                    return empty_figure(figsize,title="not found",label="{}".format(domain.split("/")[-1])),None
+                x = None
+                for doc in response_json["response"]["docs"]:
+                    y = doc[SOLR_VECTOR]
+                    if y is None:
+                        continue
+                    if x is None:
+                        x = StudyRaman.x4search(len(y))
+                    fig = Figure(figsize=figsize)
+                    axis = fig.add_subplot(1, 1, 1)
+                    axis.plot(x, y)
+                    axis.set_ylabel("a.u.")
+                    axis.set_xlabel("Wavenumber [1/cm]")
+                    axis.title.set_text("{} {} {} ({})".format("" if extraprm is None else extraprm,
+                                doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
+                    etag = generate_etag("{}{}{}".format(doc["textValue_s"],doc["updated_s"],doc["_version_"]))
+                    return fig,etag
+        
+        return empty_figure(figsize,"{} {}".format(rs.status_code,rs.reason),"{}".format(domain.split("/")[-1])),None
 
     except Exception as err:
-        raise(err)
+        print(traceback.format_exc())
+        return empty_figure(figsize,title="{}".format(err),label="{}".format(domain.split("/")[-1])),None
     finally:
         if not (rs is None):
-            rs.close    
+            await rs.aclose()
 
 
 def recursive_copy(

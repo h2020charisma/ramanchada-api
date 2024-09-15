@@ -17,7 +17,6 @@ async def solr_query_post(solr_url,query_params = None,post_param = None):
             response.raise_for_status()  # Check for HTTP errors
             return response
         except httpx.HTTPStatusError as e:
-            print(traceback.format_exc())
             raise HTTPException(status_code=e.response.status_code, detail="Error fetching data from external service")
 
 async def solr_query_get(solr_url,params = None):
@@ -30,5 +29,4 @@ async def solr_query_get(solr_url,params = None):
             response.raise_for_status()  # Check for HTTP errors
             return response
         except httpx.HTTPStatusError as e:
-            print(traceback.format_exc())
             raise HTTPException(status_code=e.response.status_code, detail="Error fetching data from external service")
