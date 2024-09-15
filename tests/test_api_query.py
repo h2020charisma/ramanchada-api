@@ -7,7 +7,7 @@ from numcompress import  decompress
 
 client = TestClient(app)
 
-TEST_ENDPOINT = "/query"
+TEST_ENDPOINT = "/db/query"
 
 @pytest.fixture
 def knnquery4test():

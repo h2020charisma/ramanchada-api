@@ -84,7 +84,7 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
                 print(err)    
         else:    
             encoded_domain = urllib.parse.quote(value)
-            image_link = f"{base_url}download?what={thumbnail}&domain={encoded_domain}&extra="
+            image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra="
         _tmp = {
             "value": value,
             "text": text,

@@ -14,12 +14,12 @@ client = TestClient(app)
 PNG_SIGNATURE  = b'\x89PNG\r\n\x1a\n'
 HDF5_SIGNATURE = b'\x89HDF\r\n\x1a\n'
 
-TEST_ENDPOINT = "/download"
+TEST_ENDPOINT = "/db/download"
 
 @pytest.fixture(scope="module")
 def domain():
     params = { "query_type" : "metadata" , "pagesize" : 1} 
-    response = client.get("/query",params=params)
+    response = client.get("/db/query",params=params)
     assert response.status_code == 200
     _domain = response.json()[0]["value"]
     return _domain

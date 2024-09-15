@@ -7,7 +7,7 @@ from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION, sol
 
 router = APIRouter()
 
-@router.get("/", )
+@router.get("/query", )
 async def get_query(
                     request: Request,
                     q: Optional[str] = "*", 
@@ -45,7 +45,7 @@ async def get_query(
 
     
 
-@router.get("/field", )
+@router.get("/query/field", )
 async def get_field(
     request: Request,
     name: str = "publicname_s"
