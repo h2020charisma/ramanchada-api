@@ -68,7 +68,7 @@ def knnquery(domain,dataset="raw"):
         with h5pyd.File(domain,mode="r") as h5:
             x = h5[dataset][0]
             y = h5[dataset][1]
-            (cdf,pdf) = StudyRaman.h52embedding(h5,dataset="raw",xlinspace = StudyRaman.x4search())
+            (cdf,pdf) = StudyRaman.h52embedding(h5,dataset="raw",xlinspace = StudyRaman.x4search(2048))
             result_json = {}
             result_json["cdf"] = compress(pdf.tolist(),precision=6)
             #result_json["pdf"] = compress(pdf.tolist(),precision=6)

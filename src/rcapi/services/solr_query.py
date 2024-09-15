@@ -1,6 +1,6 @@
 import httpx 
-import traceback 
 from fastapi import  HTTPException
+import re 
 
 SOLR_ROOT = "https://solr-kc.ideaconsult.net/solr/"
 SOLR_VECTOR = "spectrum_p1024"
@@ -30,3 +30,12 @@ async def solr_query_get(solr_url,params = None):
             return response
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail="Error fetching data from external service")
+        
+def solr_escape(value: str) -> str:
+    # Escape special characters that Solr expects to be escaped
+    solr_special_chars = r'(\+|\-|\&\&|\|\||!|\(|\)|\{|\}|\[|\]|\^|"|~|\*|\?|\:|\\|\/)'
+    
+    # Replace the special characters with an escaped version (i.e., prefix with \)
+    escaped_value = re.sub(solr_special_chars, r'\\\1', value)
+    
+    return escaped_value        

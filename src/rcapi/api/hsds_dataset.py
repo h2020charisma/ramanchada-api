@@ -2,6 +2,8 @@ from fastapi import APIRouter, Query, HTTPException
 from typing import Optional,  List, Union
 from pydantic import BaseModel
 import h5pyd
+from rcapi.services.solr_query import solr_query_get,SOLR_ROOT,SOLR_COLLECTION,solr_escape,SOLR_VECTOR
+from pynanomapper.clients.datamodel_simple import StudyRaman
 
 router = APIRouter()
 
@@ -40,8 +42,68 @@ async def get_dataset(
     if domain.endswith(".cha"):
         result = {"subdomains": [], "domain": domain, "annotation": [], "datasets": []}
         return read_cha(domain,result,read_values=values)
-    else:
-        raise HTTPException(status_code=400, detail="Invalid domain format. Must end with '.cha'.")
+    else: # resort to solr index
+        escaped_value = solr_escape(domain)
+        query = f'textValue_s:{escaped_value}*'
+        fields = "name_s,reference_s,reference_owner_s,document_uuid_s,updated_s,_version_"
+        if values:
+            fields = "{},{}".format(fields,SOLR_VECTOR)
+        params = {"q": query, "fq" : ["type_s:study"], "fl" : fields}
+        print(params)
+        try:
+            rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params)
+            return await read_solr_study4dataset(domain,rs.json(),values)
+        except HTTPException as err:
+            raise
+        finally:
+            await rs.aclose()
+        
+async def read_solr_study4dataset(domain, response_data,with_values=False):
+    
+    _domain = domain.split('#', 1)[0] if '#' in domain else domain
+
+    result = {"subdomains": [], "domain": _domain, "annotation": [], "datasets": []}
+    for doc in response_data["response"]["docs"]:
+        annotation = {
+            "sample" : doc.get("name_s", ""),
+            "provider" : doc.get("reference_owner_s", ""),
+            "investigation" : doc.get("reference_s", "")
+        }
+        result["annotation"].append(annotation)
+
+        dataset_name = domain.split('#', 1)[1] if '#' in domain else "indexed"
+        dataset = {"key" : dataset_name, "name" : dataset_name, "shape" : [2,2048], "size": 2048 }
+        if with_values:
+            y = doc[SOLR_VECTOR]
+            dim = len(y)
+            dataset["shape"] =  [2,dim]
+            dataset["size"]  = dim 
+            dataset["values"] = []
+            dataset["values"].append(StudyRaman.x4search(dim).tolist())
+            dataset["values"].append(y)
+
+        result["datasets"].append(dataset)
+
+        doc_uuid = doc.get("document_uuid_s", "")
+        params = {"q": "document_uuid_s:{}".format(doc_uuid), "fq" : ["type_s:params"]}
+        try:
+            rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params)
+            rs_params_json = rs.json() # one study has one set of params by definition
+            for doc_param in rs_params_json.get("response", {}).get("docs", []):
+                # these should come from parameters ...
+                annotation["wavelength"] = doc_param.get("wavelength_d", "")
+                annotation["instrument"] = doc_param.get("instrument_s", "")
+                annotation["laser_power"] = ""
+                annotation["native_filename"] = ""       
+                annotation["optical_path"] = ""    
+                break  
+        except HTTPException as err:
+            raise
+        finally:
+            await rs.aclose()        
+
+        break
+    return result
 
 def read_cha(domain, result,  read_values=False, filter={"sample" : None}):
     
