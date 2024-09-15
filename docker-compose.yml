@@ -60,10 +60,14 @@ services:
       - uploads-prod:/var/uploads
 
   dev:
-    image: ghcr.io/h2020charisma/ramanchada-api:develop
+    image: ghcr.io/h2020charisma/ramanchada-api:latest
     container_name: ramanchada-api-dev
     hostname: ramanchada-api-dev
     restart: unless-stopped
+    environment:
+      HS_ENDPOINT: ${HS_ENDPOINT}
+      HS_USERNAME: ${HS_USERNAME}
+      HS_PASSWORD: ${HS_PASSWORD}
     labels:
       traefik.enable: 'true'
       traefik.http.routers.ramanchada-api-dev.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
