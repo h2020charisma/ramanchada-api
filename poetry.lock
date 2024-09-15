@@ -150,13 +150,13 @@ test = ["dateparser (==1.*)", "pre-commit", "pytest", "pytest-cov", "pytest-mock
 
 [[package]]
 name = "asteval"
-version = "1.0.3"
+version = "1.0.4"
 description = "Safe, minimalistic evaluator of python expression using ast module"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "asteval-1.0.3-py3-none-any.whl", hash = "sha256:72778d7b07b28c34e2f8757bc7f24953404aaa9994789b4c3d15be171e2a305f"},
-    {file = "asteval-1.0.3.tar.gz", hash = "sha256:c4d5dfca5f0346f946d20d881149f573223c8a48ba4167bd51296777eb425311"},
+    {file = "asteval-1.0.4-py3-none-any.whl", hash = "sha256:7a88bfd0dd1eabdf20bb4995904df742cecf876f7f9e700f22231abf4e34d50c"},
+    {file = "asteval-1.0.4.tar.gz", hash = "sha256:15e63bd01fce65aded51357f7e1debc6f46100d777c372af11c27c07cb740074"},
 ]
 
 [package.extras]
@@ -1117,14 +1117,17 @@ zstd = ["zstandard (>=0.18.0)"]
 
 [[package]]
 name = "idna"
-version = "3.8"
+version = "3.9"
 description = "Internationalized Domain Names in Applications (IDNA)"
 optional = false
 python-versions = ">=3.6"
 files = [
-    {file = "idna-3.8-py3-none-any.whl", hash = "sha256:050b4e5baadcd44d760cedbd2b8e639f2ff89bbc7a5730fcc662954303377aac"},
-    {file = "idna-3.8.tar.gz", hash = "sha256:d838c2c0ed6fced7693d5e8ab8e734d5f8fda53a039c0164afb0b82e771e3603"},
+    {file = "idna-3.9-py3-none-any.whl", hash = "sha256:69297d5da0cc9281c77efffb4e730254dd45943f45bbfb461de5991713989b1e"},
+    {file = "idna-3.9.tar.gz", hash = "sha256:e5c5dafde284f26e9e0f28f6ea2d6400abd5ca099864a67f576f3981c6476124"},
 ]
+
+[package.extras]
+all = ["flake8 (>=7.1.1)", "mypy (>=1.11.2)", "pytest (>=8.3.2)", "ruff (>=0.6.2)"]
 
 [[package]]
 name = "iniconfig"
@@ -2589,13 +2592,13 @@ xmp = ["defusedxml"]
 
 [[package]]
 name = "platformdirs"
-version = "4.3.2"
+version = "4.3.3"
 description = "A small Python package for determining appropriate platform-specific dirs, e.g. a `user data dir`."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "platformdirs-4.3.2-py3-none-any.whl", hash = "sha256:eb1c8582560b34ed4ba105009a4badf7f6f85768b30126f351328507b2beb617"},
-    {file = "platformdirs-4.3.2.tar.gz", hash = "sha256:9e5e27a08aa095dd127b9f2e764d74254f482fef22b0970773bfba79d091ab8c"},
+    {file = "platformdirs-4.3.3-py3-none-any.whl", hash = "sha256:50a5450e2e84f44539718293cbb1da0a0885c9d14adf21b77bae4e66fc99d9b5"},
+    {file = "platformdirs-4.3.3.tar.gz", hash = "sha256:d4e0b7d8ec176b341fb03cb11ca12d0276faa8c485f9cd218f613840463fc2c0"},
 ]
 
 [package.extras]
@@ -3004,13 +3007,13 @@ files = [
 
 [[package]]
 name = "python-keycloak"
-version = "4.3.0"
+version = "4.4.0"
 description = "python-keycloak is a Python package providing access to the Keycloak API."
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "python_keycloak-4.3.0-py3-none-any.whl", hash = "sha256:6dc1e89c38346a90bb4386850381d84fedb489a7dea19d561aaad5882ceeed72"},
-    {file = "python_keycloak-4.3.0.tar.gz", hash = "sha256:c187ceee7d79f0d76d9c2ed26e3d10ce35e42a407896bf5ec15b8fb24fc0c9ce"},
+    {file = "python_keycloak-4.4.0-py3-none-any.whl", hash = "sha256:b7c1e65b2d501ddf924797701d8bd1372f7772ad67532e689456d911e3790ad2"},
+    {file = "python_keycloak-4.4.0.tar.gz", hash = "sha256:f063f4c24f81817c66470b61dbdba5fa5555cc5c236c17a198909ece40482c69"},
 ]
 
 [package.dependencies]
