@@ -1033,7 +1033,7 @@ numpy = ">=1.17.3,<2.0.0"
 packaging = "*"
 pyjwt = "*"
 pytz = "*"
-requests-unixsocket = "*"
+requests_unixsocket = "*"
 
 [package.extras]
 aws = ["s3fs"]
@@ -4145,4 +4145,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.13"
-content-hash = "1754385a8655ce43f5d19b915d641d14faee86ada022c09beb260db720fb13c9"
+content-hash = "f565af1f10230400c4755b6ebf125e1226ebc1c1b472164507fe06cc05da1cd7"
