@@ -28,6 +28,7 @@ def get_api_key(authorization: Optional[str] = Header(None)):
 @contextmanager
 def inject_api_key_h5pyd(api_key):
     """
+    Smth is wrong with  this
     Thread-safe context manager that injects the `api_key` into the `h5pyd.File` and `h5pyd.Folder`
     calls for the current thread.
 
@@ -88,6 +89,7 @@ def inject_api_key_h5pyd(api_key):
 @asynccontextmanager
 async def inject_api_key_into_httpx(api_key: str):
     """
+    Smth is wrong with  this
     Thread-safe async context manager to inject the API key into the thread-local `httpx.AsyncClient`
     used for making HTTP requests.
 

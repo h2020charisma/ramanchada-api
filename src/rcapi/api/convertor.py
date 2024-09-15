@@ -12,7 +12,7 @@ import ramanchada2 as rc2
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from numcompress import compress
 from rcapi.services.convertor_service import empty_figure,dict2figure,  solr2image, knnquery, recursive_copy,read_spectrum_native
-from rcapi.services.kc import inject_api_key_h5pyd, inject_api_key_into_httpx, get_api_key
+#from rcapi.services.kc import inject_api_key_h5pyd, inject_api_key_into_httpx, get_api_key
 import h5py, h5pyd 
 from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION
 import tempfile
@@ -30,8 +30,9 @@ async def convert_get(
     dataset: Optional[str] = "raw",
     w: Optional[int] = 300,
     h: Optional[int] = 200,
-    extra: Optional[str] = None,
-    api_key: Optional[str] = Depends(get_api_key)) :
+    extra: Optional[str] = None
+    #api_key: Optional[str] = Depends(get_api_key)
+) :
     if not domain:
         #tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
@@ -59,7 +60,8 @@ async def convert_get(
             FigureCanvas(fig).print_png(output)
             return Response(content=output.getvalue(), media_type='image/png')
         elif what in ["thumbnail","b64png","image"]: #solr query
-                async with inject_api_key_into_httpx(api_key):
+                #async with inject_api_key_into_httpx(api_key):
+                try:
                     fig = await solr2image(solr_url, domain, figsize, extra)
                     output = io.BytesIO()
                     FigureCanvas(fig).print_png(output)
@@ -68,20 +70,21 @@ async def convert_get(
                         return Response(content=base64_bytes, media_type='text/plain')         
                     else:
                         return Response(content=output.getvalue(), media_type='image/png')
+                except Exception as err:
+                    raise HTTPException(status_code=500, detail=f" error: {str(err)}")
         elif what  == "h5":  # h5 query
             try:
-                with inject_api_key_h5pyd(api_key):
-                    if what == "h5":
-                        try:
-                            with io.BytesIO() as tmpfile:
-                                with h5pyd.File(domain,mode="r") as fin:   
-                                    with h5py.File(tmpfile,"w") as fout:
-                                        recursive_copy(fin,fout)                         
-                                tmpfile.seek(0)
-                                return Response(content=tmpfile.read(), media_type="application/x-hdf5", headers={"Content-Disposition": "attachment; filename=download.h5"})
-                        except Exception as e:
-                            print(traceback.format_exc())
-                            raise HTTPException(status_code=400, detail=f" error: {str(e)}")
+                #with inject_api_key_h5pyd(api_key):
+                if what == "h5":
+                    try:
+                        with io.BytesIO() as tmpfile:
+                            with h5pyd.File(domain,mode="r") as fin:   
+                                with h5py.File(tmpfile,"w") as fout:
+                                    recursive_copy(fin,fout)                         
+                            tmpfile.seek(0)
+                            return Response(content=tmpfile.read(), media_type="application/x-hdf5", headers={"Content-Disposition": "attachment; filename=download.h5"})
+                    except Exception as e:
+                        raise HTTPException(status_code=400, detail=f" error: {str(e)}")
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f" error: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Unsupported 'what' parameter: {what}")
@@ -89,14 +92,13 @@ async def convert_get(
     except HTTPException as err:
         raise err
     except Exception as err:
-        print(err)
         raise HTTPException(status_code=400, detail=str(err))
     
 @router.post("/download")
 async def convert_post(
         what: Literal["knnquery", "b64png" ]  = Query("knnquery") ,
-        files: list[UploadFile] = File(...),
-        api_key: Optional[str] = Depends(get_api_key) 
+        files: list[UploadFile] = File(...)
+        #api_key: Optional[str] = Depends(get_api_key) 
     ):
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")
