@@ -1,10 +1,13 @@
 import httpx 
 from fastapi import  HTTPException
 import re 
+from rcapi.config.app_config import initialize_dirs
 
-SOLR_ROOT = "https://solr-kc.ideaconsult.net/solr/"
-SOLR_VECTOR = "spectrum_p1024"
-SOLR_COLLECTION = "charisma"
+config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
+SOLR_ROOT = config.SOLR_ROOT
+SOLR_VECTOR = config.SOLR_VECTOR
+SOLR_COLLECTION = config.SOLR_COLLECTION
+
 
 async def solr_query_post(solr_url,query_params = None,post_param = None):
     async with httpx.AsyncClient() as client:

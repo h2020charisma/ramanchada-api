@@ -8,6 +8,9 @@ import shutil
 class AppConfig(BaseSettings):
     upload_dir: str
     nmparse_url: str 
+    SOLR_ROOT : str = "https://solr-kc.ideaconsult.net/solr/"
+    SOLR_VECTOR : str = "spectrum_p1024"
+    SOLR_COLLECTION : str = "charisma"
     
 #    class Config:
 #        env_file = ".env"  # Optional: Load configuration from an .env file
