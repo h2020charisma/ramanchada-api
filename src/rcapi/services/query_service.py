@@ -1,9 +1,9 @@
-import requests
 from typing import Optional, Literal
 from fastapi import Request, HTTPException
 from numcompress import  decompress
 from rcapi.services.solr_query import solr_query_post
 import urllib.parse
+from rcapi.api.utils import get_baseurl
 
 async def process(request: Request,
     solr_url: str,
@@ -37,7 +37,7 @@ async def process(request: Request,
         try:
             response = await solr_query_post(solr_url,query_params,solr_params)
             response_data = response.json()
-            return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field=None)
+            return parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None)
         except Exception as err:
             raise
         finally:

@@ -16,7 +16,7 @@ import hashlib
 import glob 
 import traceback
 import requests
-import pandas as pd
+from rcapi.api.utils import get_baseurl
 
 router = APIRouter()
 
@@ -25,14 +25,6 @@ DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %z"
 
 async def get_request(request: Request = Depends()):
     return request
-
-
-def get_baseurl(request : Request):
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "http")
-    base_url = str(request.base_url) 
-    if "localhost" not in base_url:
-        base_url = base_url.replace("http://", "{}://".format(forwarded_proto))  
-    return base_url
 
 def get_uuid():
     return str(uuid.uuid4())

@@ -49,7 +49,7 @@ def test_knnquery(knnquery4test):
     assert isinstance(result, list), "Response is not a list"
     for item in result:
         assert isinstance(item, dict), "Items in the list should be dictionaries"
-        assert "score" in item, "'value' key missing"        
+        assert "score" in item, "'score' key missing"        
         assert "value" in item, "'value' key missing"
         assert "text" in item, "'text' key missing"
         assert "imageLink" in item, "'imageLink' key missing"
