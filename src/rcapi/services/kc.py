@@ -12,8 +12,8 @@ thread_local = threading.local()
 
 logger = logging.getLogger(__name__)
 
-# Dependency to extract API key from Bearer token
-def get_api_key(authorization: Optional[str] = Header(None)):
+# Dependency to extract Bearer token
+def get_token(authorization: Optional[str] = Header(None)):
     if authorization is None:
         return None
     elif authorization.startswith("Bearer "):

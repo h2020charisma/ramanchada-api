@@ -8,15 +8,14 @@ import io
 import base64
 import traceback
 import os.path
-import ramanchada2 as rc2
+
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from numcompress import compress
-from rcapi.services.convertor_service import empty_figure,dict2figure,  solr2image, knnquery, recursive_copy,read_spectrum_native
-#from rcapi.services.kc import inject_api_key_h5pyd, inject_api_key_into_httpx, get_api_key
+from rcapi.services.convertor_service import empty_figure,dict2figure,  solr2image,  recursive_copy,read_spectrum_native
+from rcapi.services.kc import get_token
 import h5py, h5pyd 
-from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION
-import tempfile
-import shutil
+from rcapi.services.solr_query import SOLR_ROOT,SOLR_COLLECTION
+
 
 
 router = APIRouter()
@@ -30,8 +29,8 @@ async def convert_get(
     dataset: Optional[str] = "raw",
     w: Optional[int] = 300,
     h: Optional[int] = 200,
-    extra: Optional[str] = None
-    #api_key: Optional[str] = Depends(get_api_key)
+    extra: Optional[str] = None,
+    token: Optional[str] = Depends(get_token)
 ) :
     if not domain:
         #tr.set_error("missing domain")
@@ -62,7 +61,7 @@ async def convert_get(
         elif what in ["thumbnail","b64png","image"]: #solr query
                 #async with inject_api_key_into_httpx(api_key):
                 try:
-                    fig,etag = await solr2image(solr_url, domain, figsize, extra)
+                    fig,etag = await solr2image(solr_url, domain, figsize, extra,token)
                     # Check if ETag matches the client's If-None-Match header
                     _headers = {}
                     if etag is not None:
@@ -86,7 +85,7 @@ async def convert_get(
                 if what == "h5":
                     try:
                         with io.BytesIO() as tmpfile:
-                            with h5pyd.File(domain,mode="r") as fin:   
+                            with h5pyd.File(domain,mode="r",api_key=token) as fin:   
                                 with h5py.File(tmpfile,"w") as fout:
                                     recursive_copy(fin,fout)                         
                             tmpfile.seek(0)
@@ -105,8 +104,8 @@ async def convert_get(
 @router.post("/download")
 async def convert_post(
         what: Literal["knnquery", "b64png" ]  = Query("knnquery") ,
-        files: list[UploadFile] = File(...)
-        #api_key: Optional[str] = Depends(get_api_key) 
+        files: list[UploadFile] = File(...),
+        token: Optional[str] = Depends(get_token) 
     ):
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")

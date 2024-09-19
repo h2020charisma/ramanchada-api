@@ -4,6 +4,7 @@ from typing import Optional, Literal
 from rcapi.services import query_service
 import traceback 
 from rcapi.services.solr_query import SOLR_ROOT,SOLR_VECTOR,SOLR_COLLECTION, solr_query_get
+from rcapi.services.kc import get_token
 
 router = APIRouter()
 
@@ -17,6 +18,7 @@ async def get_query(
                     page : Optional[int] = 0, pagesize : Optional[int] = 10,
                     img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
                     vector_field : Optional[str] = None,
+                    token: Optional[str] = Depends(get_token)
                     ):
     solr_url = "{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION)
 
@@ -36,7 +38,8 @@ async def get_query(
             page=page,
             pagesize=pagesize,
             img=img,
-            vector_field=SOLR_VECTOR if vector_field is None else vector_field
+            vector_field=SOLR_VECTOR if vector_field is None else vector_field,
+            token=token
         )
         return results
     except Exception as err:
@@ -48,12 +51,13 @@ async def get_query(
 @router.get("/query/field", )
 async def get_field(
     request: Request,
-    name: str = "publicname_s"
+    name: str = "publicname_s",
+    token: Optional[str] = Depends(get_token)
     ):
     solr_url = "{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION)
     try:
         params= {"q" : "*", "rows" : 0, "facet.field": name, "facet" : "true"}
-        rs =  await solr_query_get(solr_url, params)
+        rs =  await solr_query_get(solr_url, params,token)
         result = []
         # Extract the facet field values
         facet_field_values = rs.json()["facet_counts"]["facet_fields"][name]

@@ -9,25 +9,33 @@ SOLR_VECTOR = config.SOLR_VECTOR
 SOLR_COLLECTION = config.SOLR_COLLECTION
 
 
-async def solr_query_post(solr_url,query_params = None,post_param = None):
+async def solr_query_post(solr_url,query_params = None,post_param = None, token = None):
     async with httpx.AsyncClient() as client:
         try:
+            headers = {}
+            if token:
+                headers['Authorization'] = f'Bearer {token}'  # Add token to headers                  
             response = await client.post(
                 solr_url,
                 json=post_param,
-                params = query_params 
+                params = query_params,
+                headers=headers  # Pass headers
             )
             response.raise_for_status()  # Check for HTTP errors
             return response
         except httpx.HTTPStatusError as e:
             raise HTTPException(status_code=e.response.status_code, detail="Error fetching data from external service")
 
-async def solr_query_get(solr_url,params = None):
+async def solr_query_get(solr_url,params = None, token = None):
     async with httpx.AsyncClient() as client:
         try:
+            headers = {}
+            if token:
+                headers['Authorization'] = f'Bearer {token}'  # Add token to headers            
             response = await client.get(
                 solr_url,
-                params = params 
+                params = params,
+                headers=headers  # Pass headers
             )
             response.raise_for_status()  # Check for HTTP errors
             return response

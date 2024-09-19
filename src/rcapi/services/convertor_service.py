@@ -94,14 +94,14 @@ def knnquery(domain,dataset="raw"):
 def generate_etag(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
     
-async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None) -> Tuple[Figure, str]:
+async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None,token : str = None) -> Tuple[Figure, str]:
     rs = None
     try:
         
         query="textValue_s:{}{}{}".format('"',domain,'"')
         params = {"q": query, "fq" : ["type_s:study"], "fl" : "name_s,textValue_s,reference_s,reference_owner_s,{},updated_s,_version_".format(SOLR_VECTOR)}
         
-        rs =  await solr_query_get(solr_url, params)
+        rs =  await solr_query_get(solr_url, params, token = token)
         if rs is not None and rs.status_code == 200:
             response_json = rs.json()
             if "response" in response_json:

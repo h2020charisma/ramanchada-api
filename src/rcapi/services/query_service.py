@@ -15,7 +15,8 @@ async def process(request: Request,
     page: Optional[int] = 0,
     pagesize: Optional[int] = 10,
     img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
-    vector_field="spectrum_p1024"):
+    vector_field="spectrum_p1024",
+    token=None):
 
     query_fields = "id,name_s,textValue_s"
     embedded_images = img=="embedded"
@@ -35,7 +36,7 @@ async def process(request: Request,
                 "reference_s:{}".format(q_reference),"reference_owner_s:{}".format(q_provider)], 
                 "fields" : query_fields}
         try:
-            response = await solr_query_post(solr_url,query_params,solr_params)
+            response = await solr_query_post(solr_url,query_params,solr_params,token)
             response_data = response.json()
             return parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None)
         except Exception as err:
@@ -56,7 +57,7 @@ async def process(request: Request,
                             "reference_owner_s:{}".format(q_provider)  ], 
                             "fields" : query_fields}
             try:
-                response = await solr_query_post(solr_url,query_params,solr_params)
+                response = await solr_query_post(solr_url,query_params,solr_params,token)
                 response_data = response.json()
                 return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field)
             except Exception as err:
