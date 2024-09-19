@@ -54,6 +54,7 @@ async def get_field(
     name: str = "publicname_s",
     token: Optional[str] = Depends(get_token)
     ):
+    
     solr_url = "{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION)
     try:
         params= {"q" : "*", "rows" : 0, "facet.field": name, "facet" : "true"}
@@ -67,7 +68,7 @@ async def get_field(
             result.append({"value": facet_field_values[i], "count": facet_field_values[i + 1]})
         return result
     except HTTPException as err:
-        raise
+        raise err
     except Exception as err:
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(err))
