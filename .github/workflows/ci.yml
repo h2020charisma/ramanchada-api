@@ -78,7 +78,9 @@ jobs:
           HS_ENDPOINT: ${{ secrets.HS_ENDPOINT }}
           HS_USERNAME: ${{ secrets.HS_USERNAME }}
           HS_PASSWORD: ${{ secrets.HS_PASSWORD }}
-        run: poetry run pytest
+        run: |
+          sed -i 's|"charisma_protected"|"charisma"|' src/rcapi/config/config.yaml
+          poetry run pytest
 
   build:
 
