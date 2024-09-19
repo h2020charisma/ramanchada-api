@@ -130,7 +130,7 @@ async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None,tok
         print(traceback.format_exc())
         return empty_figure(figsize,title="{}".format(err),label="{}".format(domain.split("/")[-1])),None
     finally:
-        if not (rs is None):
+        if rs is not None:
             await rs.aclose()
 
 

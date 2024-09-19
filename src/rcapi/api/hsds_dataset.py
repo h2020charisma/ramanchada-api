@@ -51,13 +51,15 @@ async def get_dataset(
         if values:
             fields = "{},{}".format(fields,SOLR_VECTOR)
         params = {"q": query, "fq" : ["type_s:study"], "fl" : fields}
+        rs = None
         try:
             rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params,token)
             return await read_solr_study4dataset(domain,rs.json(),values,token)
         except HTTPException as err:
             raise err
         finally:
-            await rs.aclose()
+            if rs is not None:
+                await rs.aclose()
         
 async def read_solr_study4dataset(domain, response_data,with_values=False,token=None):
     #print(response_data)
@@ -87,6 +89,7 @@ async def read_solr_study4dataset(domain, response_data,with_values=False,token=
 
         doc_uuid = doc.get("document_uuid_s", "")
         params = {"q": "document_uuid_s:{}".format(doc_uuid), "fq" : ["type_s:params"]}
+        rs = None
         try:
             rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params,token)
             rs_params_json = rs.json() # one study has one set of params by definition
@@ -99,9 +102,10 @@ async def read_solr_study4dataset(domain, response_data,with_values=False,token=
                 annotation["optical_path"] = ""    
                 break  
         except HTTPException as err:
-            raise
+            raise err
         finally:
-            await rs.aclose()        
+            if rs is not None:
+                await rs.aclose()        
 
         break
     return result
