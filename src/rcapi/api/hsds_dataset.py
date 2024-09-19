@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Query, HTTPException
+from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional,  List, Union
 from pydantic import BaseModel
 import h5pyd
 from rcapi.services.solr_query import solr_query_get,SOLR_ROOT,SOLR_COLLECTION,solr_escape,SOLR_VECTOR
 from pynanomapper.clients.datamodel_simple import StudyRaman
+from rcapi.services.kc import get_token
 
 router = APIRouter()
 
@@ -38,10 +39,11 @@ async def get_dataset(
     domain: str = Query(..., description="The hsds domain to query"),
     values: Optional[bool] = Query(None, description="Whether to include values or not"),
     bucket: str = Query(None, description="The HSDS bucket"),
+    token: Optional[str] = Depends(get_token),
 ):
     if domain.endswith(".chaold"):  # all goes through solr now
         result = {"subdomains": [], "domain": domain, "annotation": [], "datasets": []}
-        return read_cha(domain,result,read_values=values)
+        return read_cha(domain,result,read_values=values,token=token)
     else: # resort to solr index
         escaped_value = solr_escape(domain)
         query = f'textValue_s:"{domain}"'
@@ -50,14 +52,14 @@ async def get_dataset(
             fields = "{},{}".format(fields,SOLR_VECTOR)
         params = {"q": query, "fq" : ["type_s:study"], "fl" : fields}
         try:
-            rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params)
-            return await read_solr_study4dataset(domain,rs.json(),values)
+            rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params,token)
+            return await read_solr_study4dataset(domain,rs.json(),values,token)
         except HTTPException as err:
             raise err
         finally:
             await rs.aclose()
         
-async def read_solr_study4dataset(domain, response_data,with_values=False):
+async def read_solr_study4dataset(domain, response_data,with_values=False,token=None):
     #print(response_data)
     _domain = domain.split('#', 1)[0] if '#' in domain else domain
 
@@ -86,7 +88,7 @@ async def read_solr_study4dataset(domain, response_data,with_values=False):
         doc_uuid = doc.get("document_uuid_s", "")
         params = {"q": "document_uuid_s:{}".format(doc_uuid), "fq" : ["type_s:params"]}
         try:
-            rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params)
+            rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params,token)
             rs_params_json = rs.json() # one study has one set of params by definition
             for doc_param in rs_params_json.get("response", {}).get("docs", []):
                 # these should come from parameters ...
@@ -104,9 +106,9 @@ async def read_solr_study4dataset(domain, response_data,with_values=False):
         break
     return result
 
-def read_cha(domain, result,  read_values=False, filter={"sample" : None}):
+def read_cha(domain, result,  read_values=False, filter={"sample" : None},token=None):
     
-    with h5pyd.File(domain) as file:
+    with h5pyd.File(domain,api_key=token) as file:
         tmp, datasets = get_file_annotations(file, read_values, filter)
         if tmp is None or datasets is None:
             return result
