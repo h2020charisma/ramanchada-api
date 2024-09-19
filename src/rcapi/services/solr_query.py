@@ -24,7 +24,8 @@ async def solr_query_post(solr_url,query_params = None,post_param = None, token 
             response.raise_for_status()  # Check for HTTP errors
             return response
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail="Error fetching data from external service")
+            raise HTTPException(status_code=e.response.status_code, 
+                        detail="Error fetching data from external service {}".format(e.response.text))
 
 async def solr_query_get(solr_url,params = None, token = None):
     async with httpx.AsyncClient() as client:
@@ -40,7 +41,8 @@ async def solr_query_get(solr_url,params = None, token = None):
             response.raise_for_status()  # Check for HTTP errors
             return response
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, detail="Error fetching data from external service")
+            raise HTTPException(status_code=e.response.status_code, 
+                                detail="Error fetching data from external service {}".format(e.response.text))
         
 def solr_escape(value: str) -> str:
     # Escape special characters that Solr expects to be escaped
