@@ -18,7 +18,8 @@ def get_token(authorization: Optional[str] = Header(None)):
         return None
     elif authorization.startswith("Bearer "):
         # Extract the token (API key)
-        return authorization.split(" ")[1]
+        _token = authorization.split(" ")[1]
+        return None if _token == "null" else _token
     else:
         return None
     #    raise HTTPException(status_code=401, detail="Invalid or missing Authorization header")
