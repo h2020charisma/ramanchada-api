@@ -9,6 +9,11 @@ on:  # yamllint disable-line rule:truthy
     tags:
       - v*.*.*
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   workflow_dispatch:
 
 env:
@@ -22,6 +27,7 @@ jobs:
   test:
 
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         python-version:
@@ -85,6 +91,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     needs: test
     permissions:
       contents: read
