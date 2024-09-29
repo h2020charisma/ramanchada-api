@@ -9,9 +9,9 @@ import base64
 import traceback
 import os.path
 
-from pynanomapper.clients.datamodel_simple import StudyRaman
 from numcompress import compress
-from rcapi.services.convertor_service import empty_figure,dict2figure,  solr2image,  recursive_copy,read_spectrum_native
+from rcapi.services.convertor_service import empty_figure,dict2figure, solr2image, recursive_copy
+from rcapi.services.convertor_service import read_spectrum_native, plot_spectrum, preprocess_spectrum, x4search
 from rcapi.services.kc import get_token
 import h5py, h5pyd 
 from rcapi.services.solr_query import SOLR_ROOT,SOLR_COLLECTION
@@ -118,19 +118,28 @@ async def convert_post(
     try:
         result = ""
         for uf in files:
-            print(uf.filename)
             f_name = uf.filename
             _filename, file_extension = os.path.splitext(f_name)
             
             if file_extension not in (".cha",".nxs"):
                 spe = read_spectrum_native(uf.file, uf.filename)
                 if what == "knnquery":
-                    _cdf, pdf = StudyRaman.xy2embedding(spe.x, spe.y, StudyRaman.x4search(dim=2048))
-                    result_json = {"cdf": compress(pdf.tolist(), precision=6)}
+                    spe_processed = preprocess_spectrum(spe,x4search,baseline=True)
+                    # this is no more CDF , but the spectrasearch still expect it as "cdf"
+                    result_json = {"cdf": compress(spe_processed.y.tolist(), precision=6)}
                     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
-                    fig = plt.Figure(figsize=(300 * px, 200 * px))
-                    axis = fig.add_subplot(1, 1, 1)
-                    axis.plot(spe.x, spe.y, color='green')
+                    try:
+                        xlabel = spe.meta["@axes"][0]
+                        xlabel = None if xlabel == "" else xlabel
+                    except:
+                        xlabel = None
+                    try:  
+                        ylabel= None if spe.meta["@signal"]=="" else spe.meta["@signal"]
+                    except:
+                        ylabel = None
+                    print(xlabel,ylabel)
+                    fig = plot_spectrum(spe_processed.x, spe_processed.y,uf.filename,xlabel=xlabel,ylabel=ylabel,figsize=(640*px, 160*px),
+                                        thumbnail=False,plot_kwargs={'color':"green"})
                     output = io.BytesIO()
                     FigureCanvas(fig).print_png(output)
                     base64_bytes = base64.b64encode(output.getvalue())

@@ -5,7 +5,6 @@ from io import BytesIO
 import base64
 import numpy as np
 from numcompress import compress
-from pynanomapper.clients.datamodel_simple import StudyRaman
 import h5py, h5pyd 
 from rcapi.services.solr_query import solr_query_get,SOLR_VECTOR
 import traceback
@@ -15,6 +14,12 @@ from ramanchada2.spectrum import from_local_file
 import os
 import hashlib
 from typing import Tuple
+import ramanchada2 as rc2 
+import numpy.typing as npt
+import os
+from scipy.interpolate import Akima1DInterpolator
+
+x4search = np.linspace(140,3*1024+140,num=2048)
 
 def empty_figure(figsize,title,label) -> Figure:
     fig = Figure(figsize=figsize)
@@ -68,21 +73,16 @@ def knnquery(domain,dataset="raw"):
         with h5pyd.File(domain,mode="r") as h5:
             x = h5[dataset][0]
             y = h5[dataset][1]
-            (cdf,pdf) = StudyRaman.h52embedding(h5,dataset="raw",xlinspace = StudyRaman.x4search(2048))
+            spe = rc2.spectrum.Spectrum(x,y)
+            spe_processed = preprocess_spectrum(spe,x4search,baseline=False)
             result_json = {}
-            result_json["cdf"] = compress(pdf.tolist(),precision=6)
+            result_json["cdf"] = compress(spe_processed.y.tolist(),precision=6)
             #result_json["pdf"] = compress(pdf.tolist(),precision=6)
             #return ','.join(map(str, cdf))
             try:
                 px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-                fig = Figure(figsize=(300*px, 200*px),constrained_layout=True)
-                axis = fig.add_subplot(1, 1, 1)
-                axis.plot(x, y)
-                axis.set_ylabel(h5[dataset].dims[1].label)
-                axis.set_xlabel(h5[dataset].dims[0].label)
-                axis.title.set_text("query")
-                axis.set_yticks([])
-                axis.set_yticklabels([]) 
+                fig = plot_spectrum(x,y,"query",h5[dataset].dims[0].label,h5[dataset].dims[1].label,figsize=(300*px, 200*px),
+                                    thumbnail=True,plot_kwargs={'color': 'green'})
                 output = BytesIO()
                 FigureCanvas(fig).print_png(output)
                 base64_bytes = base64.b64encode(output.getvalue())
@@ -93,15 +93,20 @@ def knnquery(domain,dataset="raw"):
     except Exception as err:
         raise(err)
     
-def plot_spectrum(x,y,title=None,xlabel=r'wavenumber [$\mathrm{cm}^{-1}$]',ylabel="intensity [a.u.]",thumbnail=True,figsize=None):
+def plot_spectrum(x,y,title=None,xlabel=None,ylabel=None,thumbnail=True,figsize=None,plot_kwargs=None):
     if figsize is None:
         figsize=(6,4)
+    if xlabel is None:
+        xlabel = r'wavenumber [$\mathrm{cm}^{-1}$]'
+    if ylabel is None:
+        ylabel = "intensity [a.u.]"
     fig = Figure(figsize=figsize,constrained_layout=True)
+    if plot_kwargs is None:
+        plot_kwargs = {}
     axis = fig.add_subplot(1, 1, 1)
-    axis.plot(x, y)
-    
+    axis.plot(x, y,**plot_kwargs)
     axis.set_xlabel(xlabel)
-    plt.subplots_adjust(bottom=0.2)                  
+    plt.subplots_adjust(bottom=0.1)                  
     if not thumbnail:
         axis.title.set_text(title)
         axis.set_ylabel(ylabel)
@@ -109,6 +114,27 @@ def plot_spectrum(x,y,title=None,xlabel=r'wavenumber [$\mathrm{cm}^{-1}$]',ylabe
         axis.set_yticks([])
         axis.set_yticklabels([]) 
     return fig
+
+
+def resample_spline(spe :  rc2.spectrum.Spectrum, x4search : npt.NDArray):
+
+    spline = Akima1DInterpolator(spe.x, spe.y)
+    spe_spline = np.zeros_like(x4search)
+    xmin, xmax = spe.x.min(), spe.x.max()
+    within_range = (x4search >= xmin) & (x4search <= xmax)
+    spe_spline[within_range] = spline(x4search[within_range])
+    return rc2.spectrum.Spectrum(x=spe.x, y = spe_spline)
+
+def preprocess_spectrum(spe :  rc2.spectrum.Spectrum, x4search : npt.NDArray, baseline = False):
+    spe_nopedestal = rc2.spectrum.Spectrum(x=spe.x, y = spe.y - np.min(spe.y))
+    spe_resampled = resample_spline(spe_nopedestal,x4search)
+    # baseline 
+    if baseline:
+        spe_resampled = spe_resampled.subtract_baseline_rc1_snip(niter = 40)  
+    # L2 norm for searching
+    l2_norm = np.linalg.norm(spe_resampled.y)
+
+    return rc2.spectrum.Spectrum(x4search,spe_resampled.y / l2_norm)
 
 def generate_etag(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
@@ -132,20 +158,11 @@ async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None, th
                     if y is None:
                         continue
                     if x is None:
-                        x = StudyRaman.x4search(len(y))
-                    fig = Figure(figsize=figsize,constrained_layout=True)
-                    axis = fig.add_subplot(1, 1, 1)
-                    axis.plot(x, y)
-                    
-                    axis.set_xlabel(r'wavenumber [$\mathrm{cm}^{-1}$]')
-                    plt.subplots_adjust(bottom=0.2)                  
-                    if not thumbnail:
-                        axis.title.set_text("{} {} {} ({})".format("" if extraprm is None else extraprm,
-                                doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
-                        axis.set_ylabel("intensity [a.u.]")
-                    else:
-                        axis.set_yticks([])
-                        axis.set_yticklabels([]) 
+                        x = x4search
+                    _title = None if thumbnail else "{} {} {} ({})".format("" if extraprm is None else extraprm,
+                                doc["name_s"],doc["reference_owner_s"],doc["reference_s"])
+                    fig = plot_spectrum(x,y,_title,r'wavenumber [$\mathrm{cm}^{-1}$]',"intensity [a.u.]",
+                                        figsize=figsize,thumbnail=thumbnail)
                     etag = generate_etag("{}{}{}".format(doc["textValue_s"],doc.get("updated_s",""),doc.get("_version_","")))
                     return fig,etag
         
@@ -186,7 +203,6 @@ def recursive_copy(
         except Exception as err:
             print(traceback.format_exc())
              
-
 
 def read_spectrum_native(file,file_name,prefix="rcapi_"):
     native_filename=None

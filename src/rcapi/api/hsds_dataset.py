@@ -5,7 +5,7 @@ import h5pyd
 from rcapi.services.solr_query import solr_query_get,SOLR_ROOT,SOLR_COLLECTION,solr_escape,SOLR_VECTOR
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from rcapi.services.kc import get_token
-
+from rcapi.services.convertor_service import x4search
 router = APIRouter()
 
 # Response models to mimic hsds /dataset previously used for .cha file
@@ -75,7 +75,7 @@ async def read_solr_study4dataset(domain, response_data,with_values=False,token=
         result["annotation"].append(annotation)
 
         dataset_name = domain.split('#', 1)[1] if '#' in domain else "indexed"
-        dataset = {"key" : dataset_name, "name" : dataset_name, "shape" : [2,2048], "size": 2048 }
+        dataset = {"key" : dataset_name, "name" : dataset_name, "shape" : [2,len(x4search)], "size": len(x4search) }
         if with_values:
             y = doc[SOLR_VECTOR]
             dim = len(y)
