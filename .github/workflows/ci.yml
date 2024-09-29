@@ -9,6 +9,11 @@ on:  # yamllint disable-line rule:truthy
     tags:
       - v*.*.*
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
   workflow_dispatch:
 
 env:
@@ -22,10 +27,10 @@ jobs:
   test:
 
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     strategy:
       matrix:
         python-version:
-          - '3.9'
           - '3.10'
           - '3.11'
           - '3.12'
@@ -75,11 +80,18 @@ jobs:
         run: poetry install --no-interaction
 
       - name: Run tests
-        run: poetry run pytest
+        env:
+          HS_ENDPOINT: ${{ secrets.HS_ENDPOINT }}
+          HS_USERNAME: ${{ secrets.HS_USERNAME }}
+          HS_PASSWORD: ${{ secrets.HS_PASSWORD }}
+        run: |
+          sed -i 's|"charisma_protected"|"charisma"|' src/rcapi/config/config.yaml
+          poetry run pytest
 
   build:
 
     runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
     needs: test
     permissions:
       contents: read

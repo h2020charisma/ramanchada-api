@@ -5,7 +5,7 @@ import shutil
 from rcapi.models.models import Task  # Import your data models
 import h5py
 from ..config.app_config import load_config
-from pynanomapper.datamodel.nexus_parser import SpectrumParser
+from pyambit.nexus_parser import SpectrumParser
 
 config = load_config()
 async def process(task : Task,process_config : dict, nexus_dataset_url: str,base_url: str):
