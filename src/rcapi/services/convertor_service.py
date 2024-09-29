@@ -75,12 +75,14 @@ def knnquery(domain,dataset="raw"):
             #return ','.join(map(str, cdf))
             try:
                 px = 1/plt.rcParams['figure.dpi']  # pixel in inches
-                fig = Figure(figsize=(300*px, 200*px))
+                fig = Figure(figsize=(300*px, 200*px),constrained_layout=True)
                 axis = fig.add_subplot(1, 1, 1)
                 axis.plot(x, y)
                 axis.set_ylabel(h5[dataset].dims[1].label)
                 axis.set_xlabel(h5[dataset].dims[0].label)
                 axis.title.set_text("query")
+                axis.set_yticks([])
+                axis.set_yticklabels([]) 
                 output = BytesIO()
                 FigureCanvas(fig).print_png(output)
                 base64_bytes = base64.b64encode(output.getvalue())
@@ -91,10 +93,27 @@ def knnquery(domain,dataset="raw"):
     except Exception as err:
         raise(err)
     
+def plot_spectrum(x,y,title=None,xlabel=r'wavenumber [$\mathrm{cm}^{-1}$]',ylabel="intensity [a.u.]",thumbnail=True,figsize=None):
+    if figsize is None:
+        figsize=(6,4)
+    fig = Figure(figsize=figsize,constrained_layout=True)
+    axis = fig.add_subplot(1, 1, 1)
+    axis.plot(x, y)
+    
+    axis.set_xlabel(xlabel)
+    plt.subplots_adjust(bottom=0.2)                  
+    if not thumbnail:
+        axis.title.set_text(title)
+        axis.set_ylabel(ylabel)
+    else:
+        axis.set_yticks([])
+        axis.set_yticklabels([]) 
+    return fig
+
 def generate_etag(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
     
-async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None,token : str = None) -> Tuple[Figure, str]:
+async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None, thumbnail : bool = True,token : str = None) -> Tuple[Figure, str]:
     rs = None
     try:
         
@@ -114,13 +133,19 @@ async def solr2image(solr_url: str,domain : str,figsize=(6,4),extraprm =None,tok
                         continue
                     if x is None:
                         x = StudyRaman.x4search(len(y))
-                    fig = Figure(figsize=figsize)
+                    fig = Figure(figsize=figsize,constrained_layout=True)
                     axis = fig.add_subplot(1, 1, 1)
                     axis.plot(x, y)
-                    axis.set_ylabel("a.u.")
-                    axis.set_xlabel("Wavenumber [1/cm]")
-                    axis.title.set_text("{} {} {} ({})".format("" if extraprm is None else extraprm,
+                    
+                    axis.set_xlabel(r'wavenumber [$\mathrm{cm}^{-1}$]')
+                    plt.subplots_adjust(bottom=0.2)                  
+                    if not thumbnail:
+                        axis.title.set_text("{} {} {} ({})".format("" if extraprm is None else extraprm,
                                 doc["name_s"],doc["reference_owner_s"],doc["reference_s"]))
+                        axis.set_ylabel("intensity [a.u.]")
+                    else:
+                        axis.set_yticks([])
+                        axis.set_yticklabels([]) 
                     etag = generate_etag("{}{}{}".format(doc["textValue_s"],doc.get("updated_s",""),doc.get("_version_","")))
                     return fig,etag
         

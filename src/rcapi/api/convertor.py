@@ -38,8 +38,8 @@ async def convert_get(
     
     solr_url = "{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION)
 
-    width = w
-    height = h
+    width = validate(w,300)
+    height = validate(h,200)
     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
     figsize = width * px, height * px
        
@@ -61,7 +61,7 @@ async def convert_get(
         elif what in ["thumbnail","b64png","image"]: #solr query
                 #async with inject_api_key_into_httpx(api_key):
                 try:
-                    fig,etag = await solr2image(solr_url, domain, figsize, extra,token)
+                    fig,etag = await solr2image(solr_url, domain, figsize, extraprm= extra,thumbnail = (what != "image"),token=token)
                     # Check if ETag matches the client's If-None-Match header
                     _headers = {}
                     if etag is not None:
@@ -155,4 +155,8 @@ async def convert_post(
         print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(traceback.format_exc()))
     
-    
+def validate(param, default=300):
+    try:
+        return int(param)
+    except (ValueError, TypeError):
+        return default    
