@@ -2,8 +2,7 @@ from fastapi.testclient import TestClient
 from rcapi.main import app
 import pytest
 from importlib.resources import files
-from rcapi.services.solr_query import SOLR_VECTOR 
-from numcompress import  decompress
+from numcompress import decompress
 
 client = TestClient(app)
 
@@ -16,9 +15,10 @@ def knnquery4test():
         knnQuery = file_stream.read()
     return knnQuery
 
+
 def test_query_metadata():
-    params = { "query_type" : "metadata" }
-    response = client.get(TEST_ENDPOINT,params=params)
+    params = { "query_type": "metadata" }
+    response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
     result = response.json()
     assert isinstance(result, list), "Response is not a list"
@@ -28,9 +28,10 @@ def test_query_metadata():
         assert "text" in item, "'text' key missing"
         assert "imageLink" in item, "'imageLink' key missing"
 
+
 def test_query_metadata_embeddedimages():
-    params = { "query_type" : "metadata" , "img" : "embedded"}
-    response = client.get(TEST_ENDPOINT,params=params)
+    params = { "query_type": "metadata" , "img": "embedded"}
+    response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
     result = response.json()
     assert isinstance(result, list), "Response is not a list"
@@ -41,9 +42,10 @@ def test_query_metadata_embeddedimages():
         assert "imageLink" in item, "'imageLink' key missing"
         #assert "spectrum_p1024" in item, "vector field key missing"
 
+
 def test_knnquery(knnquery4test):
-    params = { "query_type" : "knnquery" , "ann" : knnquery4test}
-    response = client.get(TEST_ENDPOINT,params=params)
+    params = { "query_type": "knnquery" , "ann": knnquery4test}
+    response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
     result = response.json()
     assert isinstance(result, list), "Response is not a list"
@@ -54,6 +56,7 @@ def test_knnquery(knnquery4test):
         assert "text" in item, "'text' key missing"
         assert "imageLink" in item, "'imageLink' key missing"
         #assert SOLR_VECTOR in item, "vector field key missing"
+
 
 def test_fixture(knnquery4test):
     _knnquery = decompress(knnquery4test)

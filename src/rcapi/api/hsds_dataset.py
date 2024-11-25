@@ -2,11 +2,14 @@ from fastapi import APIRouter, Query, HTTPException, Depends
 from typing import Optional,  List, Union
 from pydantic import BaseModel
 import h5pyd
-from rcapi.services.solr_query import solr_query_get,SOLR_ROOT,SOLR_COLLECTION,solr_escape,SOLR_VECTOR
+from rcapi.services.solr_query import (
+    solr_query_get, SOLR_ROOT, SOLR_COLLECTION, solr_escape, SOLR_VECTOR
+)
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from rcapi.services.kc import get_token
 from rcapi.services.convertor_service import x4search
 router = APIRouter()
+
 
 # Response models to mimic hsds /dataset previously used for .cha file
 class Dataset(BaseModel):
@@ -18,6 +21,7 @@ class Dataset(BaseModel):
     value: List[List[Union[float, int]]]
     dims: List[str]
 
+
 class Annotation(BaseModel):
     sample: str
     instrument: str
@@ -28,11 +32,13 @@ class Annotation(BaseModel):
     provider: str
     wavelength: str
 
+
 class ResponseModel(BaseModel):
     subdomains: List[str]
     domain: str
     annotation: List[Annotation]
     datasets: List[Dataset]
+
 
 @router.get("/dataset")
 async def get_dataset(
@@ -43,44 +49,45 @@ async def get_dataset(
 ):
     if domain.endswith(".chaold"):  # all goes through solr now
         result = {"subdomains": [], "domain": domain, "annotation": [], "datasets": []}
-        return read_cha(domain,result,read_values=values,token=token)
+        return read_cha(domain, result, read_values=values, token=token)
     else: # resort to solr index
         escaped_value = solr_escape(domain)
         query = f'textValue_s:"{domain}"'
         fields = "name_s,reference_s,reference_owner_s,document_uuid_s,updated_s,_version_"
         if values:
-            fields = "{},{}".format(fields,SOLR_VECTOR)
-        params = {"q": query, "fq" : ["type_s:study"], "fl" : fields}
+            fields = "{},{}".format(fields, SOLR_VECTOR)
+        params = {"q": query, "fq": ["type_s:study"], "fl": fields}
         rs = None
         try:
-            rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params,token)
-            return await read_solr_study4dataset(domain,rs.json(),values,token)
+            rs = await solr_query_get("{}{}/select".format(SOLR_ROOT, SOLR_COLLECTION), params, token)
+            return await read_solr_study4dataset(domain, rs.json(), values, token)
         except HTTPException as err:
             raise err
         finally:
             if rs is not None:
                 await rs.aclose()
-        
-async def read_solr_study4dataset(domain, response_data,with_values=False,token=None):
-    #print(response_data)
+
+
+async def read_solr_study4dataset(domain, response_data, with_values=False, token=None):
+    # print(response_data)
     _domain = domain.split('#', 1)[0] if '#' in domain else domain
 
     result = {"subdomains": [], "domain": _domain, "annotation": [], "datasets": []}
     for doc in response_data["response"]["docs"]:
         annotation = {
-            "sample" : doc.get("name_s", ""),
-            "provider" : doc.get("reference_owner_s", ""),
-            "investigation" : doc.get("reference_s", "")
+            "sample": doc.get("name_s", ""),
+            "provider": doc.get("reference_owner_s", ""),
+            "investigation": doc.get("reference_s", "")
         }
         result["annotation"].append(annotation)
 
         dataset_name = domain.split('#', 1)[1] if '#' in domain else "indexed"
-        dataset = {"key" : dataset_name, "name" : dataset_name, "shape" : [2,len(x4search)], "size": len(x4search) }
+        dataset = {"key": dataset_name, "name": dataset_name, "shape": [2, len(x4search)], "size": len(x4search)}
         if with_values:
             y = doc[SOLR_VECTOR]
             dim = len(y)
-            dataset["shape"] =  [2,dim]
-            dataset["size"]  = dim 
+            dataset["shape"] = [2, dim]
+            dataset["size"] = dim 
             dataset["value"] = []
             dataset["value"].append(StudyRaman.x4search(dim).tolist())
             dataset["value"].append(y)
@@ -88,31 +95,32 @@ async def read_solr_study4dataset(domain, response_data,with_values=False,token=
         result["datasets"].append(dataset)
 
         doc_uuid = doc.get("document_uuid_s", "")
-        params = {"q": "document_uuid_s:{}".format(doc_uuid), "fq" : ["type_s:params"]}
+        params = {"q": "document_uuid_s:{}".format(doc_uuid), "fq": ["type_s:params"]}
         rs = None
         try:
-            rs =  await solr_query_get("{}{}/select".format(SOLR_ROOT,SOLR_COLLECTION), params,token)
+            rs = await solr_query_get("{}{}/select".format(SOLR_ROOT, SOLR_COLLECTION), params, token)
             rs_params_json = rs.json() # one study has one set of params by definition
             for doc_param in rs_params_json.get("response", {}).get("docs", []):
                 # these should come from parameters ...
                 annotation["wavelength"] = doc_param.get("wavelength_d", "")
                 annotation["instrument"] = doc_param.get("instrument_s", "")
                 annotation["laser_power"] = ""
-                annotation["native_filename"] = ""       
-                annotation["optical_path"] = ""    
-                break  
+                annotation["native_filename"] = ""
+                annotation["optical_path"] = ""
+                break
         except HTTPException as err:
             raise err
         finally:
             if rs is not None:
-                await rs.aclose()        
+                await rs.aclose()
 
         break
     return result
 
-def read_cha(domain, result,  read_values=False, filter={"sample" : None},token=None):
-    
-    with h5pyd.File(domain,api_key=token) as file:
+
+def read_cha(domain, result,  read_values=False, filter={"sample": None}, token=None):
+
+    with h5pyd.File(domain, api_key=token) as file:
         tmp, datasets = get_file_annotations(file, read_values, filter)
         if tmp is None or datasets is None:
             return result
@@ -121,12 +129,13 @@ def read_cha(domain, result,  read_values=False, filter={"sample" : None},token=
             result["datasets"] = datasets
     return result
 
-def get_file_annotations(file=None,read_values=False,filter={"sample" : None}):
-    
+
+def get_file_annotations(file=None, read_values=False, filter={"sample": None}):
+
     annotation = {}
     datasets = []
 
-    #print(filter)
+    # print(filter)
     if filter is None or filter["sample"] is None:
         pass
     else:
@@ -135,15 +144,15 @@ def get_file_annotations(file=None,read_values=False,filter={"sample" : None}):
 
     for key in file.keys():
         
-        if key=="annotation_sample":
+        if key == "annotation_sample":
             for item in file[key].attrs:
                 annotation[item]=file[key].attrs[item] 
-        elif key=="annotation_study":
+        elif key == "annotation_study":
             for item in file[key].attrs:
-                annotation[item]=file[key].attrs[item]  
+                annotation[item] = file[key].attrs[item]  
         else:
-            _dataset = {"key" : key, "uuid" : file[key].id.uuid, "name" : file[key].name, 
-                                "shape" : file[key].shape, "size" : file[key].size}
+            _dataset = {"key": key, "uuid": file[key].id.uuid, "name": file[key].name,
+                                "shape": file[key].shape, "size": file[key].size}
             if read_values:
                 _dataset["value"] = file[key][()].tolist()
                 _dataset["dims"] = []
@@ -152,4 +161,4 @@ def get_file_annotations(file=None,read_values=False,filter={"sample" : None}):
 
             datasets.append(_dataset)
 
-    return annotation,datasets
+    return annotation, datasets
