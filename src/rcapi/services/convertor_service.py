@@ -93,14 +93,14 @@ def knnquery(domain, dataset="raw"):
                 output = BytesIO()
                 FigureCanvas(fig).print_png(output)
                 base64_bytes = base64.b64encode(output.getvalue())
-                result_json["imageLink"] = "data:image/png;base64,{}".format(str(base64_bytes,'utf-8'))
+                result_json["imageLink"] = "data:image/png;base64,{}".format(str(base64_bytes, 'utf-8'))
             except Exception as err:
                 print(err)
             return result_json
     except Exception as err:
         raise err
-    
-    
+
+
 def plot_spectrum(x, y, title=None, xlabel=None, ylabel=None, thumbnail=True, figsize=None, plot_kwargs=None):
     if figsize is None:
         figsize = (6, 4)
@@ -130,7 +130,7 @@ def resample_spline(spe: rc2.spectrum.Spectrum, x4search: npt.NDArray):
     xmin, xmax = spe.x.min(), spe.x.max()
     within_range = (x4search >= xmin) & (x4search <= xmax)
     spe_spline[within_range] = spline(x4search[within_range])
-    return rc2.spectrum.Spectrum(x=spe.x, y=spe_spline)
+    return rc2.spectrum.Spectrum(x=x4search, y=spe_spline)
 
 
 def preprocess_spectrum(spe:  rc2.spectrum.Spectrum, x4search: npt.NDArray, baseline=False):
