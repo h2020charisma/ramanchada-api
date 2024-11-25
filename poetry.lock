@@ -3272,7 +3272,7 @@ cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 
 [[package]]
 name = "ramanchada2"
-version = "1.1.0"
+version = "1.2.0"
 description = "Harmonising Raman Spectroscopy"
 optional = false
 python-versions = ">=3.9,<3.13"
@@ -3292,6 +3292,7 @@ renishawWiRE = "==0.1.*"
 scikit-learn = "==1.*"
 scipy = ">=1.8.0,<2.0"
 spc-io = ">=0.2.0,<0.3.0"
+spe2py = ">=2.0,<3.0"
 statsmodels = "==0.14.*"
 uncertainties = "==3.*"
 
@@ -3540,6 +3541,11 @@ files = [
     {file = "scikit_learn-1.5.2-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:f60021ec1574e56632be2a36b946f8143bf4e5e6af4a06d85281adc22938e0dd"},
     {file = "scikit_learn-1.5.2-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:394397841449853c2290a32050382edaec3da89e35b3e03d6cc966aebc6a8ae6"},
     {file = "scikit_learn-1.5.2-cp312-cp312-win_amd64.whl", hash = "sha256:57cc1786cfd6bd118220a92ede80270132aa353647684efa385a74244a41e3b1"},
+    {file = "scikit_learn-1.5.2-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:e9a702e2de732bbb20d3bad29ebd77fc05a6b427dc49964300340e4c9328b3f5"},
+    {file = "scikit_learn-1.5.2-cp313-cp313-macosx_12_0_arm64.whl", hash = "sha256:b0768ad641981f5d3a198430a1d31c3e044ed2e8a6f22166b4d546a5116d7908"},
+    {file = "scikit_learn-1.5.2-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:178ddd0a5cb0044464fc1bfc4cca5b1833bfc7bb022d70b05db8530da4bb3dd3"},
+    {file = "scikit_learn-1.5.2-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f7284ade780084d94505632241bf78c44ab3b6f1e8ccab3d2af58e0e950f9c12"},
+    {file = "scikit_learn-1.5.2-cp313-cp313-win_amd64.whl", hash = "sha256:b7b0f9a0b1040830d38c39b91b3a44e1b643f4b36e36567b80b7c6bd2202a27f"},
     {file = "scikit_learn-1.5.2-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:757c7d514ddb00ae249832fe87100d9c73c6ea91423802872d9e74970a0e40b9"},
     {file = "scikit_learn-1.5.2-cp39-cp39-macosx_12_0_arm64.whl", hash = "sha256:52788f48b5d8bca5c0736c175fa6bdaab2ef00a8f536cda698db61bd89c551c1"},
     {file = "scikit_learn-1.5.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:643964678f4b5fbdc95cbf8aec638acc7aa70f5f79ee2cdad1eec3df4ba6ead8"},
@@ -3719,6 +3725,22 @@ files = [
 numpy = "*"
 pandas = "*"
 pydantic = ">=2.0,<3.0"
+
+[[package]]
+name = "spe2py"
+version = "2.0.0"
+description = "This module imports a Princeton Instruments LightField (SPE 3.0) file into a python environment."
+optional = false
+python-versions = "*"
+files = [
+    {file = "spe2py-2.0.0-py3-none-any.whl", hash = "sha256:7ba810d21b05fea583c3851b78a53e9e70abb36ae02a7d3d5d3991f17dbb0f33"},
+    {file = "spe2py-2.0.0.tar.gz", hash = "sha256:4df0f06f21bec5062a33b04e41d71000705a2b1de8bd77ad3809d5b3f01e291a"},
+]
+
+[package.dependencies]
+matplotlib = "*"
+numpy = "*"
+untangle = "*"
 
 [[package]]
 name = "stack-data"
@@ -4016,6 +4038,20 @@ all = ["uncertainties[arrays,doc,test]"]
 arrays = ["numpy"]
 doc = ["python-docs-theme", "sphinx", "sphinx-copybutton"]
 test = ["pytest", "pytest-cov"]
+
+[[package]]
+name = "untangle"
+version = "1.2.1"
+description = "Converts XML to Python objects"
+optional = false
+python-versions = ">=3.7,<4.0"
+files = [
+    {file = "untangle-1.2.1-py3-none-any.whl", hash = "sha256:1e783bb75996daf46ff7239ba049ee0eb54c056e235ac34809d74ea9e9898dd1"},
+    {file = "untangle-1.2.1.tar.gz", hash = "sha256:ae76522472722b31b303d5100c3c6f8b7dd4952b7b6c9d31e6d7b4a56f1a6d30"},
+]
+
+[package.dependencies]
+defusedxml = ">=0.7.1,<0.8.0"
 
 [[package]]
 name = "uri-template"
