@@ -75,7 +75,7 @@ def setup_template_dir(config_dict):
     for TEST_JSON_PATH, TEMPLATE_UUID in _TEMPLATES:
         print(TEST_JSON_PATH)
         file_path = os.path.join(TEMPLATE_DIR, "{}.json".format(TEMPLATE_UUID))
-        shutil.copy(TEST_JSON_PATH, file_path )
+        shutil.copy(TEST_JSON_PATH, file_path)
         new_modified_date = datetime.now(tz.utc) - timedelta(hours=24)
         timestamp = new_modified_date.timestamp()
         os.utime(file_path, times=(timestamp, timestamp))

@@ -10,7 +10,7 @@ TEST_ENDPOINT = "/db/dataset"
 
 @pytest.fixture(scope="module")
 def domain():
-    params = { "query_type": "metadata", "pagesize": 1}
+    params = {"query_type": "metadata", "pagesize": 1}
     response = client.get("/db/query", params=params)
     assert response.status_code == 200
     _domain = response.json()[0]["value"]

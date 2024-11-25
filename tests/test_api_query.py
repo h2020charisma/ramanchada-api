@@ -8,6 +8,7 @@ client = TestClient(app)
 
 TEST_ENDPOINT = "/db/query"
 
+
 @pytest.fixture
 def knnquery4test():
     resource_path = files('resources.api',).joinpath('pdf2knnquery.txt')
@@ -30,7 +31,7 @@ def test_query_metadata():
 
 
 def test_query_metadata_embeddedimages():
-    params = { "query_type": "metadata" , "img": "embedded"}
+    params = {"query_type": "metadata" , "img": "embedded"}
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
     result = response.json()
@@ -40,11 +41,11 @@ def test_query_metadata_embeddedimages():
         assert "value" in item, "'value' key missing"
         assert "text" in item, "'text' key missing"
         assert "imageLink" in item, "'imageLink' key missing"
-        #assert "spectrum_p1024" in item, "vector field key missing"
+        # assert "spectrum_p1024" in item, "vector field key missing"
 
 
 def test_knnquery(knnquery4test):
-    params = { "query_type": "knnquery" , "ann": knnquery4test}
+    params = {"query_type": "knnquery", "ann": knnquery4test}
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
     result = response.json()
@@ -55,7 +56,7 @@ def test_knnquery(knnquery4test):
         assert "value" in item, "'value' key missing"
         assert "text" in item, "'text' key missing"
         assert "imageLink" in item, "'imageLink' key missing"
-        #assert SOLR_VECTOR in item, "vector field key missing"
+        # assert SOLR_VECTOR in item, "vector field key missing"
 
 
 def test_fixture(knnquery4test):

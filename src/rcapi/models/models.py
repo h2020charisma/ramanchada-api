@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Dict, Optional, Union
+from typing import Dict, Optional
 
 
 class Task(BaseModel):
@@ -15,4 +15,5 @@ class Task(BaseModel):
     result_uuid: Optional[str] = None
     errorCause: Optional[str] = None
 
-tasks_db: Dict[str, Task] = {}    
+
+tasks_db: Dict[str, Task] = {}
