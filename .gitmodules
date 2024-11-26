@@ -1,6 +1,0 @@
-[submodule "pynanomapper"]
-	path = extern/pynanomapper
-	url = https://github.com/ideaconsult/pynanomapper.git
-[submodule "ramanchada2"]
-	path = extern/ramanchada2
-	url = https://github.com/h2020charisma/ramanchada2.git

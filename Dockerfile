@@ -2,12 +2,9 @@ FROM python:3.11-slim AS requirements-stage
 
 WORKDIR /tmp
 
-RUN pip install poetry
-
 COPY ./pyproject.toml ./poetry.lock* /tmp/
-COPY ./extern/pynanomapper /tmp/extern/pynanomapper
-COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
 
+RUN pip install poetry
 RUN poetry export -f requirements.txt --output requirements.txt --without=dev --without-hashes
 
 
@@ -18,14 +15,6 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=requirements-stage /tmp/requirements.txt /app/requirements.txt
-COPY ./extern/pynanomapper /tmp/extern/pynanomapper
-COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
-
-RUN sed -i 's/^-e //' /app/requirements.txt
-
-# FIXME: 809de9f workaround introduced discrepancy between poetry.lock and this installation.
-# This is another "fix" that'll come back to bite us until we fix the whole dependency thing.
-RUN sed -i '/^pyambit/d' /tmp/extern/pynanomapper/pyproject.toml
 
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
