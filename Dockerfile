@@ -21,7 +21,11 @@ COPY --from=requirements-stage /tmp/requirements.txt /app/requirements.txt
 COPY ./extern/pynanomapper /tmp/extern/pynanomapper
 COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
 
-RUN sed -Ei -e 's|^-e ||' -e 's|(/pyambit.git)@\S+|\1|' /app/requirements.txt
+RUN sed -i 's/^-e //' /app/requirements.txt
+
+# FIXME: 809de9f workaround introduced discrepancy between poetry.lock and this installation.
+# This is another "fix" that'll come back to bite us until we fix the whole dependency thing.
+RUN sed -i '/^pyambit/d' /tmp/extern/pynanomapper/pyproject.toml
 
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
