@@ -24,14 +24,15 @@ python = ">=3.10,<3.13"
 apscheduler = "^3.10.1"
 fastapi = "^0.112.1"
 h5grove = "^2.0.0"
-h5pyd = { git = "https://github.com/HDFGroup/h5pyd.git" }
+h5pyd = { git = "https://github.com/HDFGroup/h5pyd.git", rev = "8d1c87ea9b6d4b7691b75ef6e372bc0ece141a76" }
 numcompress = "^0.1.2"
 openpyxl = "^3.1.2"
+pyambit = "^0.0.1"
 pydantic-settings = "^2.4.0"
-pynanomapper = { path = "extern/pynanomapper", develop = true }
+pynanomapper = "^2.0.1"
 python-keycloak = "^4.3.0"
 python-multipart = "^0.0.6"
-ramanchada2 = { path = "extern/ramanchada2", develop = true }
+ramanchada2 = "^1.2.0"
 uvicorn = "^0.27.1"
 
 [tool.poetry.urls]
