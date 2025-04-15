@@ -50,7 +50,7 @@ jupyter = "^1.0.0"
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-minversion = "7.0"
+minversion = "8.0"
 addopts = "-ra -q"
 testpaths = [
     "tests",
