@@ -23,8 +23,8 @@ def domain():
     params = { "query_type": "metadata" , "pagesize": 1} 
     response = client.get("/db/query", params=params)
     assert response.status_code == 200
-    _domain = response.json()[0]["value"]
-    return _domain
+    domain_url = response.json()[0]["value"]
+    return domain_url.partition("#")[0]
 
 
 @pytest.fixture(scope="module")
@@ -35,6 +35,7 @@ def test_spectrum():
 def test_access_domain(domain):
     print(h5pyd.__version__)
     print(domain)
+    assert h5pyd.is_hdf5(domain)
     with h5pyd.File(domain) as top_group:
         for index, key in enumerate(top_group):
             print(index, key)
