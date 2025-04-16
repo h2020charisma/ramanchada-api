@@ -14,6 +14,7 @@ import ramanchada2 as rc2
 from fastapi import HTTPException
 import traceback
 import h5py
+import pandas as pd
 from rcapi.config.app_config import initialize_dirs
 
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
@@ -40,7 +41,11 @@ async def process(task,dataset_type,file,jsonconfig,expandconfig,base_url):
             dataset_type = "template_wizard"
             if file_extension.lower() == ".xlsx" or file_extension.lower() == ".xls":
                 try:
-                    parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
+                    xls = pd.ExcelFile(file_path)
+                    if "TemplateDesigner" in xls.sheet_names:
+                        parse_template_designer_files(task,base_url,file_path)
+                    else: # Template Wizard files need external config
+                        parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig)
                     task.status = "Completed"
                 except HTTPException as err:
                     task.error = "error parsing file"
@@ -177,6 +182,15 @@ def convert_to_nexus(substances: Substances,task,base_url,dataset_uuid):
         task.completed =int(time.time() * 1000)
      
 
+def parse_template_designer_files(task,base_url,file_path,jsonconfig,expandconfig=None):
+    task.result=f"{base_url}task/{task.id}?format=json",
+    task.result_uuid = None
+    task.status="Error"
+    task.error = f"Not implemented yet"   
+    task.errorCause = traceback.format_exc()
+    task.completed=int(time.time() * 1000)     
+    
+
 def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=None):
     if jsonconfig is None:
         task.status="Error"
@@ -194,12 +208,13 @@ def parse_template_wizard_files(task,base_url,file_path,jsonconfig,expandconfig=
             substances = Substances(**parsed_json)
             convert_to_nexus(substances,task,base_url)                
         except Exception as perr:    
-            task.result=f"{base_url}dataset/{task.id}?format=json",
+            task.result=f"{base_url}task/{task.id}?format=json",
             task.result_uuid = None
             task.status="Error"
             task.error = f"Error parsing template wizard files {perr}"   
             task.errorCause = traceback.format_exc() 
     task.completed=int(time.time() * 1000)
+
 
 def nmparser(xfile,jsonconfig,expandfile=None):
     with open(xfile, 'rb') as fin:
