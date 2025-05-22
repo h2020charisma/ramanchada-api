@@ -11,27 +11,20 @@ import time
 from pathlib import Path
 import traceback
 from datetime import datetime
+from datetime import timezone as tz
 import hashlib
 import glob 
 import traceback
 import requests
-import pandas as pd
+from rcapi.api.utils import get_baseurl
 
 router = APIRouter()
 
 config, UPLOAD_DIR, NEXUS_DIR, TEMPLATE_DIR = initialize_dirs()
-DATE_FORMAT = "%a, %d %b %Y %H:%M:%S GMT" 
+DATE_FORMAT = "%a, %d %b %Y %H:%M:%S %z" 
 
 async def get_request(request: Request = Depends()):
     return request
-
-
-def get_baseurl(request : Request):
-    forwarded_proto = request.headers.get("X-Forwarded-Proto", "http")
-    base_url = str(request.base_url) 
-    if "localhost" not in base_url:
-        base_url = base_url.replace("http://", "{}://".format(forwarded_proto))  
-    return base_url
 
 def get_uuid():
     return str(uuid.uuid4())
@@ -51,7 +44,7 @@ def generate_etag(data):
 def get_last_modified(file_path):
     try:
         timestamp = os.path.getmtime(file_path)
-        last_modified = datetime.utcfromtimestamp(timestamp)
+        last_modified = datetime.fromtimestamp(timestamp, tz.utc)
         return last_modified
     except FileNotFoundError:
         return None
@@ -192,7 +185,7 @@ async def makecopy(request: Request,
                 "example": "see Template Wizard data entry templates"
             },
             "application/x-hdf5": {
-                "example": "pynanomapper.datamodel.ambit.Substances converted to Nexus format"
+                "example": "pyambit.datamodel.Substances converted to Nexus format"
             }            
         }
     },
@@ -229,8 +222,12 @@ async def get_template(request : Request, response : Response,
         custom_headers = {  "Last-Modified":  last_modified_time.strftime(DATE_FORMAT) }
         if format=="json":
             # Check Last-Modified header
-            if if_modified_since and last_modified_time <= datetime.strptime(if_modified_since,DATE_FORMAT):
-                return JSONResponse(status_code=304, content=None)            
+            if if_modified_since:
+                if_modified_since_dt = datetime.strptime(
+                    if_modified_since.replace('GMT', '+0000'), DATE_FORMAT
+                )
+                if last_modified_time <= if_modified_since_dt:
+                    return JSONResponse(status_code=304, content=None)            
    
             _etag = generate_etag(json_blueprint)
             if if_none_match and if_none_match == str(_etag):
@@ -284,8 +281,12 @@ async def get_templates(request : Request,q:str = Query(None), response: Respons
         list_of_json_files = glob.glob(os.path.join(TEMPLATE_DIR, '*.json'))
         latest_json_file = max(list_of_json_files, key=os.path.getmtime)
         last_modified_time = get_last_modified(latest_json_file)
-        if if_modified_since and last_modified_time <= datetime.strptime(if_modified_since,DATE_FORMAT):
-            return JSONResponse(status_code=304, content=None)
+        if if_modified_since:
+            if_modified_since_dt = datetime.strptime(
+                if_modified_since.replace('GMT', '+0000'), DATE_FORMAT
+            )
+            if last_modified_time <= if_modified_since_dt:
+                return JSONResponse(status_code=304, content=None)
     except Exception as err:
         print(err)
         pass

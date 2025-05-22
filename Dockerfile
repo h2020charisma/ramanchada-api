@@ -1,27 +1,20 @@
-FROM python:3.11-slim AS requirements-stage
+FROM python:3.12-slim AS requirements-stage
 
 WORKDIR /tmp
 
-RUN pip install poetry
-
 COPY ./pyproject.toml ./poetry.lock* /tmp/
-COPY ./extern/pynanomapper /tmp/extern/pynanomapper
-COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
 
+RUN pip install poetry poetry-plugin-export
 RUN poetry export -f requirements.txt --output requirements.txt --without=dev --without-hashes
 
 
-FROM python:3.11-slim
+FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=requirements-stage /tmp/requirements.txt /app/requirements.txt
-COPY ./extern/pynanomapper /tmp/extern/pynanomapper
-COPY ./extern/ramanchada2 /tmp/extern/ramanchada2
-
-RUN sed -Ei -e 's|^-e ||' -e 's|(/pyambit.git)@\S+|\1|' /app/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 
