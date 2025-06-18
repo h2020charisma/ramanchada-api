@@ -21,7 +21,7 @@ async def get_query(
         vector_field: Optional[str] = None,
         token: Optional[str] = Depends(get_token)
         ):
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default.name)
+    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default)
 
     textQuery = q
     textQuery = "*" if textQuery is None or textQuery == "" else textQuery
@@ -54,7 +54,7 @@ async def get_field(
         name: str = "publicname_s",
         token: Optional[str] = Depends(get_token)
         ):
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default.name)
+    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default)
     try:
         params = {"q": "*", "rows":0, "facet.field":name, "facet":"true"}
         rs = await solr_query_get(solr_url, params, token)
@@ -82,7 +82,7 @@ async def get_sources(
         ):
     print("query", token)
     try:
-        collections = [SOLR_COLLECTIONS.default]
+        collections = []
         if token is None:
             collections.extend(SOLR_COLLECTIONS.public)
         else:

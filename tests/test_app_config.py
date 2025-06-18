@@ -14,10 +14,7 @@ class TestAppConfig(unittest.TestCase):
             'upload_dir': '/tmp/uploads',
             'nmparse_url': 'http://localhost:8080/nmparse',
             'SOLR_COLLECTIONS': {
-                'default': {
-                    'name': 'custom_default',
-                    'description': 'Default collection description'
-                },
+                'default': 'custom_public_1',
                 'public': [
                     {'name': 'custom_public_1', 'description': 'Public 1'},
                     {'name': 'custom_public_2', 'description': 'Public 2'}
@@ -44,8 +41,7 @@ class TestAppConfig(unittest.TestCase):
         self.assertEqual(config.nmparse_url, 'http://localhost:8080/nmparse')
 
         # Check default collection
-        self.assertEqual(config.SOLR_COLLECTIONS.default.name, 'custom_default')
-        self.assertEqual(config.SOLR_COLLECTIONS.default.description, 'Default collection description')
+        self.assertEqual(config.SOLR_COLLECTIONS.default, 'custom_public_1')
 
         # Check public collections
         self.assertEqual(len(config.SOLR_COLLECTIONS.public), 2)

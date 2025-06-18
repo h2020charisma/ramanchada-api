@@ -60,7 +60,7 @@ async def get_dataset(
         rs = None
         try:
             rs = await solr_query_get("{}{}/select".format(
-                SOLR_ROOT, SOLR_COLLECTIONS.default.name), params, token)
+                SOLR_ROOT, SOLR_COLLECTIONS.default), params, token)
             return await read_solr_study4dataset(
                 domain, rs.json(), values, token)
         except HTTPException as err:
@@ -101,7 +101,7 @@ async def read_solr_study4dataset(domain, response_data, with_values=False, toke
         rs = None
         try:
             rs = await solr_query_get("{}{}/select".format(
-                SOLR_ROOT, SOLR_COLLECTIONS.default.name), params, token)
+                SOLR_ROOT, SOLR_COLLECTIONS.default), params, token)
             rs_params_json = rs.json() # one study has one set of params by definition
             for doc_param in rs_params_json.get("response", {}).get("docs", []):
                 # these should come from parameters ...

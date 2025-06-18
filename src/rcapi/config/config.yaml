@@ -3,9 +3,7 @@ nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"
 SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"
 SOLR_VECTOR: "spectrum_p1024"
 SOLR_COLLECTIONS:
-  default:
-    name: "charisma"
-    description: "CHARISMA"
+  default: "charisma"
   public:
     - name: "charisma"
       description: "CHARISMA"

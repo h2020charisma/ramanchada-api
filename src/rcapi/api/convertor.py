@@ -39,7 +39,7 @@ async def convert_get(
         # tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
 
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default.name)
+    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default)
 
     width = validate(w, 300)
     height = validate(h, 200)

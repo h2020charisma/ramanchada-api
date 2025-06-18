@@ -14,8 +14,7 @@ class SolrCollectionEntry(BaseModel):
 
 
 class SolrCollectionSettings(BaseModel):
-    default: SolrCollectionEntry = SolrCollectionEntry(
-        name="charisma", description="Default collection")
+    default: str = "charisma"
     public: List[SolrCollectionEntry] = []
     private: List[SolrCollectionEntry] = []
 
