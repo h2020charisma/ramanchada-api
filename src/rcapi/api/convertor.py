@@ -18,7 +18,7 @@ from rcapi.services.convertor_service import (
 from rcapi.services.kc import get_token
 import h5py
 import h5pyd
-from rcapi.services.solr_query import SOLR_ROOT, SOLR_COLLECTION
+from rcapi.services.solr_query import SOLR_ROOT, SOLR_COLLECTIONS
 
 
 router = APIRouter()
@@ -28,7 +28,7 @@ router = APIRouter()
 async def convert_get(
     request: Request,
     domain: str,
-    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail","b64png"]] = "h5",
+    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail", "b64png"]] = "h5",
     dataset: Optional[str] = "raw",
     w: Optional[int] = 300,
     h: Optional[int] = 200,
@@ -39,7 +39,7 @@ async def convert_get(
         # tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
 
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTION)
+    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default.name)
 
     width = validate(w, 300)
     height = validate(h, 200)

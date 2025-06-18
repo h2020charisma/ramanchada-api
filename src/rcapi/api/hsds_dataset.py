@@ -3,7 +3,7 @@ from typing import Optional,  List, Union
 from pydantic import BaseModel
 import h5pyd
 from rcapi.services.solr_query import (
-    solr_query_get, SOLR_ROOT, SOLR_COLLECTION, solr_escape, SOLR_VECTOR
+    solr_query_get, SOLR_ROOT, SOLR_COLLECTIONS, solr_escape, SOLR_VECTOR
 )
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from rcapi.services.kc import get_token
@@ -59,8 +59,10 @@ async def get_dataset(
         params = {"q": query, "fq": ["type_s:study"], "fl": fields}
         rs = None
         try:
-            rs = await solr_query_get("{}{}/select".format(SOLR_ROOT, SOLR_COLLECTION), params, token)
-            return await read_solr_study4dataset(domain, rs.json(), values, token)
+            rs = await solr_query_get("{}{}/select".format(
+                SOLR_ROOT, SOLR_COLLECTIONS.default.name), params, token)
+            return await read_solr_study4dataset(
+                domain, rs.json(), values, token)
         except HTTPException as err:
             raise err
         finally:
@@ -98,7 +100,8 @@ async def read_solr_study4dataset(domain, response_data, with_values=False, toke
         params = {"q": "document_uuid_s:{}".format(doc_uuid), "fq": ["type_s:params"]}
         rs = None
         try:
-            rs = await solr_query_get("{}{}/select".format(SOLR_ROOT, SOLR_COLLECTION), params, token)
+            rs = await solr_query_get("{}{}/select".format(
+                SOLR_ROOT, SOLR_COLLECTIONS.default.name), params, token)
             rs_params_json = rs.json() # one study has one set of params by definition
             for doc_param in rs_params_json.get("response", {}).get("docs", []):
                 # these should come from parameters ...

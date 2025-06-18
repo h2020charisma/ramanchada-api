@@ -5,6 +5,7 @@ from rcapi.services.solr_query import solr_query_post
 import urllib.parse
 from rcapi.api.utils import get_baseurl
 
+
 async def process(request: Request,
     solr_url: str,
     q: Optional[str] = "*",

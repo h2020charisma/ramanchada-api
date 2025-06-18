@@ -2,4 +2,13 @@ upload_dir: "uploads"
 nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"
 SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"
 SOLR_VECTOR: "spectrum_p1024"
-SOLR_COLLECTION: "charisma_protected"
+SOLR_COLLECTIONS:
+  default:
+    name: "charisma"
+    description: "CHARISMA"
+  public:
+    - name: "charisma"
+      description: "CHARISMA"
+  private:
+    - name: "charisma_protected"
+      description: "CHARISMA protected"

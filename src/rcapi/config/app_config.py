@@ -1,4 +1,6 @@
 from pydantic_settings import BaseSettings
+from pydantic import BaseModel
+from typing import List
 import yaml
 import os
 from importlib import resources
@@ -6,12 +8,24 @@ from pathlib import Path
 import shutil
 
 
+class SolrCollectionEntry(BaseModel):
+    name: str
+    description: str
+
+
+class SolrCollectionSettings(BaseModel):
+    default: SolrCollectionEntry = SolrCollectionEntry(
+        name="charisma", description="Default collection")
+    public: List[SolrCollectionEntry] = []
+    private: List[SolrCollectionEntry] = []
+
+
 class AppConfig(BaseSettings):
     upload_dir: str
-    nmparse_url: str 
+    nmparse_url: str
     SOLR_ROOT: str = "https://solr-kc.ideaconsult.net/solr/"
     SOLR_VECTOR: str = "spectrum_p1024"
-    SOLR_COLLECTION: str = "charisma"
+    SOLR_COLLECTIONS: SolrCollectionSettings = SolrCollectionSettings()
 
 
 def load_config():
