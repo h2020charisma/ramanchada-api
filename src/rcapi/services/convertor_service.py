@@ -1,6 +1,3 @@
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 import numpy as np
@@ -18,7 +15,12 @@ from typing import Tuple
 import ramanchada2 as rc2
 import numpy.typing as npt
 from scipy.interpolate import Akima1DInterpolator
-
+import matplotlib  # noqa: E402
+matplotlib.use('Agg')
+from matplotlib.backends.backend_agg import (  # noqa: E402
+    FigureCanvasAgg as FigureCanvas)
+from matplotlib.figure import Figure  # noqa: E402
+import matplotlib.pyplot as plt  # noqa: E402
 
 x4search = np.linspace(140, 3*1024+140, num=2048)
 

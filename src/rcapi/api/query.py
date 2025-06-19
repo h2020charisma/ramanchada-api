@@ -4,10 +4,11 @@ from rcapi.services import query_service
 from rcapi.services.solr_query import (
     SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, solr_query_get
 )
-from rcapi.services.kc import get_token
+from rcapi.services.kc import get_token, get_roles_from_token
 import traceback
 
 router = APIRouter()
+
 
 @router.get("/query", )
 async def get_query(
@@ -56,7 +57,7 @@ async def get_field(
         ):
     solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default)
     try:
-        params = {"q": "*", "rows":0, "facet.field":name, "facet":"true"}
+        params = {"q": "*", "rows": 0, "facet.field": name, "facet": "true"}
         rs = await solr_query_get(solr_url, params, token)
         result = []
         # Extract the facet field values
@@ -80,24 +81,20 @@ async def get_sources(
         request: Request,
         token: Optional[str] = Depends(get_token)
         ):
-    print("query", token)
     try:
-        collections = []
-        if token is None:
-            collections.extend(SOLR_COLLECTIONS.public)
+        if token is not None:
+            user_roles = get_roles_from_token(token)
         else:
-            collections.extend(SOLR_COLLECTIONS.public)
-            collections.extend(SOLR_COLLECTIONS.private)
-        seen_names = set()
-        unique_collections = []
-        for col in collections:
-            if col.name not in seen_names:
-                seen_names.add(col.name)
-                unique_collections.append(col)
+            user_roles = []
+        user_roles.append("public")
+        print("roles", user_roles)
+        # Filter collections based on user's roles
+        accessible_collections = SOLR_COLLECTIONS.for_roles(user_roles)
+
         return {
             "data_sources": [
                 {"name": c.name, "description": c.description}
-                for c in unique_collections
+                for c in accessible_collections
             ]
         }
 

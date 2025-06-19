@@ -3,14 +3,59 @@ from fastapi import Request, HTTPException, Header
 import logging
 import threading
 import h5pyd
-import httpx
 from contextlib import contextmanager, asynccontextmanager
 from typing import Optional
+from keycloak import KeycloakOpenID
+from rcapi.config.app_config import initialize_dirs
+import jwt
+
 
 # Thread-local storage for API key
 thread_local = threading.local()
 
+config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
+
+keycloak_openid = KeycloakOpenID(
+    server_url=config.KEYCLOAK.SERVER_URL,
+    client_id=config.KEYCLOAK.CLIENT_ID,
+    realm_name=config.KEYCLOAK.REALM_NAME,
+    client_secret_key=config.KEYCLOAK.CLIENT_SECRET
+)
+
+
 logger = logging.getLogger(__name__)
+
+
+def get_roles_from_token(token: str,
+                         validate=True) -> list[str]:
+    try:
+        if validate:
+            decoded = keycloak_openid.decode_token(
+                token, validate=True
+            )
+        else:
+            decoded = jwt.decode(
+                token,
+                key='',  # or a dummy public key
+                algorithms=["RS256"],
+                options={
+                    "verify_signature": False,
+                    "verify_exp": False,
+                    "verify_aud": False,
+                    "verify_iss": False
+                }
+            )
+        roles = set(decoded.get("realm_access", {}).get("roles", []))
+        for client, access in decoded.get("resource_access", {}).items():
+            roles.update(access.get("roles", []))
+        # this gets back when using jwt.decode
+        roles.update(decoded.get("roles", []))
+        return list(roles)
+
+    except Exception as err:
+        print(err)
+        return []
+
 
 # Dependency to extract Bearer token
 def get_token(authorization: Optional[str] = Header(None)):

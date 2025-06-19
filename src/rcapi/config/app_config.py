@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field
+from typing import List, Dict, Set
 import yaml
 import os
 from importlib import resources
@@ -11,12 +11,47 @@ import shutil
 class SolrCollectionEntry(BaseModel):
     name: str
     description: str
+    roles: List[str] = Field(default_factory=list)
 
 
 class SolrCollectionSettings(BaseModel):
     default: str = "charisma"
-    public: List[SolrCollectionEntry] = []
-    private: List[SolrCollectionEntry] = []
+    collections: List[SolrCollectionEntry] = Field(default_factory=list)
+
+    def all_roles(self) -> Set[str]:
+        """Return a set of all roles used across all collections."""
+        return {
+            role
+            for collection in self.collections
+            for role in collection.roles
+        }
+
+    def for_roles(self, user_roles: List[str]) -> List[SolrCollectionEntry]:
+        """Return collections accessible to any of the given user roles."""
+        user_role_set = set(user_roles)
+        return [
+            c for c in self.collections
+            if user_role_set.intersection(c.roles)
+        ]
+
+    def by_role(self) -> Dict[str, List[SolrCollectionEntry]]:
+        """Index collections by role for quick lookup."""
+        role_map: Dict[str, List[SolrCollectionEntry]] = {}
+        for collection in self.collections:
+            for role in collection.roles:
+                role_map.setdefault(role, []).append(collection)
+        return role_map
+
+    def public_collections(self) -> List[SolrCollectionEntry]:
+        """Convenience shortcut for public-accessible collections."""
+        return self.for_roles(["public"])
+
+    
+class KeycloakConfig(BaseModel):
+    SERVER_URL: str
+    REALM_NAME: str
+    CLIENT_ID: str
+    CLIENT_SECRET: str
 
 
 class AppConfig(BaseSettings):
@@ -25,6 +60,13 @@ class AppConfig(BaseSettings):
     SOLR_ROOT: str = "https://solr-kc.ideaconsult.net/solr/"
     SOLR_VECTOR: str = "spectrum_p1024"
     SOLR_COLLECTIONS: SolrCollectionSettings = SolrCollectionSettings()
+    KEYCLOAK: KeycloakConfig
+
+    @classmethod
+    def from_yaml(cls, path: str) -> "AppConfig":
+        with open(path, "r") as f:
+            data = yaml.safe_load(f)
+        return cls(**data)
 
 
 def load_config():

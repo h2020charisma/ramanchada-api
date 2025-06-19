@@ -3,7 +3,7 @@ import os
 import yaml
 import pytest
 
-from rcapi.config.app_config import load_config, AppConfig
+from rcapi.config.app_config import load_config, AppConfig, SolrCollectionEntry
 
 
 @pytest.fixture
@@ -13,14 +13,18 @@ def temp_config_file():
         'nmparse_url': 'http://localhost:8080/nmparse',
         'SOLR_COLLECTIONS': {
             'default': 'custom_public_1',
-            'public': [
-                {'name': 'custom_public_1', 'description': 'Public 1'},
-                {'name': 'custom_public_2', 'description': 'Public 2'}
+            'collections': [
+                {'name': 'custom_public_1', 'description': 'Public 1', 'roles': ['public']},
+                {'name': 'custom_public_2', 'description': 'Public 2', 'roles': ['public']},
+                {'name': 'custom_private_1', 'description': 'Private 1', 'roles': ['private']},
+                {'name': 'custom_private_2', 'description': 'Private 2', 'roles': ['private']}
             ],
-            'private': [
-                {'name': 'custom_private_1', 'description': 'Private 1'},
-                {'name': 'custom_private_2', 'description': 'Private 2'}
-            ]
+        },
+        "KEYCLOAK": {
+            "SERVER_URL": "https://example.org/",
+            "REALM_NAME": "test",
+            "CLIENT_ID": "test",
+            "CLIENT_SECRET": "secret"
         }
     }
 
@@ -41,24 +45,35 @@ def test_load_config(temp_config_file):
     assert isinstance(config, AppConfig)
     assert config.upload_dir == '/tmp/uploads'
     assert config.nmparse_url == 'http://localhost:8080/nmparse'
-
-    # Default collection
     assert config.SOLR_COLLECTIONS.default == 'custom_public_1'
 
-    # Public collections
-    assert len(config.SOLR_COLLECTIONS.public) == 2
-    assert config.SOLR_COLLECTIONS.public[0].name == 'custom_public_1'
-    assert config.SOLR_COLLECTIONS.public[0].description == 'Public 1'
-    assert config.SOLR_COLLECTIONS.public[1].name == 'custom_public_2'
-    assert config.SOLR_COLLECTIONS.public[1].description == 'Public 2'
+    collections = config.SOLR_COLLECTIONS.collections
+    assert isinstance(collections, list)
+    assert all(isinstance(c, SolrCollectionEntry) for c in collections)
 
-    # Private collections
-    assert len(config.SOLR_COLLECTIONS.private) == 2
-    assert config.SOLR_COLLECTIONS.private[0].name == 'custom_private_1'
-    assert config.SOLR_COLLECTIONS.private[0].description == 'Private 1'
-    assert config.SOLR_COLLECTIONS.private[1].name == 'custom_private_2'
-    assert config.SOLR_COLLECTIONS.private[1].description == 'Private 2'
+    # Validate expected structure
+    assert len(collections) == 4
 
-    # Defaults
+    # Index by name for convenience
+    name_map = {c.name: c for c in collections}
+
+    assert name_map['custom_public_1'].description == 'Public 1'
+    assert 'public' in name_map['custom_public_1'].roles
+
+    assert name_map['custom_private_2'].description == 'Private 2'
+    assert 'private' in name_map['custom_private_2'].roles
+
+    # Validate role-based lookup
+    public = config.SOLR_COLLECTIONS.for_roles(['public'])
+    assert len(public) == 2
+    assert {c.name for c in public} == {'custom_public_1', 'custom_public_2'}
+
+    private = config.SOLR_COLLECTIONS.for_roles(['private'])
+    assert len(private) == 2
+    assert {c.name for c in private} == {'custom_private_1', 'custom_private_2'}
+
+    public_and_private = config.SOLR_COLLECTIONS.for_roles(['public', 'private'])
+    assert len(public_and_private) == 4
+
     assert config.SOLR_ROOT == "https://solr-kc.ideaconsult.net/solr/"
     assert config.SOLR_VECTOR == "spectrum_p1024"

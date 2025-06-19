@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Query, Depends
 from fastapi.responses import Response
 from typing import Optional, Literal
-import matplotlib.pyplot as plt
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import logging
 import io
@@ -19,7 +18,9 @@ from rcapi.services.kc import get_token
 import h5py
 import h5pyd
 from rcapi.services.solr_query import SOLR_ROOT, SOLR_COLLECTIONS
-
+import matplotlib  # noqa: E402
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt  # noqa: E402
 
 router = APIRouter()
 
@@ -86,7 +87,6 @@ async def convert_get(
                     raise HTTPException(status_code=500, detail=f" error: {str(err)}")
         elif what == "h5":  # h5 query
             try:
-                # with inject_api_key_h5pyd(api_key):
                 if what == "h5":
                     try:
                         with io.BytesIO() as tmpfile:

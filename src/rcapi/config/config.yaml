@@ -4,9 +4,15 @@ SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"
 SOLR_VECTOR: "spectrum_p1024"
 SOLR_COLLECTIONS:
   default: "charisma"
-  public:
+  collections:
     - name: "charisma"
       description: "CHARISMA"
-  private:
+      roles: ["public"]
     - name: "charisma_protected"
       description: "CHARISMA protected"
+      roles: ["charisma"]
+KEYCLOAK:
+  SERVER_URL: "https://iam.ideaconsult.net/"
+  REALM_NAME: "nano"
+  CLIENT_ID: "idea-ui"
+  CLIENT_SECRET: "secret"
