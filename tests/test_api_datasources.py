@@ -28,16 +28,16 @@ def test_sources_no_token(client):
 
 
 def test_sources_with_token(client, monkeypatch):
-    TEST_TOKEN = Path(__file__).parent / "resources/api/access_token.json"
-    with open(TEST_TOKEN, 'r') as json_file:
-        test_token = json.load(json_file)
-    app.dependency_overrides[get_token] = lambda: test_token["access_token"]
+    TEST_TOKEN = Path(__file__).parent / "resources/api/test-token.txt"
+    token = TEST_TOKEN.read_text()
+    TEST_KEY = Path(__file__).parent / "resources/api/test-jwt-key.pem"
+    key = TEST_KEY.read_text()
+    app.dependency_overrides[get_token] = lambda: token
 
     # Define patched version of get_roles_from_token
-    def mock_get_roles_from_token(token, validate=True):
-        print("----> mock_get_roles_from_token (validate=False forced)")
-        return get_roles_from_token(token, validate=False)
-    
+    def mock_get_roles_from_token(token, key=key):
+        print("----> mock_get_roles_from_token (key=key)")
+        return get_roles_from_token(token, key=key)
     monkeypatch.setattr("rcapi.api.query.get_roles_from_token",
                         mock_get_roles_from_token)
     # Call the endpoint

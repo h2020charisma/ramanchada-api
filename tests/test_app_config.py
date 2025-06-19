@@ -21,10 +21,9 @@ def temp_config_file():
             ],
         },
         "KEYCLOAK": {
-            "SERVER_URL": "https://example.org/",
-            "REALM_NAME": "test",
-            "CLIENT_ID": "test",
-            "CLIENT_SECRET": "secret"
+            "OPENID_CONFIG_URI": "https://example.org/realms/test/.well-known/openid-configuration",
+            "JWT_AUDIENCE": "account",
+            "JWT_ISSUER": "https://example.org/realms/test/"
         }
     }
 

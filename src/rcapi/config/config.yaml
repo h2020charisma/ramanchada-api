@@ -10,9 +10,8 @@ SOLR_COLLECTIONS:
       roles: ["public"]
     - name: "charisma_protected"
       description: "CHARISMA protected"
-      roles: ["charisma"]
+      roles: ["charisma", "test-role-1"]
 KEYCLOAK:
-  SERVER_URL: "https://iam.ideaconsult.net/"
-  REALM_NAME: "nano"
-  CLIENT_ID: "idea-ui"
-  CLIENT_SECRET: "secret"
+  OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"
+  JWT_AUDIENCE: "account"
+  JWT_ISSUER: "https://iam.ideaconsult.net/realms/nano"

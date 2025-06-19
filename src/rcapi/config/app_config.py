@@ -46,12 +46,11 @@ class SolrCollectionSettings(BaseModel):
         """Convenience shortcut for public-accessible collections."""
         return self.for_roles(["public"])
 
-    
+
 class KeycloakConfig(BaseModel):
-    SERVER_URL: str
-    REALM_NAME: str
-    CLIENT_ID: str
-    CLIENT_SECRET: str
+    OPENID_CONFIG_URI: str
+    JWT_AUDIENCE: str
+    JWT_ISSUER: str
 
 
 class AppConfig(BaseSettings):
