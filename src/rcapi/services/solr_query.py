@@ -6,10 +6,11 @@ from rcapi.config.app_config import initialize_dirs
 config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
 SOLR_ROOT = config.SOLR_ROOT
 SOLR_VECTOR = config.SOLR_VECTOR
-SOLR_COLLECTION = config.SOLR_COLLECTION
+SOLR_COLLECTIONS = config.SOLR_COLLECTIONS
 
 
-async def solr_query_post(solr_url, query_params=None, post_param=None, token=None):
+async def solr_query_post(
+        solr_url, query_params=None, post_param=None, token=None):
     async with httpx.AsyncClient() as client:
         try:
             headers = {}
@@ -24,8 +25,10 @@ async def solr_query_post(solr_url, query_params=None, post_param=None, token=No
             response.raise_for_status()  # Check for HTTP errors
             return response
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code,
-                    detail="external service ({})".format("-" if token is None else "+"))
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail="external service ({})".
+                format("-" if token is None else "+"))
 
 
 async def solr_query_get(solr_url, params=None, token=None):
@@ -42,8 +45,10 @@ async def solr_query_get(solr_url, params=None, token=None):
             response.raise_for_status()  # Check for HTTP errors
             return response
         except httpx.HTTPStatusError as e:
-            raise HTTPException(status_code=e.response.status_code, 
-                    detail="external service ({})".format("-" if token is None else "+"))
+            raise HTTPException(
+                status_code=e.response.status_code,
+                detail="external service ({})".format(
+                    "-" if token is None else "+"))
 
 
 def solr_escape(value: str) -> str:

@@ -68,8 +68,7 @@ def test_download_domain_h5(domain):
 
 
 def test_download_domain_image(domain):
-    print(domain)
-    params = { "domain": domain , "what": "thumbnail"} 
+    params = {"domain": domain, "what": "thumbnail"} 
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200, f"Expected status code 200 but got {response.status_code}"
     # Assert that the Content-Type is "image/png"
