@@ -153,12 +153,15 @@ def generate_etag(content: str) -> str:
 
 async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                      extraprm=None, thumbnail: bool = True,
+                     collections: str = None,
                      token: str = None) -> Tuple[Figure, str]:
     rs = None
     try:
         query = "textValue_s:{}{}{}".format('"', domain, '"')
         params = {"q": query, "fq": ["type_s:study"], 
                   "fl": "name_s,textValue_s,reference_s,reference_owner_s,{},updated_s,_version_".format(SOLR_VECTOR)}
+        if collections is not None:
+            params["collection"] = collections
         rs = await solr_query_get(solr_url, params, token=token)
         if rs is not None and rs.status_code == 200:
             response_json = rs.json()

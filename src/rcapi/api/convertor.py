@@ -68,6 +68,7 @@ async def convert_get(
                     fig, etag = await solr2image(solr_url, domain, figsize,
                                                 extraprm=extra,
                                                 thumbnail=(what != "image"),
+                                                collections=collection_param,
                                                 token=token)
                     # Check if ETag matches the client's If-None-Match header
                     _headers = {}
@@ -105,6 +106,7 @@ async def convert_get(
         raise HTTPException(status_code=400, detail=f"Unsupported 'what' parameter: {what}")
     
     except HTTPException as err:
+        traceback.print_exc(err)
         raise err
     except Exception as err:
         raise HTTPException(status_code=400, detail=str(err))

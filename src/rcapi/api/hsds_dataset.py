@@ -104,6 +104,8 @@ async def read_solr_study4dataset(
         rs = None
         try:
             solr_url, collection_param = SOLR_COLLECTIONS.get_url(SOLR_ROOT, data_source)
+            if collection_param is not None:
+                params["collection"] = collection_param
             rs = await solr_query_get(solr_url, params, token)
             rs_params_json = rs.json() # one study has one set of params by definition
             for doc_param in rs_params_json.get("response", {}).get("docs", []):

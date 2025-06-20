@@ -3,7 +3,6 @@ from fastapi.testclient import TestClient
 from rcapi.main import app
 from rcapi.services.kc import get_token, get_roles_from_token
 from pathlib import Path
-import json
 
 
 @pytest.fixture

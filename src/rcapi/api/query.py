@@ -42,6 +42,7 @@ async def get_query(
             page=page,
             pagesize=pagesize,
             img=img,
+            collections=collection_param,
             vector_field=SOLR_VECTOR if vector_field is None else vector_field,
             token=token
         )
@@ -62,6 +63,8 @@ async def get_field(
         SOLR_ROOT, data_source)
     try:
         params = {"q": "*", "rows": 0, "facet.field": name, "facet": "true"}
+        if collection_param is not None:
+            params["collection"] = collection_param
         rs = await solr_query_get(solr_url, params, token)
         result = []
         # Extract the facet field values
@@ -91,7 +94,6 @@ async def get_sources(
         else:
             user_roles = []
         user_roles.append("public")
-        print("roles", user_roles)
         # Filter collections based on user's roles
         accessible_collections = SOLR_COLLECTIONS.for_roles(user_roles)
 

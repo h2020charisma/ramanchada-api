@@ -34,6 +34,7 @@ def test_invalid_data_source(settings):
     assert url == f"{root}/charisma/select"
     assert coll is None
 
+
 def test_single_valid_data_source_default(settings):
     url, coll = settings.get_url(root, {"charisma"})
     assert url == f"{root}/charisma/select"
