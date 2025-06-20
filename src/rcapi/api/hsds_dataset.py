@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Query, HTTPException, Depends
-from typing import Optional,  List, Union
+from typing import Optional,  List, Union, Set
 from pydantic import BaseModel
 import h5pyd
 from rcapi.services.solr_query import (
@@ -45,6 +45,7 @@ async def get_dataset(
     domain: str = Query(..., description="The hsds domain to query"),
     values: Optional[bool] = Query(None, description="Whether to include values or not"),
     bucket: str = Query(None, description="The HSDS bucket"),
+    data_source: Optional[Set[str]] = Query(default=None),
     token: Optional[str] = Depends(get_token),
 ):
     if domain.endswith(".chaold"):  # all goes through solr now
@@ -59,8 +60,8 @@ async def get_dataset(
         params = {"q": query, "fq": ["type_s:study"], "fl": fields}
         rs = None
         try:
-            rs = await solr_query_get("{}{}/select".format(
-                SOLR_ROOT, SOLR_COLLECTIONS.default), params, token)
+            solr_url, collection_param = SOLR_COLLECTIONS.get_url(SOLR_ROOT, data_source)            
+            rs = await solr_query_get(solr_url, params, token)
             return await read_solr_study4dataset(
                 domain, rs.json(), values, token)
         except HTTPException as err:
@@ -70,7 +71,9 @@ async def get_dataset(
                 await rs.aclose()
 
 
-async def read_solr_study4dataset(domain, response_data, with_values=False, token=None):
+async def read_solr_study4dataset(
+        domain, response_data, with_values=False, 
+        data_source: Optional[Set[str]] = Query(default=None),token=None):
     # print(response_data)
     _domain = domain.split('#', 1)[0] if '#' in domain else domain
 
@@ -89,7 +92,7 @@ async def read_solr_study4dataset(domain, response_data, with_values=False, toke
             y = doc[SOLR_VECTOR]
             dim = len(y)
             dataset["shape"] = [2, dim]
-            dataset["size"] = dim 
+            dataset["size"] = dim
             dataset["value"] = []
             dataset["value"].append(StudyRaman.x4search(dim).tolist())
             dataset["value"].append(y)
@@ -100,8 +103,8 @@ async def read_solr_study4dataset(domain, response_data, with_values=False, toke
         params = {"q": "document_uuid_s:{}".format(doc_uuid), "fq": ["type_s:params"]}
         rs = None
         try:
-            rs = await solr_query_get("{}{}/select".format(
-                SOLR_ROOT, SOLR_COLLECTIONS.default), params, token)
+            solr_url, collection_param = SOLR_COLLECTIONS.get_url(SOLR_ROOT, data_source)
+            rs = await solr_query_get(solr_url, params, token)
             rs_params_json = rs.json() # one study has one set of params by definition
             for doc_param in rs_params_json.get("response", {}).get("docs", []):
                 # these should come from parameters ...

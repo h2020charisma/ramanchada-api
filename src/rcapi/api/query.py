@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Request, HTTPException, Depends
-from typing import Optional, Literal
+from fastapi import APIRouter, Request, HTTPException, Depends, Query
+from typing import Optional, Literal, Set
 from rcapi.services import query_service
 from rcapi.services.solr_query import (
     SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, solr_query_get
@@ -20,9 +20,11 @@ async def get_query(
         page: Optional[int] = 0, pagesize: Optional[int] = 10,
         img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
         vector_field: Optional[str] = None,
+        data_source: Optional[Set[str]] = Query(default=None),
         token: Optional[str] = Depends(get_token)
         ):
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default)
+    solr_url, collection_param = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source)
 
     textQuery = q
     textQuery = "*" if textQuery is None or textQuery == "" else textQuery
@@ -53,9 +55,11 @@ async def get_query(
 async def get_field(
         request: Request,
         name: str = "publicname_s",
+        data_source: Optional[Set[str]] = Query(default=None),
         token: Optional[str] = Depends(get_token)
         ):
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default)
+    solr_url, collection_param = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source)
     try:
         params = {"q": "*", "rows": 0, "facet.field": name, "facet": "true"}
         rs = await solr_query_get(solr_url, params, token)

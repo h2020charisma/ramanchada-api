@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Query, Depends
 from fastapi.responses import Response
-from typing import Optional, Literal
+from typing import Optional, Literal, Set
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import logging
 import io
@@ -34,14 +34,15 @@ async def convert_get(
     w: Optional[int] = 300,
     h: Optional[int] = 200,
     extra: Optional[str] = None,
+    data_source: Optional[Set[str]] = Query(default=None),
     token: Optional[str] = Depends(get_token)
 ):
     if not domain:
         # tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
 
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTIONS.default)
-
+    solr_url, collection_param = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source)
     width = validate(w, 300)
     height = validate(h, 200)
     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches

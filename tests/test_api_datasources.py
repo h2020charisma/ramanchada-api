@@ -40,6 +40,7 @@ def test_sources_with_token(client, monkeypatch):
         return get_roles_from_token(token, key=key)
     monkeypatch.setattr("rcapi.api.query.get_roles_from_token",
                         mock_get_roles_from_token)
+
     # Call the endpoint
     response = client.get("/db/query/sources")
     assert response.status_code == 200

@@ -1,6 +1,6 @@
 from pydantic_settings import BaseSettings
 from pydantic import BaseModel, Field
-from typing import List, Dict, Set
+from typing import List, Dict, Set, Optional, Tuple
 import yaml
 import os
 from importlib import resources
@@ -17,6 +17,46 @@ class SolrCollectionEntry(BaseModel):
 class SolrCollectionSettings(BaseModel):
     default: str = "charisma"
     collections: List[SolrCollectionEntry] = Field(default_factory=list)
+
+    def get_url(
+        self, root: str, data_source: Optional[Set[str]] = None
+    ) -> Tuple[str, Optional[str]]:
+        valid_names = {c.name for c in self.collections}
+
+        # Always fallback to config default
+        default_collection = self.default
+
+        # If no data_source given, or empty set
+        if not data_source:
+            effective_default = default_collection
+            collection_param = None
+            base_url = f"{root.rstrip('/')}/{effective_default}/select"
+            return base_url, collection_param
+
+        # Get valid data sources from user input
+        valid_sources = data_source & valid_names
+
+        # If no valid sources, fallback to default
+        if not valid_sources:
+            effective_default = default_collection
+            collection_param = None
+        elif len(valid_sources) == 1:
+            # Single valid source becomes default, no collections param
+            effective_default = next(iter(valid_sources))
+            collection_param = None
+        else:
+            # Multiple valid sources
+            if default_collection in valid_sources:
+                effective_default = default_collection
+            else:
+                effective_default = sorted(valid_sources)[0]
+
+            remaining = valid_sources - {effective_default}
+            collection_param = ",".join(sorted(remaining)) if remaining else None
+
+        base_url = f"{root.rstrip('/')}/{effective_default}/select"
+        return base_url, collection_param
+        
 
     def all_roles(self) -> Set[str]:
         """Return a set of all roles used across all collections."""

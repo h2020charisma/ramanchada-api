@@ -16,7 +16,8 @@ async def process(request: Request,
     page: Optional[int] = 0,
     pagesize: Optional[int] = 10,
     img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
-    vector_field="spectrum_p1024",
+    vector_field = "spectrum_p1024",
+    data_sources = None,
     token=None):
 
     query_fields = "id,name_s,textValue_s"
