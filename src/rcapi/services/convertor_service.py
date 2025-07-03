@@ -1,6 +1,3 @@
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 from io import BytesIO
 import base64
 import numpy as np
@@ -18,7 +15,12 @@ from typing import Tuple
 import ramanchada2 as rc2
 import numpy.typing as npt
 from scipy.interpolate import Akima1DInterpolator
-
+import matplotlib  # noqa: E402
+matplotlib.use('Agg')
+from matplotlib.backends.backend_agg import (  # noqa: E402
+    FigureCanvasAgg as FigureCanvas)
+from matplotlib.figure import Figure  # noqa: E402
+import matplotlib.pyplot as plt  # noqa: E402
 
 x4search = np.linspace(140, 3*1024+140, num=2048)
 
@@ -151,12 +153,15 @@ def generate_etag(content: str) -> str:
 
 async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                      extraprm=None, thumbnail: bool = True,
+                     collections: str = None,
                      token: str = None) -> Tuple[Figure, str]:
     rs = None
     try:
         query = "textValue_s:{}{}{}".format('"', domain, '"')
         params = {"q": query, "fq": ["type_s:study"], 
                   "fl": "name_s,textValue_s,reference_s,reference_owner_s,{},updated_s,_version_".format(SOLR_VECTOR)}
+        if collections is not None:
+            params["collection"] = collections
         rs = await solr_query_get(solr_url, params, token=token)
         if rs is not None and rs.status_code == 200:
             response_json = rs.json()
