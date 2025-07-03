@@ -98,6 +98,7 @@ async def get_sources(
         accessible_collections = SOLR_COLLECTIONS.for_roles(user_roles)
 
         return {
+            "default": SOLR_COLLECTIONS.default,
             "data_sources": [
                 {"name": c.name, "description": c.description}
                 for c in accessible_collections
