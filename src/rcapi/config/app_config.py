@@ -11,6 +11,7 @@ import shutil
 class SolrCollectionEntry(BaseModel):
     name: str
     description: str
+    license: str = None
     roles: List[str] = Field(default_factory=list)
 
 
@@ -56,7 +57,7 @@ class SolrCollectionSettings(BaseModel):
 
         base_url = f"{root.rstrip('/')}/{effective_default}/select"
         return base_url, collection_param
-        
+
 
     def all_roles(self) -> Set[str]:
         """Return a set of all roles used across all collections."""
