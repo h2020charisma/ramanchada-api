@@ -47,6 +47,8 @@ async def get_query(
             token=token
         )
         return results
+    except HTTPException as err:
+        raise err
     except Exception as err:
         print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(err))
