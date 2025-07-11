@@ -63,7 +63,7 @@ async def get_dataset(
             solr_url, collection_param = SOLR_COLLECTIONS.get_url(SOLR_ROOT, data_source)            
             rs = await solr_query_get(solr_url, params, token)
             return await read_solr_study4dataset(
-                domain, rs.json(), values, token)
+                domain, rs.json(), values, data_source, token)
         except HTTPException as err:
             raise err
         finally:
