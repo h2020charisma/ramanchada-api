@@ -50,10 +50,10 @@ def test_single_valid_data_source_non_default(settings):
 def test_multiple_valid_with_default(settings):
     url, coll = settings.get_url(root, {"charisma", "chem", "tox"})
     assert url == f"{root}/charisma/select"
-    assert coll == "chem,tox"
+    assert coll == "charisma,chem,tox"
 
 
 def test_multiple_valid_without_default(settings):
     url, coll = settings.get_url(root, {"chem", "tox"})
     assert url == f"{root}/chem/select"
-    assert coll == "tox"
+    assert coll == "chem,tox"
