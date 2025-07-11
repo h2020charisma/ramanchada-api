@@ -36,7 +36,7 @@ class SolrCollectionSettings(BaseModel):
 
         # Get valid data sources from user input
         valid_sources = data_source & valid_names
-
+        
         # If no valid sources, fallback to default
         if not valid_sources:
             effective_default = default_collection
@@ -51,9 +51,7 @@ class SolrCollectionSettings(BaseModel):
                 effective_default = default_collection
             else:
                 effective_default = sorted(valid_sources)[0]
-
-            remaining = valid_sources - {effective_default}
-            collection_param = ",".join(sorted(remaining)) if remaining else None
+            collection_param = ",".join(sorted(valid_sources))
 
         base_url = f"{root.rstrip('/')}/{effective_default}/select"
         return base_url, collection_param
