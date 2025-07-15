@@ -60,7 +60,8 @@ async def get_dataset(
         params = {"q": query, "fq": ["type_s:study"], "fl": fields}
         rs = None
         try:
-            solr_url, collection_param = SOLR_COLLECTIONS.get_url(SOLR_ROOT, data_source)            
+            solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+                SOLR_ROOT, data_source, drop_private=token is None)
             rs = await solr_query_get(solr_url, params, token)
             return await read_solr_study4dataset(
                 domain, rs.json(), values, data_source, token)
@@ -103,7 +104,8 @@ async def read_solr_study4dataset(
         params = {"q": "document_uuid_s:{}".format(doc_uuid), "fq": ["type_s:params"]}
         rs = None
         try:
-            solr_url, collection_param = SOLR_COLLECTIONS.get_url(SOLR_ROOT, data_source)
+            solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+                SOLR_ROOT, data_source, drop_private=token is None)
             if collection_param is not None:
                 params["collection"] = collection_param
             rs = await solr_query_get(solr_url, params, token)

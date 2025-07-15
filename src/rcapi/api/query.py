@@ -24,9 +24,8 @@ async def get_query(
         data_source: Optional[Set[str]] = Query(default=None),
         token: Optional[str] = Depends(get_token)
         ):
-    solr_url, collection_param = SOLR_COLLECTIONS.get_url(
-        SOLR_ROOT, data_source)
-
+    solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None)
     textQuery = q
     textQuery = "*" if textQuery is None or textQuery == "" else textQuery
 
@@ -47,7 +46,7 @@ async def get_query(
             vector_field=SOLR_VECTOR if vector_field is None else vector_field,
             token=token
         )
-        return StandardResponse(status=200, response=results)
+        return StandardResponse(status=1 if dropped else 0, response=results)
     except HTTPException as err:
         raise err
     except Exception as err:
@@ -62,8 +61,8 @@ async def get_field(
         data_source: Optional[Set[str]] = Query(default=None),
         token: Optional[str] = Depends(get_token)
         ):
-    solr_url, collection_param = SOLR_COLLECTIONS.get_url(
-        SOLR_ROOT, data_source)
+    solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None)
     try:
         params = {"q": "*", "rows": 0, "facet.field": name, "facet": "true"}
         if collection_param is not None:
@@ -77,7 +76,7 @@ async def get_field(
         for i in range(0, len(facet_field_values), 2):
             result.append({"value": facet_field_values[i],
                            "count": facet_field_values[i + 1]})
-        return StandardResponse(status=200, response=result)
+        return StandardResponse(status=1 if dropped else 0, response=result)
     except HTTPException as err:
         raise err
     except Exception as err:
@@ -103,7 +102,9 @@ async def get_sources(
         return {
             "default": SOLR_COLLECTIONS.default,
             "data_sources": [
-                {"name": c.name, "description": c.description}
+                {"name": c.name,
+                 "description": c.description,
+                 "public": "public" in c.roles}
                 for c in accessible_collections
             ]
         }

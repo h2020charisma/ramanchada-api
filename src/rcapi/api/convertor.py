@@ -58,8 +58,8 @@ async def convert_get(
         # tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
 
-    solr_url, collection_param = SOLR_COLLECTIONS.get_url(
-        SOLR_ROOT, data_source)
+    solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None)
     width = validate(w, 300)
     height = validate(h, 200)
     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches

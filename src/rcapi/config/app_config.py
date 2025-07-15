@@ -20,9 +20,18 @@ class SolrCollectionSettings(BaseModel):
     collections: List[SolrCollectionEntry] = Field(default_factory=list)
 
     def get_url(
-        self, root: str, data_source: Optional[Set[str]] = None
-    ) -> Tuple[str, Optional[str]]:
-        valid_names = {c.name for c in self.collections}
+        self, root: str, data_source: Optional[Set[str]] = None,
+        drop_private: bool = False
+    ) -> Tuple[str, Optional[str], bool]:
+        all_names = {c.name for c in self.collections}
+        if drop_private:
+            public_names = {
+                c.name for c in self.collections if "public" in c.roles}
+            dropped = bool(all_names - public_names)
+            valid_names = public_names
+        else:
+            dropped = False
+            valid_names = all_names
 
         # Always fallback to config default
         default_collection = self.default
@@ -32,7 +41,7 @@ class SolrCollectionSettings(BaseModel):
             effective_default = default_collection
             collection_param = None
             base_url = f"{root.rstrip('/')}/{effective_default}/select"
-            return base_url, collection_param
+            return base_url, collection_param, dropped
 
         # Get valid data sources from user input
         valid_sources = data_source & valid_names
@@ -54,8 +63,7 @@ class SolrCollectionSettings(BaseModel):
             collection_param = ",".join(sorted(valid_sources))
 
         base_url = f"{root.rstrip('/')}/{effective_default}/select"
-        return base_url, collection_param
-
+        return base_url, collection_param, dropped
 
     def all_roles(self) -> Set[str]:
         """Return a set of all roles used across all collections."""
