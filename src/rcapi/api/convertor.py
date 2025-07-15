@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Query, Depends
 from fastapi.responses import Response
-from typing import Optional, Literal
-import matplotlib.pyplot as plt
+from typing import Optional, Literal, Set
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import logging
 import io
@@ -18,29 +17,49 @@ from rcapi.services.convertor_service import (
 from rcapi.services.kc import get_token
 import h5py
 import h5pyd
-from rcapi.services.solr_query import SOLR_ROOT, SOLR_COLLECTION
-
+from rcapi.services.solr_query import SOLR_ROOT, SOLR_COLLECTIONS
+import matplotlib  # noqa: E402
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt  # noqa: E402
 
 router = APIRouter()
 
 
-@router.get("/download", )
+@router.get(
+    "/download",
+    responses={
+        200: {
+            "content": {
+                "image/png": {},
+                "application/x-hdf5": {},
+                "text/plain": {},
+            },
+            "description": "Returns image, HDF5 file, or base64-encoded PNG.",
+        },
+        304: {"description": "Not Modified"},
+        400: {"description": "Invalid request"},
+        401: {"description": "Unauthorized - missing or invalid authentication token."},
+        403: {"description": "Forbidden - access to resource is denied."},        
+        500: {"description": "Internal error"},
+    }
+)
 async def convert_get(
     request: Request,
     domain: str,
-    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail","b64png"]] = "h5",
+    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail", "b64png"]] = "h5",
     dataset: Optional[str] = "raw",
     w: Optional[int] = 300,
     h: Optional[int] = 200,
     extra: Optional[str] = None,
+    data_source: Optional[Set[str]] = Query(default=None),
     token: Optional[str] = Depends(get_token)
 ):
     if not domain:
         # tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
 
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTION)
-
+    solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None)
     width = validate(w, 300)
     height = validate(h, 200)
     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
@@ -66,6 +85,7 @@ async def convert_get(
                     fig, etag = await solr2image(solr_url, domain, figsize,
                                                 extraprm=extra,
                                                 thumbnail=(what != "image"),
+                                                collections=collection_param,
                                                 token=token)
                     # Check if ETag matches the client's If-None-Match header
                     _headers = {}
@@ -86,7 +106,6 @@ async def convert_get(
                     raise HTTPException(status_code=500, detail=f" error: {str(err)}")
         elif what == "h5":  # h5 query
             try:
-                # with inject_api_key_h5pyd(api_key):
                 if what == "h5":
                     try:
                         with io.BytesIO() as tmpfile:
@@ -104,17 +123,39 @@ async def convert_get(
         raise HTTPException(status_code=400, detail=f"Unsupported 'what' parameter: {what}")
     
     except HTTPException as err:
+        traceback.print_exc(err)
         raise err
     except Exception as err:
         raise HTTPException(status_code=400, detail=str(err))
 
 
-@router.post("/download")
+@router.post(
+    "/download",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "cdf": "compressed_string_here",
+                        "imageLink": "data:image/png;base64,..."
+                    }
+                },
+                "text/plain": {
+                    "example": "iVBORw0KGgoAAAANSUhEUgAA..."
+                }
+            },
+            "description": "Returns spectrum JSON or base64-encoded PNG string depending on 'what'.",
+        },
+        400: {"description": "Bad Request - invalid input or unsupported format"},
+        401: {"description": "Unauthorized - missing or invalid token"},
+        403: {"description": "Forbidden - token valid, but access denied"},
+        500: {"description": "Internal Server Error"},
+    }
+)
 async def convert_post(
         what: Literal["knnquery", "b64png"] = Query("knnquery"),
         files: list[UploadFile] = File(...),
-        token: Optional[str] = Depends(get_token) 
-    ):
+        token: Optional[str] = Depends(get_token)):
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")
     logging.info(f"Number of files received: {len(files)}")    

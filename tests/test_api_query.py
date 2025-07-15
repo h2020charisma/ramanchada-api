@@ -3,6 +3,8 @@ from rcapi.main import app
 import pytest
 from importlib.resources import files
 from numcompress import decompress
+from rcapi.services.standard_response import StandardDictListResponse
+
 
 client = TestClient(app)
 
@@ -21,9 +23,9 @@ def test_query_metadata():
     params = { "query_type": "metadata" }
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
-    result = response.json()
-    assert isinstance(result, list), "Response is not a list"
-    for item in result:
+    parsed = StandardDictListResponse.model_validate(response.json())
+    assert isinstance(parsed.response, list), "Response is not a list"
+    for item in parsed.response:
         assert isinstance(item, dict), "Items in the list should be dictionaries"
         assert "value" in item, "'value' key missing"
         assert "text" in item, "'text' key missing"
@@ -34,9 +36,9 @@ def test_query_metadata_embeddedimages():
     params = {"query_type": "metadata" , "img": "embedded"}
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
-    result = response.json()
-    assert isinstance(result, list), "Response is not a list"
-    for item in result:
+    parsed = StandardDictListResponse.model_validate(response.json())
+    assert isinstance(parsed.response, list), "Response is not a list"
+    for item in parsed.response:
         assert isinstance(item, dict), "Items in the list should be dictionaries"
         assert "value" in item, "'value' key missing"
         assert "text" in item, "'text' key missing"
@@ -48,9 +50,9 @@ def test_knnquery(knnquery4test):
     params = {"query_type": "knnquery", "ann": knnquery4test}
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
-    result = response.json()
-    assert isinstance(result, list), "Response is not a list"
-    for item in result:
+    parsed = StandardDictListResponse.model_validate(response.json())
+    assert isinstance(parsed.response, list), "Response is not a list"
+    for item in parsed.response:
         assert isinstance(item, dict), "Items in the list should be dictionaries"
         assert "score" in item, "'score' key missing"        
         assert "value" in item, "'value' key missing"

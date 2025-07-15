@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from rcapi.api.hsds_dataset import read_cha
 from rcapi.main import app
+from rcapi.services.standard_response import StandardDictListResponse
 
 
 TEST_ENDPOINT = "/db/dataset"
@@ -16,7 +17,8 @@ def domain():
     }
     response = client.get("/db/query", params=params)
     assert response.status_code == 200
-    domain_url = response.json()[0]["value"]
+    parsed = StandardDictListResponse.model_validate(response.json())
+    domain_url = parsed.response[0]["value"]
     return domain_url.partition("#")[0]
 
 
