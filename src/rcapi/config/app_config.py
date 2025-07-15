@@ -24,27 +24,22 @@ class SolrCollectionSettings(BaseModel):
         drop_private: bool = False
     ) -> Tuple[str, Optional[str], bool]:
         all_names = {c.name for c in self.collections}
-        if drop_private:
-            public_names = {
-                c.name for c in self.collections if "public" in c.roles}
-            dropped = bool(all_names - public_names)
-            valid_names = public_names
-        else:
-            dropped = False
-            valid_names = all_names
+        valid_names = {c.name for c in self.collections if "public" in c.roles} if drop_private else all_names
 
         # Always fallback to config default
         default_collection = self.default
-
+        requested_names = data_source if data_source is not None else default_collection
+        dropped = any(name not in valid_names for name in requested_names)
+        valid_sources = valid_names.intersection(requested_names)
         # If no data_source given, or empty set
         if not data_source:
             effective_default = default_collection
             collection_param = None
             base_url = f"{root.rstrip('/')}/{effective_default}/select"
-            return base_url, collection_param, dropped
+            return base_url, collection_param, False
 
         # Get valid data sources from user input
-        valid_sources = data_source & valid_names
+        # valid_sources = data_source & valid_names
         
         # If no valid sources, fallback to default
         if not valid_sources:

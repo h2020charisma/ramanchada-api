@@ -46,7 +46,8 @@ async def get_query(
             vector_field=SOLR_VECTOR if vector_field is None else vector_field,
             token=token
         )
-        return StandardResponse(status=1 if dropped else 0, response=results)
+        return StandardResponse(status=1 if dropped else 0,
+                                response=results)
     except HTTPException as err:
         raise err
     except Exception as err:
@@ -76,7 +77,8 @@ async def get_field(
         for i in range(0, len(facet_field_values), 2):
             result.append({"value": facet_field_values[i],
                            "count": facet_field_values[i + 1]})
-        return StandardResponse(status=1 if dropped else 0, response=result)
+        return StandardResponse(status=1 if dropped else 0,
+                                response=result)
     except HTTPException as err:
         raise err
     except Exception as err:
