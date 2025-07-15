@@ -25,7 +25,24 @@ import matplotlib.pyplot as plt  # noqa: E402
 router = APIRouter()
 
 
-@router.get("/download", )
+@router.get(
+    "/download",
+    responses={
+        200: {
+            "content": {
+                "image/png": {},
+                "application/x-hdf5": {},
+                "text/plain": {},
+            },
+            "description": "Returns image, HDF5 file, or base64-encoded PNG.",
+        },
+        304: {"description": "Not Modified"},
+        400: {"description": "Invalid request"},
+        401: {"description": "Unauthorized - missing or invalid authentication token."},
+        403: {"description": "Forbidden - access to resource is denied."},        
+        500: {"description": "Internal error"},
+    }
+)
 async def convert_get(
     request: Request,
     domain: str,
@@ -112,12 +129,33 @@ async def convert_get(
         raise HTTPException(status_code=400, detail=str(err))
 
 
-@router.post("/download")
+@router.post(
+    "/download",
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "cdf": "compressed_string_here",
+                        "imageLink": "data:image/png;base64,..."
+                    }
+                },
+                "text/plain": {
+                    "example": "iVBORw0KGgoAAAANSUhEUgAA..."
+                }
+            },
+            "description": "Returns spectrum JSON or base64-encoded PNG string depending on 'what'.",
+        },
+        400: {"description": "Bad Request - invalid input or unsupported format"},
+        401: {"description": "Unauthorized - missing or invalid token"},
+        403: {"description": "Forbidden - token valid, but access denied"},
+        500: {"description": "Internal Server Error"},
+    }
+)
 async def convert_post(
         what: Literal["knnquery", "b64png"] = Query("knnquery"),
         files: list[UploadFile] = File(...),
-        token: Optional[str] = Depends(get_token) 
-    ):
+        token: Optional[str] = Depends(get_token)):
     logging.info("convert_file function called")
     logging.info(f"Received parameter 'what': {what}")
     logging.info(f"Number of files received: {len(files)}")    
