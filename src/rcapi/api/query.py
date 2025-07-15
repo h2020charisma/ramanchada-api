@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, HTTPException, Depends, Query
-from typing import Optional, Literal, Set
+from typing import Optional, Literal, Set, List
 from rcapi.services import query_service
+from rcapi.services.standard_response import StandardResponse
 from rcapi.services.solr_query import (
     SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, solr_query_get
 )
@@ -10,7 +11,7 @@ import traceback
 router = APIRouter()
 
 
-@router.get("/query", )
+@router.get("/query", response_model=StandardResponse[List[dict]])
 async def get_query(
         request: Request,
         q: Optional[str] = "*",
@@ -46,7 +47,7 @@ async def get_query(
             vector_field=SOLR_VECTOR if vector_field is None else vector_field,
             token=token
         )
-        return results
+        return StandardResponse(status=200, response=results)
     except HTTPException as err:
         raise err
     except Exception as err:
@@ -54,7 +55,7 @@ async def get_query(
         raise HTTPException(status_code=400, detail=str(err))
 
 
-@router.get("/query/field")
+@router.get("/query/field", response_model=StandardResponse[List[dict]])
 async def get_field(
         request: Request,
         name: str = "publicname_s",
@@ -76,7 +77,7 @@ async def get_field(
         for i in range(0, len(facet_field_values), 2):
             result.append({"value": facet_field_values[i],
                            "count": facet_field_values[i + 1]})
-        return result
+        return StandardResponse(status=200, response=result)
     except HTTPException as err:
         raise err
     except Exception as err:
