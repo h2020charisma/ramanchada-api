@@ -50,7 +50,7 @@ def test_knnquery(knnquery4test):
     params = {"query_type": "knnquery", "ann": knnquery4test}
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
-    parsed = StandardDictListResponse.parse_obj(response.json())
+    parsed = StandardDictListResponse.model_validate(response.json())
     assert isinstance(parsed.response, list), "Response is not a list"
     for item in parsed.response:
         assert isinstance(item, dict), "Items in the list should be dictionaries"
