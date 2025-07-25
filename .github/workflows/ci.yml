@@ -85,7 +85,6 @@ jobs:
           HS_USERNAME: ${{ secrets.HS_USERNAME }}
           HS_PASSWORD: ${{ secrets.HS_PASSWORD }}
         run: |
-          sed -i 's|"charisma_protected"|"charisma"|' src/rcapi/config/config.yaml
           if [[ '${{ github.actor }}' != 'dependabot[bot]' ]]; then
             poetry run pytest
           else
