@@ -9,7 +9,7 @@ import os
 import uuid
 import time
 import shutil
-from pynanomapper.datamodel.ambit import Substances
+from pyambit.datamodel import Substances
 from pathlib import Path
 
         
@@ -99,14 +99,14 @@ async def upload_and_convert(request: Request,
         "description": "Returns the dataset in the requested format",
         "content": {
             "application/json": {
-                "example": "see pynanomapper.datamodel.ambit.Substances "
+                "example": "see pyambit.datamodel.Substances "
                 #"schema": {"$ref": "#/components/schemas/Substances"}
             },
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
                 "example": "see Template Wizard data entry templates"
             },
             "application/x-hdf5": {
-                "example": "pynanomapper.datamodel.ambit.Substances converted to Nexus format"
+                "example": "pyambit.ambit.Substances converted to Nexus format"
             }
         }
     },

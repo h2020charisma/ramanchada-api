@@ -6,9 +6,9 @@ from rcapi.models.models import Task  # Import your data models
 from pathlib import Path
 import requests
 import json 
-from pynanomapper.datamodel.ambit import Substances, SubstanceRecord, CompositionEntry, Component, Compound
-from pynanomapper.datamodel.nexus_writer import to_nexus
-from pynanomapper.datamodel.nexus_spectra import spe2ambit
+from pyambit.datamodel import Substances, SubstanceRecord, CompositionEntry, Component, Compound
+from pyambit.nexus_writer import to_nexus
+from pyambit.nexus_spectra import spe2ambit
 import nexusformat.nexus.tree as nx
 import ramanchada2 as rc2 
 from fastapi import HTTPException

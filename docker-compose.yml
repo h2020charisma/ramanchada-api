@@ -28,30 +28,7 @@ services:
       traefik.enable: 'true'
       traefik.http.routers.ramanchada-api-prod.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
       traefik.http.routers.ramanchada-api-prod.rule: Host(`api.ramanchada.ideaconsult.net`)
-      traefik.http.routers.ramanchada-api-prod.middlewares: ramanchada-api-prod-cors
-      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowCredentials: 'true'
-      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowHeaders: >-
-        Authorization,
-        Cache-Control,
-        Content-Type,
-        DNT,
-        If-Modified-Since,
-        Keep-Alive,
-        User-Agent,
-        X-CustomHeader,
-        X-Requested-With
-      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowMethods: >-
-        GET,
-        OPTIONS,
-        POST
-      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlAllowOriginList: >-
-        https://enanomapper.adma.ai,
-        https://enm-dev.adma.ai,
-        https://enm-experimental.adma.ai,
-        https://h5web-comp.vercel.app,
-        https://search.charisma.ideaconsult.net
-      traefik.http.middlewares.ramanchada-api-prod-cors.headers.accessControlMaxAge: 1728000
-      traefik.http.middlewares.ramanchada-api-prod-cors.headers.addVaryHeader: 'true'
+      traefik.http.routers.ramanchada-api-prod.middlewares: ramanchada-api-prod-cors@file
       com.centurylinklabs.watchtower.enable: 'true'
       com.centurylinklabs.watchtower.scope: frequent
     networks:
@@ -72,30 +49,7 @@ services:
       traefik.enable: 'true'
       traefik.http.routers.ramanchada-api-dev.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
       traefik.http.routers.ramanchada-api-dev.rule: Host(`api-dev.ramanchada.ideaconsult.net`)
-      traefik.http.routers.ramanchada-api-dev.middlewares: ramanchada-api-dev-cors
-      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowCredentials: 'true'
-      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowHeaders: >-
-        Authorization,
-        Cache-Control,
-        Content-Type,
-        DNT,
-        If-Modified-Since,
-        Keep-Alive,
-        User-Agent,
-        X-CustomHeader,
-        X-Requested-With
-      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowMethods: >-
-        GET,
-        OPTIONS,
-        POST
-      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlAllowOriginList: >-
-        https://enanomapper.adma.ai,
-        https://enm-dev.adma.ai,
-        https://enm-experimental.adma.ai,
-        https://h5web-comp.vercel.app,
-        https://search.charisma.ideaconsult.net
-      traefik.http.middlewares.ramanchada-api-dev-cors.headers.accessControlMaxAge: 1728000
-      traefik.http.middlewares.ramanchada-api-dev-cors.headers.addVaryHeader: 'true'
+      traefik.http.routers.ramanchada-api-dev.middlewares: ramanchada-api-dev-cors@file
       com.centurylinklabs.watchtower.enable: 'true'
       com.centurylinklabs.watchtower.scope: frequent
     networks:
@@ -112,30 +66,7 @@ services:
       traefik.enable: 'true'
       traefik.http.routers.ramanchada-api-test.entrypoints: tcp80v4*,tcp443v4*,tcp80v6*,tcp443v6*
       traefik.http.routers.ramanchada-api-test.rule: Host(`api-test.ramanchada.ideaconsult.net`)
-      traefik.http.routers.ramanchada-api-test.middlewares: ramanchada-api-test-cors
-      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlAllowCredentials: 'true'
-      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlAllowHeaders: >-
-        Authorization,
-        Cache-Control,
-        Content-Type,
-        DNT,
-        If-Modified-Since,
-        Keep-Alive,
-        User-Agent,
-        X-CustomHeader,
-        X-Requested-With
-      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlAllowMethods: >-
-        GET,
-        OPTIONS,
-        POST
-      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlAllowOriginList: >-
-        https://enanomapper.adma.ai,
-        https://enm-dev.adma.ai,
-        https://enm-experimental.adma.ai,
-        https://h5web-comp.vercel.app,
-        https://search.charisma.ideaconsult.net
-      traefik.http.middlewares.ramanchada-api-test-cors.headers.accessControlMaxAge: 1728000
-      traefik.http.middlewares.ramanchada-api-test-cors.headers.addVaryHeader: 'true'
+      traefik.http.routers.ramanchada-api-test.middlewares: ramanchada-api-test-cors@file
       com.centurylinklabs.watchtower.enable: 'true'
       com.centurylinklabs.watchtower.scope: frequent
     networks:

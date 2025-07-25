@@ -1,2 +1,19 @@
 upload_dir: "uploads"
 nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"
+SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"
+SOLR_VECTOR: "spectrum_p1024"
+SOLR_COLLECTIONS:
+  default: "charisma"
+  collections:
+    - name: "charisma"
+      description: "CHARISMA"
+      license: "TBD"
+      roles: ["public"]
+    - name: "charisma_protected"
+      description: "CHARISMA protected"
+      license: "TBD"
+      roles: ["charisma", "test-role-1"]
+KEYCLOAK:
+  OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"
+  JWT_AUDIENCE: "account"
+  JWT_ISSUER: "https://iam.ideaconsult.net/realms/nano"
