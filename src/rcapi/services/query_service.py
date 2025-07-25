@@ -5,6 +5,7 @@ from rcapi.services.solr_query import solr_query_post
 import urllib.parse
 from rcapi.api.utils import get_baseurl
 
+
 async def process(request: Request,
     solr_url: str,
     q: Optional[str] = "*",
@@ -15,7 +16,8 @@ async def process(request: Request,
     page: Optional[int] = 0,
     pagesize: Optional[int] = 10,
     img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
-    vector_field="spectrum_p1024",
+    vector_field = "spectrum_p1024",
+    collections = None,
     token=None):
 
     query_fields = "id,name_s,textValue_s"
@@ -25,6 +27,8 @@ async def process(request: Request,
 
     thumbnail = "image" if img=="original" else "thumbnail"
     query_params = { "start" : page, "rows" : pagesize}
+    if collections is not None:
+        query_params["collection"] = collections
 
     if query_type != "knnquery":
         textQuery = q
@@ -87,7 +91,7 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
                 image_link = "tbd"
             except Exception as err:
                 print(err)    
-        else:    
+        else:
             encoded_domain = urllib.parse.quote(value)
             image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra="
         _tmp = {

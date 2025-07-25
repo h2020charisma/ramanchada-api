@@ -5,7 +5,7 @@ import json
 import pytest
 from importlib import resources
 import yaml
-import os.path 
+import os.path
 import shutil
 from datetime import datetime, timedelta
 from datetime import timezone as tz

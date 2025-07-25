@@ -1,15 +1,17 @@
-from fastapi import APIRouter, Request, HTTPException, Depends
-from typing import Optional, Literal
+from fastapi import APIRouter, Request, HTTPException, Depends, Query
+from typing import Optional, Literal, Set, List
 from rcapi.services import query_service
+from rcapi.services.standard_response import StandardResponse
 from rcapi.services.solr_query import (
-    SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTION, solr_query_get
+    SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, solr_query_get
 )
-from rcapi.services.kc import get_token
+from rcapi.services.kc import get_token, get_roles_from_token
 import traceback
 
 router = APIRouter()
 
-@router.get("/query", )
+
+@router.get("/query", response_model=StandardResponse[List[dict]])
 async def get_query(
         request: Request,
         q: Optional[str] = "*",
@@ -19,10 +21,11 @@ async def get_query(
         page: Optional[int] = 0, pagesize: Optional[int] = 10,
         img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
         vector_field: Optional[str] = None,
+        data_source: Optional[Set[str]] = Query(default=None),
         token: Optional[str] = Depends(get_token)
         ):
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTION)
-
+    solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None)
     textQuery = q
     textQuery = "*" if textQuery is None or textQuery == "" else textQuery
 
@@ -39,24 +42,32 @@ async def get_query(
             page=page,
             pagesize=pagesize,
             img=img,
+            collections=collection_param,
             vector_field=SOLR_VECTOR if vector_field is None else vector_field,
             token=token
         )
-        return results
+        return StandardResponse(status=1 if dropped else 0,
+                                response=results)
+    except HTTPException as err:
+        raise err
     except Exception as err:
         print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=str(err))
 
 
-@router.get("/query/field")
+@router.get("/query/field", response_model=StandardResponse[List[dict]])
 async def get_field(
         request: Request,
         name: str = "publicname_s",
+        data_source: Optional[Set[str]] = Query(default=None),
         token: Optional[str] = Depends(get_token)
         ):
-    solr_url = "{}{}/select".format(SOLR_ROOT, SOLR_COLLECTION)
+    solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None)
     try:
-        params = {"q": "*", "rows":0, "facet.field":name, "facet":"true"}
+        params = {"q": "*", "rows": 0, "facet.field": name, "facet": "true"}
+        if collection_param is not None:
+            params["collection"] = collection_param
         rs = await solr_query_get(solr_url, params, token)
         result = []
         # Extract the facet field values
@@ -66,7 +77,40 @@ async def get_field(
         for i in range(0, len(facet_field_values), 2):
             result.append({"value": facet_field_values[i],
                            "count": facet_field_values[i + 1]})
-        return result
+        return StandardResponse(status=1 if dropped else 0,
+                                response=result)
+    except HTTPException as err:
+        raise err
+    except Exception as err:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(err))
+
+
+# https://github.com/h2020charisma/ramanchada-api/issues/59
+@router.get("/query/sources")
+async def get_sources(
+        request: Request,
+        token: Optional[str] = Depends(get_token)
+        ):
+    try:
+        if token is not None:
+            user_roles = get_roles_from_token(token)
+        else:
+            user_roles = []
+        user_roles.append("public")
+        # Filter collections based on user's roles
+        accessible_collections = SOLR_COLLECTIONS.for_roles(user_roles)
+
+        return {
+            "default": SOLR_COLLECTIONS.default,
+            "data_sources": [
+                {"name": c.name,
+                 "description": c.description,
+                 "public": "public" in c.roles}
+                for c in accessible_collections
+            ]
+        }
+
     except HTTPException as err:
         raise err
     except Exception as err:
