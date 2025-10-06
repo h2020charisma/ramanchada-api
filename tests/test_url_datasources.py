@@ -38,13 +38,13 @@ def test_invalid_data_source(settings):
 def test_single_valid_data_source_default(settings):
     url, coll, _ = settings.get_url(root, {"charisma"})
     assert url == f"{root}/charisma/select"
-    assert coll is None
+    assert coll is "charisma"
 
 
 def test_single_valid_data_source_non_default(settings):
     url, coll, _ = settings.get_url(root, {"chem"})
     assert url == f"{root}/chem/select"
-    assert coll is None
+    assert coll is "chem"
 
 
 def test_multiple_valid_with_default(settings):
