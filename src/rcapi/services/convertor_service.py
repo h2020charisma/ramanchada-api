@@ -170,7 +170,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                     return empty_figure(figsize, title="not found", label="{}".format(domain.split("/")[-1])), None
                 x = None
                 for doc in response_json["response"]["docs"]:
-                    y = doc[SOLR_VECTOR]
+                    y = doc.get(SOLR_VECTOR, None)
                     if y is None:
                         continue
                     if x is None:
@@ -184,7 +184,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                     etag = generate_etag("{}{}{}".format(doc["textValue_s"],
                             doc.get("updated_s",""), doc.get("_version_", "")))
                     return fig, etag
-        return empty_figure(figsize, "{} {}".format(rs.status_code, rs.reason), "{}".format(domain.split("/")[-1])), None
+        return empty_figure(figsize, "{} {}".format(rs.status_code, getattr(rs, "reason", "")), "{}".format(domain.split("/")[-1])), None
     except Exception as err:
         print(traceback.format_exc())
         return empty_figure(figsize, title="{}".format(err), 

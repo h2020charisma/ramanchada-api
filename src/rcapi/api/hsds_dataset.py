@@ -62,6 +62,9 @@ async def get_dataset(
         try:
             solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
                 SOLR_ROOT, data_source, drop_private=token is None)
+            # print("/dataset", data_source, collection_param)
+            if collection_param is not None:
+                params["collection"] = collection_param
             rs = await solr_query_get(solr_url, params, token)
             return await read_solr_study4dataset(
                 domain, rs.json(), values, data_source, token)

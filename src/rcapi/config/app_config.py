@@ -48,7 +48,8 @@ class SolrCollectionSettings(BaseModel):
         elif len(valid_sources) == 1:
             # Single valid source becomes default, no collections param
             effective_default = next(iter(valid_sources))
-            collection_param = None
+            # but if we want to pass to e.g. /download, we need collection_param!
+            collection_param = ",".join(sorted(valid_sources))
         else:
             # Multiple valid sources
             if default_collection in valid_sources:
