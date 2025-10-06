@@ -43,7 +43,7 @@ async def process(request: Request,
         try:
             response = await solr_query_post(solr_url,query_params,solr_params,token)
             response_data = response.json()
-            return parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None)
+            return parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None,collections=collections)
         except Exception as err:
             raise err
         finally:
@@ -66,7 +66,7 @@ async def process(request: Request,
             try:
                 response = await solr_query_post(solr_url,query_params,solr_params,token)
                 response_data = response.json()
-                return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field)
+                return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field,collections=collections)
             except Exception as err:
                 raise err
             finally:
@@ -74,7 +74,7 @@ async def process(request: Request,
                     await response.aclose()        
 
 
-def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field=None):
+def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field=None,collections=None):
 # Process Solr response and construct the output
     results = []
     for doc in response_data.get("response", {}).get("docs", []):
@@ -93,7 +93,12 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
                 print(err)    
         else:
             encoded_domain = urllib.parse.quote(value)
-            image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra="
+            if collections is None:
+                data_source = ""
+            else:
+                data_source = "&".join(f"data_source={c}" for c in collections.split(","))
+
+            image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra=&{data_source}"
         _tmp = {
             "value": value,
             "text": text,

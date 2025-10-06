@@ -170,7 +170,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                     return empty_figure(figsize, title="not found", label="{}".format(domain.split("/")[-1])), None
                 x = None
                 for doc in response_json["response"]["docs"]:
-                    y = doc[SOLR_VECTOR]
+                    y = doc.get(SOLR_VECTOR, None)
                     if y is None:
                         continue
                     if x is None:
