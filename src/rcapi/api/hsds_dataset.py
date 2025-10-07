@@ -54,9 +54,9 @@ async def get_dataset(
     else: # resort to solr index
         escaped_value = solr_escape(domain)
         query = f'textValue_s:"{domain}"'
-        fields = "name_s,reference_s,reference_owner_s,document_uuid_s,updated_s,_version_"
+        fields = "name_s,reference_s,reference_owner_s,document_uuid_s,updated_s, guidance_s, _version_"
         if values:
-            fields = "{},{}".format(fields, SOLR_VECTOR)
+            fields = f"{fields},{SOLR_VECTOR},dense_a512,dense_b512"
         params = {"q": query, "fq": ["type_s:study"], "fl": fields}
         rs = None
         try:
@@ -91,15 +91,31 @@ async def read_solr_study4dataset(
         result["annotation"].append(annotation)
 
         dataset_name = domain.split('#', 1)[1] if '#' in domain else "indexed"
-        dataset = {"key": dataset_name, "name": dataset_name, "shape": [2, len(x4search)], "size": len(x4search)}
+        dataset = {"key": dataset_name, "name": dataset_name}
         if with_values:
-            y = doc[SOLR_VECTOR]
-            dim = len(y)
-            dataset["shape"] = [2, dim]
-            dataset["size"] = dim
-            dataset["value"] = []
-            dataset["value"].append(StudyRaman.x4search(dim).tolist())
-            dataset["value"].append(y)
+            y = doc.get(SOLR_VECTOR, None)
+            if y is None:
+               y = doc.get("dense_b512", None)
+               x = doc.get("dense_a512", None)
+               xtitle = ""
+               ytitle = "intensity [a.u.]"
+            else:
+               dim = len(y)
+               x = StudyRaman.x4search(dim).tolist()
+               xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
+               ytitle = "intensity [a.u.]"
+               
+            if y is None or x is None:
+                dataset = None
+            else:
+                dim = len(y)
+                dataset["shape"] = [2, dim]
+                dataset["size"] = dim
+                dataset["value"] = []
+                dataset["value"].append(x)
+                dataset["value"].append(y)
+                dataset["xtitle"] = xtitle
+                dataset["ytitle"] = ytitle
 
         result["datasets"].append(dataset)
 
@@ -115,11 +131,8 @@ async def read_solr_study4dataset(
             rs_params_json = rs.json() # one study has one set of params by definition
             for doc_param in rs_params_json.get("response", {}).get("docs", []):
                 # these should come from parameters ...
-                annotation["wavelength"] = doc_param.get("wavelength_d", "")
+                annotation["method"] = doc_param.get("E.method_s", "")
                 annotation["instrument"] = doc_param.get("instrument_s", "")
-                annotation["laser_power"] = ""
-                annotation["native_filename"] = ""
-                annotation["optical_path"] = ""
                 break
         except HTTPException as err:
             raise err

@@ -12,6 +12,7 @@ async def process(request: Request,
     query_type: Optional[str] = None,
     q_reference: Optional[str] = "*",
     q_provider: Optional[str] = "*",
+    q_method: Optional[str] = "*",
     ann: Optional[str] = None,
     page: Optional[int] = 0,
     pagesize: Optional[int] = 10,
@@ -37,7 +38,10 @@ async def process(request: Request,
             "query": textQuery, 
             "filter" : [
                 "type_s:study",
-                "reference_s:{}".format(q_reference),"reference_owner_s:{}".format(q_provider)], 
+                f"reference_s:{q_reference}",
+                f"reference_owner_s:{q_provider}",
+                f"guidance_s:{q_method}"
+                ], 
                 "fields" : query_fields}
         response = None
         try:

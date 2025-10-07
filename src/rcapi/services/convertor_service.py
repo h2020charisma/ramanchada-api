@@ -159,12 +159,13 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
     try:
         query = "textValue_s:{}{}{}".format('"', domain, '"')
         params = {"q": query, "fq": ["type_s:study"], 
-                  "fl": "name_s,textValue_s,reference_s,reference_owner_s,{},updated_s,_version_".format(SOLR_VECTOR)}
+                  "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
         if collections is not None:
             params["collection"] = collections
         rs = await solr_query_get(solr_url, params, token=token)
         if rs is not None and rs.status_code == 200:
             response_json = rs.json()
+            # print(response_json)
             if "response" in response_json:
                 if response_json["response"]["numFound"] == 0:
                     return empty_figure(figsize, title="not found", label="{}".format(domain.split("/")[-1])), None
@@ -172,15 +173,23 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                 for doc in response_json["response"]["docs"]:
                     y = doc.get(SOLR_VECTOR, None)
                     if y is None:
-                        continue
-                    if x is None:
+                        y = doc.get("dense_b512", None)
+                        x = doc.get("dense_a512", None)
+                        if y is None and x is None:
+                            continue
+                        plot_kwargs={"color": "#FF7F0E"}
+                        xtitle = ""
+                    else:
                         x = x4search
+                        plot_kwargs={}
+                        xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
+
                     _title = None if thumbnail else "{} {} {} ({})".format(
                         "" if extraprm is None else extraprm,
                         doc["name_s"], 
                         doc["reference_owner_s"], doc["reference_s"])
-                    fig = plot_spectrum(x, y, _title, r'wavenumber [$\mathrm{cm}^{-1}$]', "intensity [a.u.]",
-                                        figsize=figsize, thumbnail=thumbnail)
+                    fig = plot_spectrum(x, y, _title, xtitle, "intensity [a.u.]",
+                                        figsize=figsize, thumbnail=thumbnail, plot_kwargs=plot_kwargs)
                     etag = generate_etag("{}{}{}".format(doc["textValue_s"],
                             doc.get("updated_s",""), doc.get("_version_", "")))
                     return fig, etag
@@ -228,9 +237,9 @@ def read_spectrum_native(file, file_name, prefix="rcapi_"):
     try:
         filename, file_extension = os.path.splitext(file_name)
         # because rc2 works with file paths only, no url nor file objects
-        with tempfile.NamedTemporaryFile(
-            delete=False,
-            prefix=prefix, suffix=file_extension) as tmp:
+        with tempfile.NamedTemporaryFile(delete=False,
+                                         prefix=prefix,
+                                         suffix=file_extension) as tmp:
             shutil.copyfileobj(file, tmp)
             native_filename = tmp.name
         spe = from_local_file(native_filename)
