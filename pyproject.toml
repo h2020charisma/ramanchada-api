@@ -33,7 +33,7 @@ pydantic-settings = "^2.4.0"
 pynanomapper = "^2.0.1"
 python-multipart = "^0.0.6"
 ramanchada2 = "^1.2.0"
-uvicorn = "^0.27.1"
+uvicorn = "^0.38.0"
 python-jose = "^3.5.0"
 
 [tool.poetry.urls]
