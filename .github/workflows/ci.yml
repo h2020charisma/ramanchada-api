@@ -147,7 +147,7 @@ jobs:
             org.opencontainers.image.url=https://github.com/h2020charisma/ramanchada-api/blob/main/README.md
             org.opencontainers.image.vendor=IDEAconsult
           tags: |
-            type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=ref,event=branch
             type=ref,event=tag
             type=ref,event=pr
