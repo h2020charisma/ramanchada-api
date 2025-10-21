@@ -33,7 +33,7 @@ async def get_query(
 
     # tr.set_name("query_type={}&q_reference={}&q_provider={}&solr_url={}&embedded={}&q={}&ann={}".format(query_type,q_reference,q_provider,solr_url,embedded_images,q,ann))
     try:
-        results = await query_service.process(
+        stdResponse = await query_service.process(
             request=request,
             solr_url=solr_url,
             q=q,
@@ -49,8 +49,8 @@ async def get_query(
             vector_field=SOLR_VECTOR if vector_field is None else vector_field,
             token=token
         )
-        return StandardResponse(status=1 if dropped else 0,
-                                response=results)
+        stdResponse.status = 1 if dropped else 0
+        return stdResponse
     except HTTPException as err:
         raise err
     except Exception as err:

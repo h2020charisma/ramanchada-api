@@ -4,6 +4,7 @@ from numcompress import  decompress
 from rcapi.services.solr_query import solr_query_post
 import urllib.parse
 from rcapi.api.utils import get_baseurl
+from rcapi.services.standard_response import StandardResponse
 
 
 async def process(request: Request,
@@ -19,7 +20,7 @@ async def process(request: Request,
     img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
     vector_field = "spectrum_p1024",
     collections = None,
-    token=None):
+    token=None) -> StandardResponse:
 
     query_fields = "id,name_s,textValue_s"
     embedded_images = img=="embedded"
@@ -27,7 +28,7 @@ async def process(request: Request,
         query_fields = "{},{}".format(query_fields,vector_field)
 
     thumbnail = "image" if img=="original" else "thumbnail"
-    query_params = { "start" : page, "rows" : pagesize}
+    query_params = { "start" : page*pagesize, "rows" : pagesize}
     if collections is not None:
         query_params["collection"] = collections
 
@@ -45,9 +46,15 @@ async def process(request: Request,
                 "fields" : query_fields}
         response = None
         try:
-            response = await solr_query_post(solr_url,query_params,solr_params,token)
+            response = await solr_query_post(solr_url, query_params, solr_params, token)
             response_data = response.json()
-            return parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None,collections=collections)
+            results = parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None,collections=collections)
+
+            return StandardResponse(
+                status=0,
+                numFound=response_data.get("response", {}).get("numFound", 0),
+                start=response_data.get("response", {}).get("start", 0),
+                response=results)
         except Exception as err:
             raise err
         finally:
@@ -70,7 +77,12 @@ async def process(request: Request,
             try:
                 response = await solr_query_post(solr_url,query_params,solr_params,token)
                 response_data = response.json()
-                return parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field,collections=collections)
+                results = parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field,collections=collections)
+                return StandardResponse(
+                    status=0,
+                    numFound=response_data.get("response", {}).get("numFound", 0),
+                    start=response_data.get("response", {}).get("start", 0),
+                    response=results)
             except Exception as err:
                 raise err
             finally:
@@ -81,7 +93,8 @@ async def process(request: Request,
 def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field=None,collections=None):
 # Process Solr response and construct the output
     results = []
-    for doc in response_data.get("response", {}).get("docs", []):
+    response = response_data.get("response", {})
+    for doc in response.get("docs", []):
         value = doc.get("textValue_s", "")
         text = f"{doc.get('name_s', '')}"
         if embedded_images:
