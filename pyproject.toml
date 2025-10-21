@@ -43,7 +43,7 @@ python-jose = "^3.5.0"
 dev = "scripts.dev_server:main"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0.1"
+pytest = "^8.4.2"
 
 [tool.poetry.group.jupyter.dependencies]
 jupyter = "^1.0.0"
