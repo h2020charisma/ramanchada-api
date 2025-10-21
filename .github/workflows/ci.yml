@@ -5,10 +5,11 @@ on:  # yamllint disable-line rule:truthy
   push:
     branches:
       - main
-      - develop
     tags:
       - v*.*.*
   pull_request:
+    branches:
+      - main
     types:
       - opened
       - reopened
@@ -117,7 +118,6 @@ jobs:
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign
-        if: github.event_name != 'pull_request'
         uses: sigstore/cosign-installer@v3.10.0
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
@@ -127,7 +127,6 @@ jobs:
       # Login against a Docker registry except on PR
       # https://github.com/docker/login-action
       - name: Log into registry ${{ env.REGISTRY }}
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@v3.6.0
         with:
           registry: ${{ env.REGISTRY }}
@@ -148,7 +147,6 @@ jobs:
             org.opencontainers.image.url=https://github.com/h2020charisma/ramanchada-api/blob/main/README.md
             org.opencontainers.image.vendor=IDEAconsult
           tags: |
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/develop' }}
             type=raw,value=stable,enable=${{ github.ref == 'refs/heads/main' }}
             type=ref,event=branch
             type=ref,event=tag
@@ -164,7 +162,7 @@ jobs:
           cache-to: type=gha,mode=max
           context: .
           labels: ${{ steps.meta.outputs.labels }}
-          push: ${{ github.event_name != 'pull_request' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
 
       # Sign the resulting Docker image digest except on PRs.
@@ -173,7 +171,6 @@ jobs:
       # transparency data even for private images, pass --force to cosign below.
       # https://github.com/sigstore/cosign
       - name: Sign the published Docker image
-        if: github.event_name != 'pull_request'
         env:
           # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
           TAGS: ${{ steps.meta.outputs.tags }}
