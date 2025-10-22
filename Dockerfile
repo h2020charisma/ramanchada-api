@@ -14,14 +14,14 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=requirements-stage /tmp/requirements.txt /app/requirements.txt
+COPY --from=requirements-stage /tmp/requirements.txt /tmp/requirements.txt
 
-RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade -r /tmp/requirements.txt
 
 RUN find /tmp -mindepth 1 -delete
 
 COPY ./src/rcapi /app/rcapi
-COPY ./__rcapi_*__.* /app/rcapi/
+COPY ./__rcapi_*__.* /app/
 
 RUN sed -i '/^upload_dir:/s|:.*|: "/var/uploads"|' /app/rcapi/config/config.yaml
 
