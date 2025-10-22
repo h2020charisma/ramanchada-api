@@ -21,6 +21,7 @@ RUN pip install --no-cache-dir --upgrade -r /app/requirements.txt
 RUN find /tmp -mindepth 1 -delete
 
 COPY ./src/rcapi /app/rcapi
+COPY ./__rcapi_*__.* /app/rcapi/
 
 RUN sed -i '/^upload_dir:/s|:.*|: "/var/uploads"|' /app/rcapi/config/config.yaml
 

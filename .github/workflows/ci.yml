@@ -115,6 +115,9 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Dump the current code version
+        run: git log -1 --pretty=reference >__rcapi_version__.txt
+
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
       - name: Install cosign

@@ -1,5 +1,7 @@
+import re
+
 from fastapi import APIRouter
-import subprocess
+
 
 router = APIRouter()
 
@@ -7,9 +9,12 @@ router = APIRouter()
 @router.get("/info")
 async def get_build_number():
     try:
-        # Run the "git rev-parse HEAD" command to get the latest commit hash
-        commit_hash = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"]).decode().strip()
-        return {"build_number": commit_hash}
+        with open("__rcapi_version__.txt") as f:
+            rcapi_version_raw = f.readline().strip("\n")
+            # Very basic sanitization, just in case.
+            rcapi_version = re.sub(r"[^ -~]", "", rcapi_version_raw)
+        return {"build_number": rcapi_version}
+    except FileNotFoundError:
+        return {"build_number": "unknown"}
     except Exception as e:
         return {"error": str(e)}
