@@ -7,6 +7,7 @@ config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
 SOLR_ROOT = config.SOLR_ROOT
 SOLR_VECTOR = config.SOLR_VECTOR
 SOLR_COLLECTIONS = config.SOLR_COLLECTIONS
+SOLR_FIELDS = config.SOLR_FIELDS
 
 
 async def solr_query_post(

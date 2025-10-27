@@ -7,7 +7,11 @@ from importlib import resources
 from pathlib import Path
 import shutil
 
+class SolrFieldEntry(BaseModel):
+    name: str
+    field: str
 
+    
 class SolrCollectionEntry(BaseModel):
     name: str
     description: str
@@ -102,6 +106,7 @@ class AppConfig(BaseSettings):
     SOLR_ROOT: str = "https://solr-kc.ideaconsult.net/solr/"
     SOLR_VECTOR: str = "spectrum_p1024"
     SOLR_COLLECTIONS: SolrCollectionSettings = SolrCollectionSettings()
+    SOLR_FIELDS: List[SolrFieldEntry] = Field(default_factory=list)    
     KEYCLOAK: KeycloakConfig
 
     @classmethod
