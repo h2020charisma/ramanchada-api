@@ -3,7 +3,7 @@ from typing import Optional, Literal, Set, List
 from rcapi.services import query_service
 from rcapi.services.standard_response import StandardResponse
 from rcapi.services.solr_query import (
-    SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, solr_query_get
+    SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, SOLR_FIELDS, solr_query_get
 )
 from rcapi.services.kc import get_token, get_roles_from_token
 import traceback
@@ -111,7 +111,8 @@ async def get_sources(
                  "description": c.description,
                  "public": "public" in c.roles}
                 for c in accessible_collections
-            ]
+            ],
+            "fields": SOLR_FIELDS
         }
 
     except HTTPException as err:

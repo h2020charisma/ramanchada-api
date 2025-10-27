@@ -13,6 +13,19 @@ SOLR_COLLECTIONS:
       description: "CHARISMA protected"
       license: "TBD"
       roles: ["charisma", "test-role-1"]
+SOLR_FIELDS:
+  - name: "Sample"
+    field: "name_s"
+  - name: "Material"
+    field: "publicname_s"
+  - name: "Instrument"
+    field: "instrument_s"
+  - name: "Data provider"
+    field: "reference_owner_s"
+  - name: "Investigation"
+    field: "reference_s"
+  - name: "Method"
+    field: "E.method_s"
 KEYCLOAK:
   OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"
   JWT_AUDIENCE: "account"
