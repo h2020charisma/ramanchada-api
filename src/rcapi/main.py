@@ -4,12 +4,12 @@ from datetime import timedelta
 from importlib.metadata import version
 import time
 from rcapi.api import (
-    convertor, upload, process, info, tasks, templates, query, hsds_dataset
+    convertor, upload, process, info, tasks, query, hsds_dataset,
+    mcp
 )
 from rcapi.models.models import tasks_db
 import os.path
 from .config.app_config import initialize_dirs
-from rcapi.services import template_service
 from fastapi.responses import JSONResponse
 import logging
 import traceback
@@ -68,11 +68,11 @@ app.include_router(upload.router, prefix="", tags=["dataset"])
 app.include_router(process.router, prefix="", tags=["process"])
 app.include_router(tasks.router, prefix="", tags=["task"])
 app.include_router(info.router, prefix="", tags=["info"])
-app.include_router(templates.router, prefix="", tags=["templates"])
 app.include_router(query.router, prefix="/db", tags=["db"])
 app.include_router(convertor.router, prefix="/db", tags=["db"])
 app.include_router(hsds_dataset.router, prefix="/db", tags=["db"])
 app.include_router(fastapi_utils.router, prefix="/h5grove", tags=["h5grove"])
+app.include_router(mcp.router, tags=["mcp"])
 
 for route in app.routes:
     print(f"Route: {route.path} | Methods: {route.methods}")
