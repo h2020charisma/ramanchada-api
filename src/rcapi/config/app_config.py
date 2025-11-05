@@ -7,9 +7,13 @@ from importlib import resources
 from pathlib import Path
 import shutil
 
+
 class SolrFieldEntry(BaseModel):
     name: str
     field: str
+    type: str  # 'text', 'numeric', 'vector', 'date', etc.
+    icon: str
+    use: str
 
     
 class SolrCollectionEntry(BaseModel):
