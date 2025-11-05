@@ -10,6 +10,11 @@ SOLR_COLLECTIONS = config.SOLR_COLLECTIONS
 SOLR_FIELDS = config.SOLR_FIELDS
 
 
+def solr_doc_filter() -> str:
+    docs = config.SOLR_DOCS or ["study"]
+    return f"type_s:({ ' OR '.join(f'\"{v}\"' for v in docs) })"
+
+
 async def solr_query_post(
         solr_url, query_params=None, post_param=None, token=None):
     async with httpx.AsyncClient() as client:

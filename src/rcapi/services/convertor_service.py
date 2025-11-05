@@ -4,7 +4,9 @@ import numpy as np
 from numcompress import compress
 import h5py
 import h5pyd 
-from rcapi.services.solr_query import solr_query_get, SOLR_VECTOR
+from rcapi.services.solr_query import (
+    solr_query_get, SOLR_VECTOR, solr_doc_filter
+    )
 import traceback
 import tempfile
 import shutil
@@ -158,7 +160,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
     rs = None
     try:
         query = "textValue_s:{}{}{}".format('"', domain, '"')
-        params = {"q": query, "fq": ["type_s:study"], 
+        params = {"q": query, "fq": [solr_doc_filter()], 
                   "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
         if collections is not None:
             params["collection"] = collections

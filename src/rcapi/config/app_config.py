@@ -110,7 +110,8 @@ class AppConfig(BaseSettings):
     SOLR_ROOT: str = "https://solr-kc.ideaconsult.net/solr/"
     SOLR_VECTOR: str = "spectrum_p1024"
     SOLR_COLLECTIONS: SolrCollectionSettings = SolrCollectionSettings()
-    SOLR_FIELDS: List[SolrFieldEntry] = Field(default_factory=list)    
+    SOLR_FIELDS: List[SolrFieldEntry] = Field(default_factory=list)
+    SOLR_DOCS: List[str] = Field(default_factory=lambda: ["study"])
     KEYCLOAK: KeycloakConfig
 
     @classmethod

@@ -1,7 +1,7 @@
 from typing import Optional, Literal
 from fastapi import Request, HTTPException
 from numcompress import  decompress
-from rcapi.services.solr_query import solr_query_post
+from rcapi.services.solr_query import solr_query_post, solr_doc_filter
 import urllib.parse
 from rcapi.api.utils import get_baseurl
 from rcapi.services.standard_response import StandardResponse
@@ -38,7 +38,7 @@ async def process(request: Request,
         solr_params = {
             "query": textQuery, 
             "filter" : [
-                "type_s:study",
+                solr_doc_filter(),
                 f"reference_s:{q_reference}",
                 f"reference_owner_s:{q_provider}",
                 f"guidance_s:{q_method}"
@@ -69,7 +69,7 @@ async def process(request: Request,
             knnQuery = ','.join(map(str, decompress(knnQuery)))
             query = "!knn f={} topK={}".format(vector_field,40)
             solr_params= {"query": "{"+query+"}[" + knnQuery + "]", 
-                "filter" : ["type_s:study",
+                "filter" : [solr_doc_filter(),
                             "reference_s:{}".format(q_reference),
                             "reference_owner_s:{}".format(q_provider)  ], 
                             "fields" : query_fields}

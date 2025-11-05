@@ -44,6 +44,8 @@ SOLR_FIELDS:
     type: "text"
     icon: "fa-solid fa-flask"
     use: "predefined"
+SOLR_DOCS: ["study"]
+
 KEYCLOAK:
   OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"
   JWT_AUDIENCE: "account"
