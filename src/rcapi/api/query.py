@@ -21,8 +21,8 @@ router = APIRouter()
     openapi_extra={
         "x-mcp-prompt": (
             "Use this tool to search the ambit/enanomapper  database. Provide query terms, "
-            "filters, and optional parameters. Example for metadata search: "
-            "{'query_type': 'metadata', 'q': '*', 'filters': {'name_s': 'polystyrene'}, 'data_source': 'charisma'}. "
+            "dynamic query fields, and optional parameters. Example for metadata search: "
+            "{'query_type': 'metadata', 'q': '*', 'qdynamic': {'name_s': 'polystyrene'}, 'data_source': 'charisma'}. "
             "For vector similarity search: {'query_type': 'knnquery', 'ann': '<base64_vector>'}. "
             "Include pagination with 'page' and 'pagesize'."
         )
@@ -43,10 +43,10 @@ async def query_universal(
     vector_field: Optional[str] = None,
     data_source: Optional[Set[str]] = Query(default=None),
     # flexible JSON input for POST 
-    filters: Optional[Dict[str, Any]] = Body(
+    qdynamic: Optional[Dict[str, Any]] = Body(
         default=None,
         example={"name_s": "Anatase"},
-        description="Optional dict of field:value filters (keys limited by configuration)"
+        description="Optional dict of field:value dynamic query (keys limited by configuration)"
     ),
     token: Optional[str] = Depends(get_token),
 ):
@@ -61,7 +61,7 @@ async def query_universal(
     {
       "q": "PP",
       "data_source": "charisma",
-      "filters": {"name_s": "Anatase"},
+      "qdynamic": {"name_s": "Anatase"},
       "page": 0,
       "pagesize": 10
     }
@@ -84,16 +84,16 @@ async def query_universal(
             # Allow both str and list for data_source
             ds = body.get("data_source", data_source)
             data_source = {ds} if isinstance(ds, str) else set(ds or [])
-            filters = body.get("filters", filters)
+            qdynamic = body.get("qdynamic", qdynamic)
         # --- GET: extract filters.* parameters -----------------------------------
         elif request.method == "GET":
-            query_filters = {
-                k[len("filters."):]: v
+            query_dynamic = {
+                k[len("qdynamic."):]: v
                 for k, v in request.query_params.items()
-                if k.startswith("filters.")
+                if k.startswith("qdynamic.")
             }
-            if query_filters:
-                filters = query_filters
+            if query_dynamic:
+                qdynamic = query_dynamic
 
         # --- determine which collections user can access ------------------------------
         solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
@@ -102,12 +102,12 @@ async def query_universal(
 
         # --- filter sanitization ------------------------------------------------------
         allowed_fields = [f.field for f in SOLR_FIELDS]
-        filters = sanitize_filters(filters, allowed_fields)
+        qdynamic = sanitize_filters(qdynamic, allowed_fields)
 
         # --- merge filters into Solr query string -------------------------------------
         textQuery = q or "*"
-        if filters:
-            filter_query = " AND ".join(f"{k}:{v}" for k, v in filters.items())
+        if qdynamic:
+            filter_query = " AND ".join(f"{k}:{v}" for k, v in qdynamic.items())
             textQuery = f"({textQuery}) AND ({filter_query})" if textQuery != "*" else filter_query
 
         # --- call Solr service --------------------------------------------------------

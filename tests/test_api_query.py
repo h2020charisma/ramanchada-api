@@ -50,7 +50,7 @@ def test_query_metadata_embeddedimages():
 def test_query_metadata_with_filters_get():
     params = {
         "query_type": "metadata",
-        "filters.name_s": "Fluorapatite"
+        "qdynamic.name_s": "Fluorapatite"
     }
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
@@ -96,7 +96,7 @@ def test_post_query_metadata():
 def test_post_query_metadata_with_filters():
     payload = {
         "query_type": "metadata",
-        "filters": {"name_s": "Anatase"},
+        "qdynamic": {"name_s": "Anatase"},
         "data_source": "charisma",
     }
     response = client.post(TEST_ENDPOINT, json=payload)
