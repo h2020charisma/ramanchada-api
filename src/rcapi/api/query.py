@@ -12,7 +12,22 @@ from rcapi.services.kc import get_token, get_roles_from_token
 router = APIRouter()
 
 
-@router.api_route("/query", methods=["GET", "POST"], response_model=StandardResponse[List[dict]])
+@router.api_route(
+    "/query",
+    methods=["GET", "POST"],
+    response_model=StandardResponse[List[dict]],
+    summary="Search experiments",
+    description="Perform a search for study types as in ambit data model using query parameters or filters.",
+    openapi_extra={
+        "x-mcp-prompt": (
+            "Use this tool to search the ambit/enanomapper  database. Provide query terms, "
+            "filters, and optional parameters. Example for metadata search: "
+            "{'query_type': 'metadata', 'q': '*', 'filters': {'name_s': 'polystyrene'}, 'data_source': 'charisma'}. "
+            "For vector similarity search: {'query_type': 'knnquery', 'ann': '<base64_vector>'}. "
+            "Include pagination with 'page' and 'pagesize'."
+        )
+    }
+)
 async def query_universal(
     request: Request,
     # standard GET parameters
@@ -121,7 +136,19 @@ async def query_universal(
         raise HTTPException(status_code=400, detail=str(err))
 
 
-@router.get("/query/field", response_model=StandardResponse[List[dict]])
+@router.get(
+    "/query/field",
+    summary="Get facet values for a query field",
+    description="Return all possible values for a given query field",
+    openapi_extra={
+        "x-mcp-prompt": (
+            "Use this resource to get the list of values for a specific field. "
+            "Provide the field name (e.g., 'instrument_s') and optional data sources. "
+            "Returns read-only metadata with counts for each value."
+        )
+    },
+    response_model=StandardResponse[List[dict]]
+)
 async def get_field(
     request: Request,
     name: str = "publicname_s",
@@ -152,7 +179,18 @@ async def get_field(
 
 
 # https://github.com/h2020charisma/ramanchada-api/issues/59
-@router.get("/query/sources")
+@router.get(
+    "/query/sources",
+    summary="List available data sources",
+    description="Return  collections accessible to the user along with field metadata.",
+    openapi_extra={
+        "x-mcp-prompt": (
+            "Use this resource to discover which data sources are available for queries. "
+            "Returns a list of collections with names, descriptions, and accessibility. "
+            "This is read-only metadata."
+        )
+    },
+)
 async def get_sources(
         request: Request,
         token: Optional[str] = Depends(get_token)
