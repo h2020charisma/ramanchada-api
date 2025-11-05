@@ -30,15 +30,15 @@ async def query_universal(
     # flexible JSON input for POST 
     filters: Optional[Dict[str, Any]] = Body(
         default=None,
-        example={"provider": "nist", "method": "ftir"},
-        description="Optional dict of Solr field:value filters (keys limited to known SOLR_FIELDS)"
+        example={"name_s": "Anatase"},
+        description="Optional dict of field:value filters (keys limited by configuration)"
     ),
     token: Optional[str] = Depends(get_token),
 ):
     """
     Universal query endpoint for spectra and safety-related data.
 
-    - **GET** supports classic query-string style for the React UI.
+    - **GET** supports classic query-string style .
     - **POST** accepts structured JSON for MCP or automated clients.
 
     Example POST body:
@@ -46,7 +46,7 @@ async def query_universal(
     {
       "q": "PP",
       "data_source": "charisma",
-      "filters": {"provider": "nist", "method": "ftir"},
+      "filters": {"name_s": "Anatase"},
       "page": 0,
       "pagesize": 10
     }
@@ -70,6 +70,15 @@ async def query_universal(
             ds = body.get("data_source", data_source)
             data_source = {ds} if isinstance(ds, str) else set(ds or [])
             filters = body.get("filters", filters)
+        # --- GET: extract filters.* parameters -----------------------------------
+        elif request.method == "GET":
+            query_filters = {
+                k[len("filters."):]: v
+                for k, v in request.query_params.items()
+                if k.startswith("filters.")
+            }
+            if query_filters:
+                filters = query_filters
 
         # --- determine which collections user can access ------------------------------
         solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(

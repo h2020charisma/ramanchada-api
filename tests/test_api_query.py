@@ -5,45 +5,62 @@ from importlib.resources import files
 from numcompress import decompress
 from rcapi.services.standard_response import StandardDictListResponse
 
-
 client = TestClient(app)
-
 TEST_ENDPOINT = "/db/query"
 
 
 @pytest.fixture
 def knnquery4test():
-    resource_path = files('resources.api',).joinpath('pdf2knnquery.txt')
-    with resource_path.open('r') as file_stream:
+    resource_path = files("resources.api").joinpath("pdf2knnquery.txt")
+    with resource_path.open("r") as file_stream:
         knnQuery = file_stream.read()
     return knnQuery
 
 
+# --------------------------------------------------------------------
+# GET tests
+# --------------------------------------------------------------------
+
 def test_query_metadata():
-    params = { "query_type": "metadata" }
+    params = {"query_type": "metadata"}
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
     parsed = StandardDictListResponse.model_validate(response.json())
-    assert isinstance(parsed.response, list), "Response is not a list"
+    assert isinstance(parsed.response, list)
     for item in parsed.response:
-        assert isinstance(item, dict), "Items in the list should be dictionaries"
-        assert "value" in item, "'value' key missing"
-        assert "text" in item, "'text' key missing"
-        assert "imageLink" in item, "'imageLink' key missing"
+        assert isinstance(item, dict)
+        assert "value" in item
+        assert "text" in item
+        assert "imageLink" in item
 
 
 def test_query_metadata_embeddedimages():
-    params = {"query_type": "metadata" , "img": "embedded"}
+    params = {"query_type": "metadata", "img": "embedded"}
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
     parsed = StandardDictListResponse.model_validate(response.json())
-    assert isinstance(parsed.response, list), "Response is not a list"
+    assert isinstance(parsed.response, list)
     for item in parsed.response:
-        assert isinstance(item, dict), "Items in the list should be dictionaries"
-        assert "value" in item, "'value' key missing"
-        assert "text" in item, "'text' key missing"
-        assert "imageLink" in item, "'imageLink' key missing"
-        # assert "spectrum_p1024" in item, "vector field key missing"
+        assert isinstance(item, dict)
+        assert "value" in item
+        assert "text" in item
+        assert "imageLink" in item
+
+
+def test_query_metadata_with_filters_get():
+    params = {
+        "query_type": "metadata",
+        "filters.name_s": "Fluorapatite"
+    }
+    response = client.get(TEST_ENDPOINT, params=params)
+    assert response.status_code == 200
+    parsed = StandardDictListResponse.model_validate(response.json())
+    assert isinstance(parsed.response, list)
+    for item in parsed.response:
+        assert isinstance(item, dict)
+        assert "value" in item
+        assert "text" in item
+        assert "imageLink" in item
 
 
 def test_knnquery(knnquery4test):
@@ -51,20 +68,18 @@ def test_knnquery(knnquery4test):
     response = client.get(TEST_ENDPOINT, params=params)
     assert response.status_code == 200
     parsed = StandardDictListResponse.model_validate(response.json())
-    assert isinstance(parsed.response, list), "Response is not a list"
+    assert isinstance(parsed.response, list)
     for item in parsed.response:
-        assert isinstance(item, dict), "Items in the list should be dictionaries"
-        assert "score" in item, "'score' key missing"        
-        assert "value" in item, "'value' key missing"
-        assert "text" in item, "'text' key missing"
-        assert "imageLink" in item, "'imageLink' key missing"
-        # assert SOLR_VECTOR in item, "vector field key missing"
+        assert isinstance(item, dict)
+        assert "score" in item
+        assert "value" in item
+        assert "text" in item
+        assert "imageLink" in item
 
 
-def test_fixture(knnquery4test):
-    _knnquery = decompress(knnquery4test)
-    assert len(_knnquery) == 2048
-
+# --------------------------------------------------------------------
+# POST tests
+# --------------------------------------------------------------------
 
 def test_post_query_metadata():
     payload = {"query_type": "metadata"}
@@ -81,8 +96,8 @@ def test_post_query_metadata():
 def test_post_query_metadata_with_filters():
     payload = {
         "query_type": "metadata",
-        "filters": {"provider": "nist", "method": "ftir"},
-        "data_source": "raman",
+        "filters": {"name_s": "Anatase"},
+        "data_source": "charisma",
     }
     response = client.post(TEST_ENDPOINT, json=payload)
     assert response.status_code == 200
@@ -105,4 +120,13 @@ def test_post_knnquery(knnquery4test):
         assert "score" in item
         assert "value" in item
         assert "text" in item
-        assert "imageLink" in item    
+        assert "imageLink" in item
+
+
+# --------------------------------------------------------------------
+# Fixtures / sanity checks
+# --------------------------------------------------------------------
+
+def test_fixture(knnquery4test):
+    _knnquery = decompress(knnquery4test)
+    assert len(_knnquery) == 2048
