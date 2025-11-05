@@ -64,3 +64,45 @@ def test_knnquery(knnquery4test):
 def test_fixture(knnquery4test):
     _knnquery = decompress(knnquery4test)
     assert len(_knnquery) == 2048
+
+
+def test_post_query_metadata():
+    payload = {"query_type": "metadata"}
+    response = client.post(TEST_ENDPOINT, json=payload)
+    assert response.status_code == 200
+    parsed = StandardDictListResponse.model_validate(response.json())
+    assert isinstance(parsed.response, list)
+    for item in parsed.response:
+        assert "value" in item
+        assert "text" in item
+        assert "imageLink" in item
+
+
+def test_post_query_metadata_with_filters():
+    payload = {
+        "query_type": "metadata",
+        "filters": {"provider": "nist", "method": "ftir"},
+        "data_source": "raman",
+    }
+    response = client.post(TEST_ENDPOINT, json=payload)
+    assert response.status_code == 200
+    parsed = StandardDictListResponse.model_validate(response.json())
+    assert isinstance(parsed.response, list)
+    for item in parsed.response:
+        assert isinstance(item, dict)
+        assert "value" in item
+        assert "text" in item
+        assert "imageLink" in item
+
+
+def test_post_knnquery(knnquery4test):
+    payload = {"query_type": "knnquery", "ann": knnquery4test}
+    response = client.post(TEST_ENDPOINT, json=payload)
+    assert response.status_code == 200
+    parsed = StandardDictListResponse.model_validate(response.json())
+    assert isinstance(parsed.response, list)
+    for item in parsed.response:
+        assert "score" in item
+        assert "value" in item
+        assert "text" in item
+        assert "imageLink" in item    
