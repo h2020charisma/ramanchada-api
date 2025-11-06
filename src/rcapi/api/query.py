@@ -101,7 +101,10 @@ async def query_universal(
         )
 
         # --- filter sanitization ------------------------------------------------------
-        allowed_fields = [f.field for f in SOLR_FIELDS]
+        allowed_fields = [
+            f.field.removeprefix("qdynamic.") 
+            for f in SOLR_FIELDS
+        ]
         qdynamic = sanitize_filters(qdynamic, allowed_fields)
 
         # --- merge filters into Solr query string -------------------------------------
@@ -159,12 +162,14 @@ async def get_field(
         SOLR_ROOT, data_source, drop_private=token is None
     )
     try:
-        params = {"q": "*", "rows": 0, "facet.field": name, "facet": "true"}
+        # we need the original field names
+        _name = name.replace("qdynamic.", "")
+        params = {"q": "*", "rows": 0, "facet.field": _name, "facet": "true"}
         if collection_param is not None:
             params["collection"] = collection_param
         rs = await solr_query_get(solr_url, params, token)
         # Extract the facet field values
-        facet_field_values = rs.json()["facet_counts"]["facet_fields"][name]
+        facet_field_values = rs.json()["facet_counts"]["facet_fields"][_name]
         # Convert to an array of objects with name and count properties
         result = []
         for i in range(0, len(facet_field_values), 2):
