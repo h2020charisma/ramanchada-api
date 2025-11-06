@@ -11,9 +11,9 @@ import shutil
 class SolrFieldEntry(BaseModel):
     name: str
     field: str
-    type: str  # 'text', 'numeric', 'vector', 'date', etc.
-    icon: str
-    use: str
+    type: Optional[str] = "text"
+    icon: Optional[str] = "fa-solid fa-book"
+    use: Optional[str] = "predefined"
 
     
 class SolrCollectionEntry(BaseModel):
