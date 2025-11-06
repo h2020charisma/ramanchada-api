@@ -1,7 +1,9 @@
 from typing import Optional, Literal
 from fastapi import Request, HTTPException
 from numcompress import  decompress
-from rcapi.services.solr_query import solr_query_post, solr_doc_filter
+from rcapi.services.solr_query import (
+    get_query_fields, solr_query_post, solr_doc_filter
+)
 import urllib.parse
 from rcapi.api.utils import get_baseurl
 from rcapi.services.standard_response import StandardResponse
@@ -45,7 +47,7 @@ async def process(request: Request,
                   collections = None,
                   token=None) -> StandardResponse:
 
-    query_fields = "id,name_s,textValue_s,type_s"
+    query_fields = get_query_fields()
     embedded_images = img == "embedded"
     if embedded_images:
         query_fields = "{},{}".format(query_fields,vector_field)

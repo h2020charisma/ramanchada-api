@@ -10,6 +10,19 @@ SOLR_COLLECTIONS = config.SOLR_COLLECTIONS
 SOLR_FIELDS = config.SOLR_FIELDS
 
 
+def get_query_fields():
+    _fields = "id,type_s"
+    if "study" in config.SOLR_DOCS:
+        _fields = f"{_fields},name_s,textValue_s"
+    if "substance" in config.SOLR_DOCS:
+        _fields = f"{_fields},name_s:name_t,textValue_s"        
+    if "composition" in config.SOLR_DOCS:
+        _fields = f"{_fields},name_s:ChemicalName_s"
+    if "aop" in config.SOLR_DOCS or "key_event" in config.SOLR_DOCS:
+        _fields = f"{_fields},title_t,name_s:name_t"
+    return _fields
+
+
 def solr_doc_filter() -> str:
     docs = config.SOLR_DOCS or ["study"]
     quoted = [f'"{v}"' for v in docs]

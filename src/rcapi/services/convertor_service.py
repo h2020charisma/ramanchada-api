@@ -23,6 +23,9 @@ from matplotlib.backends.backend_agg import (  # noqa: E402
     FigureCanvasAgg as FigureCanvas)
 from matplotlib.figure import Figure  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+from rdkit import Chem
+from rdkit.Chem import Draw
+
 
 x4search = np.linspace(140, 3*1024+140, num=2048)
 
@@ -72,6 +75,41 @@ def dict2figure(pm, figsize) -> Figure:
     axis.title.set_fontsize(8)
     axis.set_xlim(0, 1)
     axis.set_title(pm["domain"])
+    return fig
+
+
+def plot_structure(smiles, title=None, thumbnail=True, figsize=None, **draw_kwargs):
+    """
+    Plot a 2D chemical structure from a SMILES string.
+
+    Parameters
+    ----------
+    smiles : str
+        SMILES representation of the molecule.
+    title : str, optional
+        Title of the plot.
+    thumbnail : bool, default=True
+        If True, hide title and axes for compact display.
+    figsize : tuple, optional
+        Size of the figure (in inches), default (4, 4).
+    **draw_kwargs :
+        Additional keyword arguments passed to RDKit's Draw.MolToImage.
+    """
+
+    if figsize is None:
+        figsize = (4, 4)
+
+    # Create molecule from SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        raise ValueError(f"Invalid SMILES: {smiles}")
+    img = Draw.MolToImage(mol, size=(int(figsize[0]*100), int(figsize[1]*100)), **draw_kwargs)
+    fig = Figure(figsize=figsize, constrained_layout=True)
+    ax = fig.add_subplot(1, 1, 1)
+    ax.imshow(img)
+    ax.axis("off" if thumbnail else "on")
+    if not thumbnail and title:
+        ax.set_title(title)
     return fig
 
 
@@ -161,10 +199,15 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
     try:
         if domain.startswith("id:"):
             query = domain
+            if extraprm == "composition":
+                params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                                "fl": "id,type_s,chemname:ChemicalName_s,SMILES:SMILES_s,updated_s,_version_"}
+            else:
+                return empty_figure(figsize, title=extraprm, label=f"{domain}"), None
         else:
             query = "textValue_s:{}{}{}".format('"', domain, '"')
-        params = {"q": query, "fq": [solr_doc_filter()], 
-                  "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
+            params = {"q": query, "fq": [solr_doc_filter()], 
+                    "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
         if collections is not None:
             params["collection"] = collections
         rs = await solr_query_get(solr_url, params, token=token)
@@ -174,6 +217,18 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                 # print(domain, extraprm)
                 if response_json["response"]["numFound"] == 0:
                     return empty_figure(figsize, title="not found", label="{}".format(domain.split("/")[-1])), None
+                elif extraprm == "composition":
+                    print(response_json["response"]["docs"])
+                    for doc in response_json["response"]["docs"]:
+                        print(doc.get("SMILES", None))
+                        fig = plot_structure(
+                            smiles=doc.get("SMILES", None), 
+                            title=doc.get("chemname",None),
+                            thumbnail=thumbnail, figsize=figsize)
+                        etag = generate_etag(
+                            "{}{}{}".format(doc["id"], doc.get("updated_s", ""),
+                                            doc.get("_version_", "")))
+                        return fig, etag
                 elif extraprm != "study":
                     return empty_figure(figsize, title=extraprm, label=f"{domain}"), None
                 x = None
