@@ -22,7 +22,7 @@ async def process(request: Request,
     collections = None,
     token=None) -> StandardResponse:
 
-    query_fields = "id,name_s,textValue_s"
+    query_fields = "id,name_s,textValue_s,type_s"
     embedded_images = img=="embedded"
     if embedded_images:
         query_fields = "{},{}".format(query_fields,vector_field)
@@ -35,7 +35,7 @@ async def process(request: Request,
     if query_type != "knnquery":
         textQuery = q
         textQuery = "*" if textQuery is None or textQuery=="" else textQuery
-        solr_params = {
+        post_params = {
             "query": textQuery, 
             "filter" : [
                 solr_doc_filter(),
@@ -46,10 +46,11 @@ async def process(request: Request,
                 "fields" : query_fields}
         response = None
         try:
-            response = await solr_query_post(solr_url, query_params, solr_params, token)
+	        #  print(query_params, post_params)
+            response = await solr_query_post(solr_url, query_params, post_params, token)
             response_data = response.json()
             results = parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None,collections=collections)
-
+            #  print(response_data.get("response", {}).get("numFound", 0))
             return StandardResponse(
                 status=0,
                 numFound=response_data.get("response", {}).get("numFound", 0),
@@ -68,14 +69,14 @@ async def process(request: Request,
         else:
             knnQuery = ','.join(map(str, decompress(knnQuery)))
             query = "!knn f={} topK={}".format(vector_field,40)
-            solr_params= {"query": "{"+query+"}[" + knnQuery + "]", 
+            post_params= {"query": "{"+query+"}[" + knnQuery + "]", 
                 "filter" : [solr_doc_filter(),
                             "reference_s:{}".format(q_reference),
                             "reference_owner_s:{}".format(q_provider)  ], 
                             "fields" : query_fields}
             response = None
             try:
-                response = await solr_query_post(solr_url,query_params,solr_params,token)
+                response = await solr_query_post(solr_url,query_params,post_params,token)
                 response_data = response.json()
                 results = parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field,collections=collections)
                 return StandardResponse(
@@ -95,6 +96,7 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
     results = []
     response = response_data.get("response", {})
     for doc in response.get("docs", []):
+        type_s = doc.get("type_s", "")
         value = doc.get("textValue_s", "")
         text = f"{doc.get('name_s', '')}"
         if embedded_images:
@@ -115,7 +117,7 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
             else:
                 data_source = "&".join(f"data_source={c}" for c in collections.split(","))
 
-            image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra=&{data_source}"
+            image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra={type_s}&{data_source}"
         _tmp = {
             "value": value,
             "text": text,
