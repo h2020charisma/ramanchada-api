@@ -13,6 +13,7 @@ SOLR_FIELDS = config.SOLR_FIELDS
 def solr_doc_filter() -> str:
     docs = config.SOLR_DOCS or ["study"]
     quoted = [f'"{v}"' for v in docs]
+    
     return f"type_s:({ ' OR '.join(quoted) })"
 
 
@@ -23,6 +24,7 @@ async def solr_query_post(
             headers = {}
             if token:
                 headers['Authorization'] = f'Bearer {token}'  # Add token to headers                  
+            # print(query_params, post_param)
             response = await client.post(
                 solr_url,
                 json=post_param,

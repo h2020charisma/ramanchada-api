@@ -7,50 +7,73 @@ from rcapi.api.utils import get_baseurl
 from rcapi.services.standard_response import StandardResponse
 
 
+def get_predefined(param):
+    PREDEFINED = {
+        "q_reference": "reference_s",
+        "q_provider": "reference_owner_s",
+        "q_method": "guidance_s"
+        }
+    return PREDEFINED.get(param, param)
+
+
+def build_solr_filters(filters=[], **kwargs):
+    """
+    Build a list of Solr filter queries based on provided keyword arguments.
+    
+    Example:
+        build_solr_filters(solr_doc_filter, q_reference='abc', q_method='*')
+    """
+    for param, value in kwargs.items():
+        if value != "*":  # skip wildcards
+            field_name = get_predefined(param)
+            filters.append(f"{field_name}:\"{value}\"")
+    return filters
+
+
 async def process(request: Request,
-    solr_url: str,
-    q: Optional[str] = "*",
-    query_type: Optional[str] = None,
-    q_reference: Optional[str] = "*",
-    q_provider: Optional[str] = "*",
-    q_method: Optional[str] = "*",
-    ann: Optional[str] = None,
-    page: Optional[int] = 0,
-    pagesize: Optional[int] = 10,
-    img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
-    vector_field = "spectrum_p1024",
-    collections = None,
-    token=None) -> StandardResponse:
+                  solr_url: str,
+                  q: Optional[str] = "*",
+                  query_type: Optional[str] = None,
+                  q_reference: Optional[str] = None,
+                  q_provider: Optional[str] = None,
+                  q_method: Optional[str] = None,
+                  ann: Optional[str] = None,
+                  page: Optional[int] = 0,
+                  pagesize: Optional[int] = 10,
+                  img: Optional[Literal["embedded", "original", "thumbnail"]]="thumbnail",
+                  vector_field: str = "spectrum_p1024",
+                  collections = None,
+                  token=None) -> StandardResponse:
 
     query_fields = "id,name_s,textValue_s,type_s"
-    embedded_images = img=="embedded"
+    embedded_images = img == "embedded"
     if embedded_images:
         query_fields = "{},{}".format(query_fields,vector_field)
 
-    thumbnail = "image" if img=="original" else "thumbnail"
-    query_params = { "start" : page*pagesize, "rows" : pagesize}
+    thumbnail = "image" if img == "original" else "thumbnail"
+    query_params = { "start": page*pagesize, "rows": pagesize}
     if collections is not None:
         query_params["collection"] = collections
 
+    print(query_type, q_provider, q_reference)
     if query_type != "knnquery":
         textQuery = q
         textQuery = "*" if textQuery is None or textQuery=="" else textQuery
-        post_params = {
-            "query": textQuery, 
-            "filter" : [
-                solr_doc_filter(),
-                f"reference_s:{q_reference}",
-                f"reference_owner_s:{q_provider}",
-                f"guidance_s:{q_method}"
-                ], 
-                "fields" : query_fields}
+        _filter = [solr_doc_filter()]
+        _filter = build_solr_filters(
+            _filter, q_reference=q_reference,
+            q_provider=q_provider, q_method=q_method)
+        post_params = {"query": textQuery, "filter": _filter,
+                       "fields": query_fields}
+
         response = None
         try:
-	        #  print(query_params, post_params)
             response = await solr_query_post(solr_url, query_params, post_params, token)
             response_data = response.json()
-            results = parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None,collections=collections)
-            #  print(response_data.get("response", {}).get("numFound", 0))
+            results = parse_solr_response(
+                response_data, get_baseurl(request), embedded_images,
+                thumbnail, vector_field=None, collections=collections)
+            print(response_data.get("response", {}).get("numFound", 0))
             return StandardResponse(
                 status=0,
                 numFound=response_data.get("response", {}).get("numFound", 0),
@@ -68,12 +91,14 @@ async def process(request: Request,
             raise HTTPException(status_code=400, detail="?ann parameter missing")
         else:
             knnQuery = ','.join(map(str, decompress(knnQuery)))
-            query = "!knn f={} topK={}".format(vector_field,40)
-            post_params= {"query": "{"+query+"}[" + knnQuery + "]", 
-                "filter" : [solr_doc_filter(),
-                            "reference_s:{}".format(q_reference),
-                            "reference_owner_s:{}".format(q_provider)  ], 
-                            "fields" : query_fields}
+            query = "!knn f={} topK={}".format(vector_field, 40)
+            _filter = [solr_doc_filter()]
+            _filter = build_solr_filters(
+                _filter, q_reference=q_reference, 
+                q_provider=q_provider, q_method=q_method)
+            post_params = {"query": f"{query}[{knnQuery}]",
+                           "filter": _filter, "fields": query_fields}
+
             response = None
             try:
                 response = await solr_query_post(solr_url,query_params,post_params,token)
@@ -91,7 +116,7 @@ async def process(request: Request,
                     await response.aclose()        
 
 
-def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field=None,collections=None):
+def parse_solr_response(response_data, base_url=None, embedded_images=False,thumbnail="image",vector_field=None,collections=None):
 # Process Solr response and construct the output
     results = []
     response = response_data.get("response", {})

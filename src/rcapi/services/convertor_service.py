@@ -169,8 +169,11 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
             response_json = rs.json()
             # print(response_json)
             if "response" in response_json:
+                # print(domain, extraprm)
                 if response_json["response"]["numFound"] == 0:
                     return empty_figure(figsize, title="not found", label="{}".format(domain.split("/")[-1])), None
+                elif extraprm != "study":
+                    return empty_figure(figsize, title=extraprm, label="{}".format(domain.split("/")[-1])), None
                 x = None
                 for doc in response_json["response"]["docs"]:
                     y = doc.get(SOLR_VECTOR, None)

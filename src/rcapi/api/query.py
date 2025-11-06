@@ -164,6 +164,7 @@ async def get_field(
     try:
         # we need the original field names
         _name = name.replace("qdynamic.", "")
+        _name = query_service.get_predefined(_name)
         params = {"q": "*", "rows": 0, "facet.field": _name, "facet": "true"}
         if collection_param is not None:
             params["collection"] = collection_param
