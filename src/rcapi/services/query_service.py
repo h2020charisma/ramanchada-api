@@ -96,7 +96,7 @@ async def process(request: Request,
             _filter = build_solr_filters(
                 _filter, q_reference=q_reference, 
                 q_provider=q_provider, q_method=q_method)
-            post_params = {"query": f"{query}[{knnQuery}]",
+            post_params = {"query": "{"+query+"}[" + knnQuery + "]",
                            "filter": _filter, "fields": query_fields}
 
             response = None
