@@ -22,12 +22,89 @@ matplotlib.use('Agg')
 from matplotlib.backends.backend_agg import (  # noqa: E402
     FigureCanvasAgg as FigureCanvas)
 from matplotlib.figure import Figure  # noqa: E402
+from matplotlib.patches import Circle, Rectangle, RegularPolygon, FancyBboxPatch, Ellipse, Polygon
 import matplotlib.pyplot as plt  # noqa: E402
 from rdkit import Chem
 from rdkit.Chem import Draw
 
 
 x4search = np.linspace(140, 3*1024+140, num=2048)
+
+
+def entity_icon(entity_type: str,
+                title: str = "",
+                figsize=(2, 2),
+                title_fontsize=9,
+                label_fontsize=8) -> Figure:
+    """
+    Generate a predefined symbolic matplotlib Figure for a given entity type,
+    with both a title (top) and a central type label.
+
+    Parameters
+    ----------
+    entity_type : str
+        Entity type (e.g. 'AOP', 'Key Event', 'Assay', 'Chemical', etc.)
+    title : str
+        Title text displayed above the figure (optional)
+    figsize : tuple
+        Figure size in inches (width, height)
+    title_fontsize : int
+        Font size for the title text
+    label_fontsize : int
+        Font size for the central type label
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure object (no canvas, suitable for streaming)
+    """
+    fig = Figure(figsize=figsize)
+    ax = fig.add_subplot(1, 1, 1)
+    ax.axis("off")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+
+    entity = entity_type.lower().replace(" ", "_")
+
+    # --- define shape and color ---
+    if entity == "aop":
+        patch = FancyBboxPatch((0.15, 0.35), 0.7, 0.3,
+                               boxstyle="round,pad=0.1",
+                               linewidth=2, edgecolor="steelblue", facecolor="lightblue")
+    elif entity in ("key_event", "ke"):
+        patch = Circle((0.5, 0.5), 0.25,
+                       facecolor="orange", edgecolor="darkorange", linewidth=2)
+    elif entity == "assay":
+        patch = Polygon([[0.2, 0.1], [0.8, 0.1], [0.5, 0.8]], closed=True,
+                        facecolor="mediumseagreen", edgecolor="seagreen", linewidth=2)
+    elif entity in ("chemical", "substance"):
+        patch = RegularPolygon((0.5, 0.5), numVertices=6, radius=0.25,
+                               facecolor="violet", edgecolor="purple", linewidth=2)
+    elif entity in ("biological_object", "gene", "protein", "cell"):
+        patch = Ellipse((0.5, 0.5), 0.6, 0.35,
+                        facecolor="turquoise", edgecolor="teal", linewidth=2)
+    elif entity in ("endpoint", "effect"):
+        patch = RegularPolygon((0.5, 0.5), numVertices=4, radius=0.3, orientation=0.785,
+                               facecolor="lightcoral", edgecolor="red", linewidth=2)
+    elif entity in ("model", "tool"):
+        patch = Rectangle((0.2, 0.3), 0.6, 0.4,
+                          facecolor="lightgray", edgecolor="dimgray", linewidth=2)
+    else:
+        patch = Rectangle((0.2, 0.3), 0.6, 0.4,
+                          facecolor="white", edgecolor="black", linewidth=1)
+
+    ax.add_patch(patch)
+
+    # --- main label (centered type) ---
+    ax.text(0.5, 0.5, entity_type.upper(),
+            ha="center", va="center", fontsize=label_fontsize, weight="bold")
+
+    # --- title (optional, above figure) ---
+    if title:
+        ax.text(0.5, 0.92, title,
+                ha="center", va="center", fontsize=title_fontsize)
+
+    return fig
 
 
 def empty_figure(figsize, title, label) -> Figure:
@@ -203,7 +280,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                 params = {"q": query, "fq": [f"type_s:{extraprm}"], 
                                 "fl": "id,type_s,chemname:ChemicalName_s,SMILES:SMILES_s,updated_s,_version_"}
             else:
-                return empty_figure(figsize, title=extraprm, label=f"{domain}"), None
+                return entity_icon(entity_type=extraprm, title=f"{domain}", figsize=figsize), None
         else:
             query = "textValue_s:{}{}{}".format('"', domain, '"')
             params = {"q": query, "fq": [solr_doc_filter()], 

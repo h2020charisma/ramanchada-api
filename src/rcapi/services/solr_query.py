@@ -15,7 +15,7 @@ def get_query_fields():
     if "study" in config.SOLR_DOCS:
         _fields = f"{_fields},name_s,textValue_s"
     if "substance" in config.SOLR_DOCS:
-        _fields = f"{_fields},name_s:name_t,textValue_s"        
+        _fields = f"{_fields},name_s:name_hs"        
     if "composition" in config.SOLR_DOCS:
         _fields = f"{_fields},name_s:ChemicalName_s"
     if "aop" in config.SOLR_DOCS or "key_event" in config.SOLR_DOCS:
