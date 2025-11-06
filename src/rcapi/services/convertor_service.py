@@ -159,7 +159,10 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                      token: str = None) -> Tuple[Figure, str]:
     rs = None
     try:
-        query = "textValue_s:{}{}{}".format('"', domain, '"')
+        if domain.startswith("id:"):
+            query = domain
+        else:
+            query = "textValue_s:{}{}{}".format('"', domain, '"')
         params = {"q": query, "fq": [solr_doc_filter()], 
                   "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
         if collections is not None:
@@ -167,7 +170,6 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
         rs = await solr_query_get(solr_url, params, token=token)
         if rs is not None and rs.status_code == 200:
             response_json = rs.json()
-            # print(response_json)
             if "response" in response_json:
                 # print(domain, extraprm)
                 if response_json["response"]["numFound"] == 0:

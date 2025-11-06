@@ -122,7 +122,7 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
     response = response_data.get("response", {})
     for doc in response.get("docs", []):
         type_s = doc.get("type_s", "")
-        value = doc.get("textValue_s", "")
+        value = doc.get("textValue_s", None)
         text = f"{doc.get('name_s', '')}"
         if embedded_images:
             try:
@@ -136,13 +136,16 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
             except Exception as err:
                 print(err)    
         else:
-            encoded_domain = urllib.parse.quote(value)
             if collections is None:
                 data_source = ""
             else:
                 data_source = "&".join(f"data_source={c}" for c in collections.split(","))
-
-            image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra={type_s}&{data_source}"
+            if value is None:
+                id = urllib.parse.quote(doc.get("id", None))
+                image_link = f"{base_url}db/download?what={thumbnail}&domain=id:{id}&extra={type_s}&{data_source}"
+            else:
+                encoded_domain = urllib.parse.quote(value)
+                image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra={type_s}&{data_source}"
         _tmp = {
             "value": value,
             "text": text,
