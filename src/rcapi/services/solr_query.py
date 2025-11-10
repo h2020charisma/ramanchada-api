@@ -6,6 +6,7 @@ from rcapi.config.app_config import initialize_dirs
 config, UPLOAD_DIR, NEXUS_DI, TEMPLATE_DIR = initialize_dirs()
 SOLR_ROOT = config.SOLR_ROOT
 SOLR_VECTOR = config.SOLR_VECTOR
+SOLR_SIMILARITY = config.SOLR_SIMILARITY
 SOLR_COLLECTIONS = config.SOLR_COLLECTIONS
 SOLR_FIELDS = config.SOLR_FIELDS
 

@@ -2,6 +2,12 @@ upload_dir: "uploads"
 nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"
 SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"
 SOLR_VECTOR: "spectrum_p1024"
+SOLR_SIMILARITY:
+  - name: "Raman spectrum"
+    vector: "spectrum_p1024"
+  - name: "Chemical"
+    vector: "dense_512"
+
 SOLR_COLLECTIONS:
   default: "charisma"
   collections:
@@ -13,7 +19,22 @@ SOLR_COLLECTIONS:
       description: "CHARISMA protected"
       license: "TBD"
       roles: ["charisma", "test-role-1"]
-
+    - name: "gracious"
+      description: "GRACIOUS"
+      license: "TBD"
+      roles: ["public"]
+    - name: "polyrisk"
+      description: "POLYRISK"
+      license: "TBD"
+      roles: ["polyrisk"]
+    - name: "nanoreg2"
+      description: "Nanoreg2"
+      license: "TBD"
+      roles: ["public"]
+    - name: "aop4enm"
+      description: "Aop Mapper"
+      license: "TBD"
+      roles: ["public"]      
 SOLR_FIELDS:
   - name: "Data provider"
     field: "q_provider"
@@ -35,8 +56,11 @@ SOLR_FIELDS:
   - name: "Method"
     field: "q_method"
     icon: "FaFlaskVial"
-
-SOLR_DOCS: ["study"]
+  - name: "Documents"
+    field: "qdynamic.type_s"
+    icon: "FaFileAlt"
+    use: "qdynamic"
+SOLR_DOCS: ["study", "aop", "assay", "substance", "composition", "biological_object", "biological_action", "key_event", "stressor", "chemical"]
 
 KEYCLOAK:
   OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"

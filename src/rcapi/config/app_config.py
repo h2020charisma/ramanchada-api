@@ -98,6 +98,11 @@ class SolrCollectionSettings(BaseModel):
         return self.for_roles(["public"])
 
 
+class SolrSimilarityEntry(BaseModel):
+    name: str
+    vector: str
+    
+
 class KeycloakConfig(BaseModel):
     OPENID_CONFIG_URI: str
     JWT_AUDIENCE: str
@@ -110,6 +115,7 @@ class AppConfig(BaseSettings):
     SOLR_ROOT: str = "https://solr-kc.ideaconsult.net/solr/"
     SOLR_VECTOR: str = "spectrum_p1024"
     SOLR_COLLECTIONS: SolrCollectionSettings = SolrCollectionSettings()
+    SOLR_SIMILARITY: List[SolrSimilarityEntry] = Field(default_factory=list)
     SOLR_FIELDS: List[SolrFieldEntry] = Field(default_factory=list)
     SOLR_DOCS: List[str] = Field(default_factory=lambda: ["study"])
     KEYCLOAK: KeycloakConfig

@@ -5,7 +5,8 @@ import traceback
 from rcapi.services import query_service
 from rcapi.services.standard_response import StandardResponse
 from rcapi.services.solr_query import (
-    SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, SOLR_FIELDS, solr_query_get
+    SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, SOLR_FIELDS, SOLR_SIMILARITY,
+    solr_query_get
 )
 from rcapi.services.kc import get_token, get_roles_from_token
 
@@ -218,7 +219,8 @@ async def get_sources(
                  "public": "public" in c.roles}
                 for c in accessible_collections
             ],
-            "fields": SOLR_FIELDS
+            "fields": SOLR_FIELDS,
+            "similarity": SOLR_SIMILARITY
         }
 
     except HTTPException as err:

@@ -316,11 +316,11 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                         x = doc.get("dense_a512", None)
                         if y is None and x is None:
                             continue
-                        plot_kwargs={"color": "#FF7F0E"}
+                        plot_kwargs = {"color": "#FF7F0E"}
                         xtitle = ""
                     else:
                         x = x4search
-                        plot_kwargs={}
+                        plot_kwargs = {}
                         xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
 
                     _title = None if thumbnail else "{} {} {} ({})".format(
