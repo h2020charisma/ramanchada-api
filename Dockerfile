@@ -12,6 +12,7 @@ FROM python:3.12-slim
 
 RUN apt-get update && apt-get install -y \
     git \
+    libxrender1 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=requirements-stage /tmp/requirements.txt /tmp/requirements.txt
