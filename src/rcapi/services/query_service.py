@@ -75,7 +75,6 @@ async def process(request: Request,
             results = parse_solr_response(
                 response_data, get_baseurl(request), embedded_images,
                 thumbnail, vector_field=None, collections=collections)
-            print(response_data.get("response", {}).get("numFound", 0))
             return StandardResponse(
                 status=0,
                 numFound=response_data.get("response", {}).get("numFound", 0),

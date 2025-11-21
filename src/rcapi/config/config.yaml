@@ -60,7 +60,7 @@ SOLR_FIELDS:
     field: "qdynamic.type_s"
     icon: "FaFileAlt"
     use: "qdynamic"
-SOLR_DOCS: ["study", "aop", "assay", "substance", "composition", "biological_object", "biological_action", "key_event", "stressor", "chemical"]
+SOLR_DOCS: ["study", "aop", "assay", "substance", "composition", "biological_object", "biological_action", "key_event", "stressor", "chemical", "inventory"]
 
 KEYCLOAK:
   OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"

@@ -279,6 +279,9 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
             if extraprm == "composition":
                 params = {"q": query, "fq": [f"type_s:{extraprm}"], 
                                 "fl": "id,type_s,chemname:ChemicalName_s,SMILES:SMILES_s,updated_s,_version_"}
+            elif extraprm == "inventory":
+                params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                                "fl": "id,type_s,chemname:Name_s,SMILES:SMILES_x_s,_version_"}                
             else:
                 return entity_icon(entity_type=extraprm, title=f"{domain}", figsize=figsize), None
         else:
@@ -294,7 +297,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                 # print(domain, extraprm)
                 if response_json["response"]["numFound"] == 0:
                     return empty_figure(figsize, title="not found", label="{}".format(domain.split("/")[-1])), None
-                elif extraprm == "composition":
+                elif extraprm in ["composition", "inventory"]:
                     print(response_json["response"]["docs"])
                     for doc in response_json["response"]["docs"]:
                         print(doc.get("SMILES", None))
