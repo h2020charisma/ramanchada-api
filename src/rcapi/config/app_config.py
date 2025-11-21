@@ -6,6 +6,7 @@ import os
 from importlib import resources
 from pathlib import Path
 import shutil
+import traceback
 
 
 class SolrFieldEntry(BaseModel):
@@ -149,7 +150,11 @@ def migrate_dir(UPLOAD_DIR, NEXUS_DIR):
 
 
 def initialize_dirs(migrate=False):
-    config = load_config()
+    try:
+        config = load_config()
+    except Exception as err:
+        traceback.print_exc()
+        raise err
     UPLOAD_DIR = config.upload_dir
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     NEXUS_DIR = os.path.join(UPLOAD_DIR, "NEXUS")
