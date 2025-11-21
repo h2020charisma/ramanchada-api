@@ -27,10 +27,26 @@ SOLR_COLLECTIONS:
       description: "POLYRISK"
       license: "TBD"
       roles: ["polyrisk"]
+    - name: "zerof"
+      description: "ZEROF"
+      license: "TBD"
+      roles: ["zerof"]      
     - name: "nanoreg2"
       description: "Nanoreg2"
       license: "TBD"
       roles: ["public"]
+    - name: "ambitlri_plasticmap"
+      description: "PlasticMap"
+      license: "TBD"
+      roles: ["public"]
+    - name: "repdose"
+      description: "Repeated Dose tox database"
+      license: "TBD"
+      roles: ["public"]         
+    - name: "openfoodtox"
+      description: "OpenFoodTox database"
+      license: "TBD"
+      roles: ["public"]               
     - name: "aop4enm"
       description: "Aop Mapper"
       license: "TBD"
