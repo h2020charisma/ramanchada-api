@@ -185,6 +185,81 @@ async def get_field(
         raise HTTPException(status_code=500, detail=str(err))
 
 
+@router.get(
+    "/query/field/terms",
+    summary="Prefix-based term lookup for a query field",
+    description=(
+        "Query Solr's term dictionary and return terms of the specified field. "
+        "Supports optional prefix filtering and result limiting. "
+        "This endpoint is optimized for fields with very high cardinality and "
+        "does not enumerate or count full facet distributions."
+    ),
+    openapi_extra={
+        "x-mcp-prompt": (
+            "Use this resource to retrieve indexed terms for a field. "
+            "Supports prefix search and result limiting. "
+            "Useful for autocomplete, exploration, and UIs that require fast term lookup "
+            "without computing facet counts."
+        )
+    },
+    response_model=StandardResponse[List[str]]
+)
+async def get_field_terms(
+    request: Request,
+    name: str = "publicname_s",
+    prefix: Optional[str] = Query(default=None, description="Only return terms starting with this prefix"),
+    limit: int = Query(default=20, ge=1, le=500, description="Maximum number of terms to return"),
+    data_source: Optional[Set[str]] = Query(default=None),
+    token: Optional[str] = Depends(get_token),
+):
+    """
+    Efficient term lookup using Solr's TermsComponent across one or more collections.
+    """
+
+    solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None
+    )
+
+    try:
+        # Normalize field name using your predefined mapping
+        _name = name.replace("qdynamic.", "")
+        _name = query_service.get_predefined(_name)
+
+        # Build Solr /select request for terms
+        params = {
+            "wt": "json",             # required to get JSON response
+            "terms": "true",
+            "terms.fl": _name,
+            "terms.sort": "index",    # sorted lexicographically
+            "terms.limit": limit,
+        }
+
+        if prefix:
+            params["terms.prefix"] = prefix
+
+        if collection_param is not None:
+            params["collection"] = collection_param
+
+        print("Solr URL:", solr_url)
+        print("Params:", params)
+
+        # Query Solr
+        rs = await solr_query_get(solr_url, params, token)
+        j = rs.json()
+        print(j)
+        # Extract terms (Solr returns ["term1", count1, "term2", count2, ...])
+        term_data = j.get("terms", {}).get(_name, [])
+        terms = [term_data[i] for i in range(0, len(term_data), 2)]  # pick only term strings
+
+        return StandardResponse(status=1 if dropped else 0, response=terms)
+
+    except HTTPException as err:
+        raise err
+    except Exception as err:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(err))
+
+
 # https://github.com/h2020charisma/ramanchada-api/issues/59
 @router.get(
     "/query/sources",
