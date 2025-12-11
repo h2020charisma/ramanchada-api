@@ -189,31 +189,24 @@ async def get_field(
     "/query/field/terms",
     summary="Prefix-based term lookup for a query field",
     description=(
-        "Query Solr's term dictionary and return terms of the specified field. "
-        "Supports optional prefix filtering and result limiting. "
-        "This endpoint is optimized for fields with very high cardinality and "
-        "does not enumerate or count full facet distributions."
+        "Autocomplete prefix lookup. For string fields (_s), uses Solr TermsComponent. "
+        "For other fields, performs a wildcard prefix query (q=field:prefix*)."
     ),
-    openapi_extra={
-        "x-mcp-prompt": (
-            "Use this resource to retrieve indexed terms for a field. "
-            "Supports prefix search and result limiting. "
-            "Useful for autocomplete, exploration, and UIs that require fast term lookup "
-            "without computing facet counts."
-        )
-    },
-    response_model=StandardResponse[List[str]]
+    response_model=StandardResponse[List[str]],
 )
 async def get_field_terms(
     request: Request,
     name: str = "publicname_s",
-    prefix: Optional[str] = Query(default=None, description="Only return terms starting with this prefix"),
-    limit: int = Query(default=20, ge=1, le=500, description="Maximum number of terms to return"),
+    prefix: Optional[str] = Query(default=None),
+    limit: int = Query(default=20, ge=1, le=500),
     data_source: Optional[Set[str]] = Query(default=None),
     token: Optional[str] = Depends(get_token),
 ):
     """
-    Efficient term lookup using Solr's TermsComponent across one or more collections.
+    Prefix lookup for autocomplete.
+
+    - For *_s fields → uses TermsComponent (fast, exact).
+    - For *_t fields → uses q=<field>:<prefix>* query and extracts distinct values.
     """
 
     solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
@@ -221,41 +214,95 @@ async def get_field_terms(
     )
 
     try:
-        # Normalize field name using your predefined mapping
-        _name = name.replace("qdynamic.", "")
-        _name = query_service.get_predefined(_name)
+        # Normalize field name
+        field = name.replace("qdynamic.", "")
+        field = query_service.get_predefined(field)
 
-        # Build Solr /select request for terms
+        # ---------------------------------------------
+        # CASE 1: String fields (_s) — TermsComponent
+        # ---------------------------------------------
+        if field.endswith("_s") or field.endswith("_ss"):
+            params = {
+                "wt": "json",
+                "terms": "true",
+                "terms.fl": field,
+                "terms.sort": "index",
+                "terms.limit": limit,
+            }
+            if prefix:
+                params["terms.prefix"] = prefix
+            if collection_param is not None:
+                params["collection"] = collection_param
+
+            rs = await solr_query_get(solr_url, params, token)
+            j = rs.json()
+            term_data = j.get("terms", {}).get(field, [])
+
+            # Extract only terms (every 2nd element)
+            terms = [term_data[i] for i in range(0, len(term_data), 2)]
+
+            return StandardResponse(status=1 if dropped else 0, response=terms)
+
+        # -----------------------------------------------------
+        # CASE 2: Text fields (_t) — wildcard prefix query
+        # -----------------------------------------------------
+        else: # field.endswith("_t"):
+            params = {
+                "wt": "json",
+                "q": f"{field}:{prefix}*" if prefix else "*:*",
+                "rows": limit,
+                "fl": field,
+            }
+            if collection_param is not None:
+                params["collection"] = collection_param
+
+            print(solr_url, params)
+            rs = await solr_query_get(solr_url, params, token)
+            docs = rs.json().get("response", {}).get("docs", [])
+
+            # Collect unique values
+            seen = set()
+            values = []
+
+            for d in docs:
+                v = d.get(field)
+                if isinstance(v, list):
+                    for x in v:
+                        if isinstance(x, str) and x not in seen:
+                            seen.add(x)
+                            values.append(x)
+                elif isinstance(v, str):
+                    if v not in seen:
+                        seen.add(v)
+                        values.append(v)
+
+            return StandardResponse(status=1 if dropped else 0,
+                                    response=values[:limit])
+
+        # -----------------------------------------------------
+        # Other field types → try TermsComponent anyway
+        # -----------------------------------------------------
         params = {
-            "wt": "json",             # required to get JSON response
+            "wt": "json",
             "terms": "true",
-            "terms.fl": _name,
-            "terms.sort": "index",    # sorted lexicographically
+            "terms.fl": field,
             "terms.limit": limit,
         }
-
         if prefix:
             params["terms.prefix"] = prefix
-
         if collection_param is not None:
             params["collection"] = collection_param
 
-        print("Solr URL:", solr_url)
-        print("Params:", params)
-
-        # Query Solr
         rs = await solr_query_get(solr_url, params, token)
         j = rs.json()
-        print(j)
-        # Extract terms (Solr returns ["term1", count1, "term2", count2, ...])
-        term_data = j.get("terms", {}).get(_name, [])
-        terms = [term_data[i] for i in range(0, len(term_data), 2)]  # pick only term strings
+        term_data = j.get("terms", {}).get(field, [])
+        terms = [term_data[i] for i in range(0, len(term_data), 2)]
 
         return StandardResponse(status=1 if dropped else 0, response=terms)
 
-    except HTTPException as err:
-        raise err
-    except Exception as err:
+    except HTTPException:
+        raise
+    except Exception:
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(err))
 
