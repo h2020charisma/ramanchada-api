@@ -15,6 +15,7 @@ class SolrFieldEntry(BaseModel):
     type: Optional[str] = "text"
     icon: Optional[str] = "fa-solid fa-book"
     use: Optional[str] = "predefined"
+    search: Optional[str] = "/db/query/field"
 
     
 class SolrCollectionEntry(BaseModel):
