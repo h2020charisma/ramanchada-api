@@ -112,6 +112,7 @@ class KeycloakConfig(BaseModel):
 
 
 class AppConfig(BaseSettings):
+    application_name: str = "Search App"
     upload_dir: str
     nmparse_url: str
     SOLR_ROOT: str = "https://solr-kc.ideaconsult.net/solr/"

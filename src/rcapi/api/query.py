@@ -6,7 +6,7 @@ from rcapi.services import query_service
 from rcapi.services.standard_response import StandardResponse
 from rcapi.services.solr_query import (
     SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, SOLR_FIELDS, SOLR_SIMILARITY,
-    solr_query_get
+    solr_query_get, APPLICATION_NAME
 )
 from rcapi.services.kc import get_token, get_roles_from_token
 
@@ -337,6 +337,7 @@ async def get_sources(
         accessible_collections = SOLR_COLLECTIONS.for_roles(user_roles)
 
         return {
+            "application_name" : APPLICATION_NAME,
             "default": SOLR_COLLECTIONS.default,
             "data_sources": [
                 {"name": c.name,

@@ -1,3 +1,4 @@
+application_name: "Raman Spectra search"
 upload_dir: "uploads"
 nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"
 SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"

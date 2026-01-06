@@ -1,0 +1,62 @@
+application_name: "AMBIT"
+upload_dir: "uploads"
+nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"
+SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"
+SOLR_VECTOR: "spectrum_p1024"
+SOLR_SIMILARITY:
+  - name: "Raman spectrum"
+    vector: "spectrum_p1024"
+  - name: "Chemical"
+    vector: "dense_512"
+
+SOLR_COLLECTIONS:
+  default: "dsstox"
+  collections:
+    - name: "ambitlri_plasticmap"
+      description: "PlasticMap"
+      license: "TBD"
+      roles: ["public"]
+    - name: "repdose"
+      description: "Repeated Dose tox database"
+      license: "TBD"
+      roles: ["public"]         
+    - name: "openfoodtox"
+      description: "OpenFoodTox database"
+      license: "OpenFoodTox"
+      roles: ["public"]               
+    - name: "dsstox"
+      description: "DSSTox https://www.epa.gov/comptox-tools/distributed-structure-searchable-toxicity-dsstox-database"
+      license: "Public"
+      roles: ["public"]      
+SOLR_FIELDS:
+  - name: "CAS RN"
+    field: "qdynamic.casrn_s"
+    use: "qdynamic"
+    search: "/db/query/field/terms"
+  - name: "Chemical name"
+    field: "qdynamic.preferred_name_t"
+    icon: "fa6/FaVial"
+    use: "qdynamic"
+    search: "/db/query/field/terms"
+  - name: "InChI key"
+    field: "qdynamic.inchi_key_s"
+    icon: "fa6/FaVial"
+    use: "qdynamic"
+    search: "/db/query/field/terms"    
+  - name: "SMILES"
+    field: "qdynamic.SMILES_s"
+    icon: "fa6/FaVial"
+    use: "qdynamic"
+    search: "/db/query/field/terms"        
+  - name: "Item types"
+    field: "qdynamic.type_s"
+    icon: "fa6/FaFileLines"
+    use: "qdynamic"
+    search: "/db/query/field"
+
+SOLR_DOCS: ["study", "aop", "assay", "substance", "composition", "biological_object", "biological_action", "key_event", "stressor", "chemical", "inventory"]
+
+KEYCLOAK:
+  OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"
+  JWT_AUDIENCE: "account"
+  JWT_ISSUER: "https://iam.ideaconsult.net/realms/nano"

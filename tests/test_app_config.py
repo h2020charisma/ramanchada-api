@@ -9,6 +9,7 @@ from rcapi.config.app_config import load_config, AppConfig, SolrCollectionEntry,
 @pytest.fixture
 def temp_config_file():
     config_data = {
+        'application_name' : "My Search App",
         'upload_dir': '/tmp/uploads',
         'nmparse_url': 'http://localhost:8080/nmparse',
         'SOLR_COLLECTIONS': {
@@ -46,6 +47,7 @@ def test_load_config(temp_config_file):
     config = load_config()
 
     assert isinstance(config, AppConfig)
+    assert config.application_name == 'My Search App'
     assert config.upload_dir == '/tmp/uploads'
     assert config.nmparse_url == 'http://localhost:8080/nmparse'
     assert config.SOLR_COLLECTIONS.default == 'custom_public_1'
