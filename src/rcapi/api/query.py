@@ -88,8 +88,11 @@ async def query_universal(
             qdynamic = body.get("qdynamic", qdynamic)
         # --- GET: extract filters.* parameters -----------------------------------
         elif request.method == "GET":
+            QUOTE_KEYS = {"SMILES_s"} 
             query_dynamic = {
-                k[len("qdynamic."):]: v
+                k[len("qdynamic."):]: (
+                    f'"{v}"' if k[len("qdynamic."):] in QUOTE_KEYS else v
+                )
                 for k, v in request.query_params.items()
                 if k.startswith("qdynamic.")
             }

@@ -185,7 +185,7 @@ async def convert_post(
                         ylabel = None if spe.meta["@signal"]=="" else spe.meta["@signal"]
                     except Exception:
                         ylabel = None
-                    print(xlabel, ylabel)
+                    
                     fig = plot_spectrum(spe_processed.x,
                                         spe_processed.y, uf.filename,
                                         xlabel=xlabel, ylabel=ylabel, figsize=(640*px, 160*px),

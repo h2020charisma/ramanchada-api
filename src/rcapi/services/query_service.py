@@ -57,7 +57,6 @@ async def process(request: Request,
     if collections is not None:
         query_params["collection"] = collections
 
-    print(query_type, q_provider, q_reference)
     if query_type != "knnquery":
         textQuery = q
         textQuery = "*" if textQuery is None or textQuery=="" else textQuery
