@@ -283,7 +283,10 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                                 "fl": "id,type_s,chemname:ChemicalName_s,SMILES:SMILES_s,updated_s,_version_"}
             elif extraprm == "chemical":
                 params = {"q": query, "fq": [f"type_s:{extraprm}"], 
-                                "fl": "id,type_s,chemname:preferred_name_t,SMILES:SMILES_s,updated_s,_version_"}                
+                                "fl": "id,type_s,chemname:preferred_name_t,SMILES:SMILES_s,updated_s,_version_"}
+            elif extraprm == "prediction":
+                params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                                "fl": "id,type_s,chemname:dsstox_id_s,attr_method,updated_s,_version_"}                
             elif extraprm == "inventory":
                 params = {"q": query, "fq": [f"type_s:{extraprm}"], 
                                 "fl": "id,type_s,chemname:Name_s,SMILES:SMILES_x_s,_version_"}                

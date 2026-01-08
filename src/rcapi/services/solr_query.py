@@ -21,7 +21,9 @@ def get_query_fields():
     if "composition" in config.SOLR_DOCS:
         _fields = f"{_fields},name_s:ChemicalName_s"
     if "chemical" in config.SOLR_DOCS:
-        _fields = f"{_fields},name_s:preferred_name_t"        
+        _fields = f"{_fields},name_s:preferred_name_t"
+    if "prediction" in config.SOLR_DOCS:
+        _fields = f"{_fields},name_s:concat(dsstox_id_s, ': ' ,guidance_s, ' ', reference_s, ' model predictions'), textValue_s: dsstox_id_s"
     if "aop" in config.SOLR_DOCS or "key_event" in config.SOLR_DOCS:
         _fields = f"{_fields},title_t,name_s:name_t"
     return _fields
