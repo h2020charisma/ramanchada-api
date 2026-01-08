@@ -9,7 +9,7 @@ import traceback
 import os.path
 from numcompress import compress
 from rcapi.services.convertor_service import (
-    empty_figure, dict2figure, , recursive_copy
+    empty_figure, dict2figure, solr2image, recursive_copy
     )
 from rcapi.services.convertor_service import (
     read_spectrum_native, plot_spectrum, preprocess_spectrum, x4search
