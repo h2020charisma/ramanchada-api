@@ -12,17 +12,9 @@ SOLR_SIMILARITY:
 SOLR_COLLECTIONS:
   default: "dsstox"
   collections:
-    - name: "ambitlri_plasticmap"
-      description: "PlasticMap"
-      license: "TBD"
-      roles: ["public"]
-    - name: "repdose"
-      description: "Repeated Dose tox database"
-      license: "TBD"
-      roles: ["public"]         
-    - name: "openfoodtox"
-      description: "OpenFoodTox database"
-      license: "OpenFoodTox"
+    - name: "vega"
+      description: "VEGA QSAR predictions"
+      license: "Public"
       roles: ["public"]               
     - name: "dsstox"
       description: "DSSTox https://www.epa.gov/comptox-tools/distributed-structure-searchable-toxicity-dsstox-database"
@@ -47,14 +39,18 @@ SOLR_FIELDS:
     field: "qdynamic.SMILES_s"
     icon: "fa6/FaVial"
     use: "qdynamic"
-    search: "/db/query/field/terms"        
+    search: "/db/query/field/terms"
+  - name: "Reference"
+    field: "q_reference"
+    icon: "fa6/FaBookOpen"
+    search: "/db/query/field"    
   - name: "Item types"
     field: "qdynamic.type_s"
     icon: "fa6/FaFileLines"
     use: "qdynamic"
     search: "/db/query/field"
 
-SOLR_DOCS: ["study", "aop", "assay", "substance", "composition", "biological_object", "biological_action", "key_event", "stressor", "chemical", "inventory"]
+SOLR_DOCS: ["study", "aop", "assay", "substance", "composition", "biological_object", "biological_action", "key_event", "stressor", "chemical", "inventory", "prediction"]
 
 KEYCLOAK:
   OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"
