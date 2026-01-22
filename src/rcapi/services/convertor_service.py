@@ -26,6 +26,7 @@ from matplotlib.patches import Circle, Rectangle, RegularPolygon, FancyBboxPatch
 import matplotlib.pyplot as plt  # noqa: E402
 from rdkit import Chem
 from rdkit.Chem import Draw
+from functools import reduce
 
 
 x4search = np.linspace(140, 3*1024+140, num=2048)
@@ -211,6 +212,14 @@ def plot_structure(smiles, title=None, thumbnail=True, figsize=None, **draw_kwar
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         raise ValueError(f"Invalid SMILES: {smiles}")
+    return plot_mol(mol, title, thumbnail, figsize, draw_kwargs)
+
+
+def plot_mol(mol, title=None, thumbnail=True, figsize=None, **draw_kwargs):
+    if mol is None:
+        raise ValueError("No structure")
+    if figsize is None:
+        figsize = (4, 4)
     img = Draw.MolToImage(mol, size=(int(figsize[0]*100), int(figsize[1]*100)), **draw_kwargs)
     fig = Figure(figsize=figsize, constrained_layout=True)
     ax = fig.add_subplot(1, 1, 1)
@@ -448,3 +457,31 @@ def read_spectrum_native(file, file_name, prefix="rcapi_"):
     finally:
         if native_filename != None:
             os.remove(native_filename)
+
+
+def read_molecule(file, file_name, n=1, prefix="rcapi_"):
+    filename, file_extension = os.path.splitext(file_name)
+    result_json = {}
+    with tempfile.NamedTemporaryFile(delete=False,
+                                     prefix=prefix,
+                                     suffix=file_extension) as tmp:
+        shutil.copyfileobj(file, tmp)
+        native_filename = tmp.name
+        print(native_filename)
+    if file_extension == ".mol":
+        mol = Chem.MolFromMolFile(native_filename)
+    else:
+        suppl = Chem.SmilesMolSupplier(native_filename)
+        mols = [mol for mol in suppl if mol is not None][:n]
+        mol = reduce(Chem.CombineMols, mols)
+    print(mol)
+    combined_smiles = Chem.MolToSmiles(mol)
+    px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
+    fig = plot_mol(mol, title=None, thumbnail=True, figsize=(320*px, 80*px))
+    output = BytesIO()
+    FigureCanvas(fig).print_png(output)
+    base64_bytes = base64.b64encode(output.getvalue())
+    result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
+    result_json["smiles"] = combined_smiles
+    return result_json
+    

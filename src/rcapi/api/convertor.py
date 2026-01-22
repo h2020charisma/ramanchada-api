@@ -9,7 +9,8 @@ import traceback
 import os.path
 from numcompress import compress
 from rcapi.services.convertor_service import (
-    empty_figure, dict2figure, solr2image, recursive_copy
+    empty_figure, dict2figure, solr2image, recursive_copy,
+    read_molecule
     )
 from rcapi.services.convertor_service import (
     read_spectrum_native, plot_spectrum, preprocess_spectrum, x4search
@@ -21,6 +22,8 @@ from rcapi.services.solr_query import SOLR_ROOT, SOLR_COLLECTIONS
 import matplotlib  # noqa: E402
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
+from rdkit import Chem
+
 
 router = APIRouter()
 
@@ -168,8 +171,16 @@ async def convert_post(
         for uf in files:
             f_name = uf.filename
             _filename, file_extension = os.path.splitext(f_name)
-            
-            if file_extension not in (".cha", ".nxs"):
+            if file_extension in (".smi", ".mol"):
+                result_json = read_molecule(uf.file, uf.filename)
+                if what == "knnquery":
+                    return result_json
+                elif what == "b64png":
+                    return result_json["imageLink"].replace("data:image/png;base64,","")
+                else:
+                    raise HTTPException(status_code=500, detail=f"Unsupported 'what' parameter: {what}")
+                #read molecule
+            elif file_extension not in (".cha", ".nxs"):
                 spe = read_spectrum_native(uf.file, uf.filename)
                 if what == "knnquery":
                     spe_processed = preprocess_spectrum(spe, x4search, baseline=True)
