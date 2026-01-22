@@ -213,7 +213,7 @@ def plot_structure(smiles, title=None, thumbnail=True, figsize=None, **draw_kwar
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
         raise ValueError(f"Invalid SMILES: {smiles}")
-    return plot_mol(mol, title, thumbnail, figsize, draw_kwargs)
+    return plot_mol(mol, title, thumbnail, figsize, **draw_kwargs)
 
 
 def plot_mol(mol, title=None, thumbnail=True, figsize=None, **draw_kwargs):
@@ -404,6 +404,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                 return empty_figure(figsize, title=extraprm, label=f"{domain}"), None                    
         return empty_figure(figsize, "{} {}".format(rs.status_code, getattr(rs, "reason", "")), "{}".format(domain.split("/")[-1])), None
     except Exception as err:
+        print(err)
         traceback.format_exc()
         return empty_figure(figsize, title="{}".format(err), 
                             label="{}".format(domain.split("/")[-1])), None
@@ -479,7 +480,7 @@ def read_molecule(file, file_name, n=1, prefix="rcapi_"):
                                      suffix=file_extension) as tmp:
         shutil.copyfileobj(file, tmp)
         native_filename = tmp.name
-        print(native_filename)
+
     if file_extension == ".mol":
         mol = Chem.MolFromMolFile(native_filename)
     else:
