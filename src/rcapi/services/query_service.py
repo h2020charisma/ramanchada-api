@@ -122,8 +122,9 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
     response = response_data.get("response", {})
     for doc in response.get("docs", []):
         type_s = doc.get("type_s", "")
-        domain = doc.get("domain", None)
+        domain = f"{doc.get(f'{type_s}_domain', None)}"
         text = f"{doc.get(f'{type_s}_name', '')}"
+        id = urllib.parse.quote(doc.get("id", None))
         if embedded_images:
             try:
                 #px = 1/plt.rcParams['figure.dpi']  # pixel in inches
@@ -140,7 +141,7 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
                 data_source = ""
             else:
                 data_source = "&".join(f"data_source={c}" for c in collections.split(","))
-            id = urllib.parse.quote(doc.get("id", None))                
+
             if domain is None:
                 image_link = f"{base_url}db/download?what={thumbnail}&domain=id:{id}&id={id}&extra={type_s}&{data_source}"
             else:

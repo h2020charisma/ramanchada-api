@@ -15,7 +15,7 @@ APPLICATION_NAME = config.application_name
 def get_query_fields():
     _fields = "id,type_s"
     if "study" in config.SOLR_DOCS:
-        _fields = f"{_fields},study_name:name_s,domain:textValue_s"
+        _fields = f"{_fields},study_name:name_s,study_domain:textValue_s"
     if "substance" in config.SOLR_DOCS:
         _fields = f"{_fields},substance_name:name_hs"
     if "composition" in config.SOLR_DOCS:
