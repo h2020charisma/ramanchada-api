@@ -65,38 +65,67 @@ def entity_icon(entity_type: str,
     ax.set_ylim(0, 1)
 
     entity = entity_type.lower().replace(" ", "_")
-
+    text_inside = entity_type.upper()
+    patches = []
     # --- define shape and color ---
     if entity == "aop":
-        patch = FancyBboxPatch((0.15, 0.35), 0.7, 0.3,
+        patches = [FancyBboxPatch((0.15, 0.35), 0.7, 0.3,
                                boxstyle="round,pad=0.1",
-                               linewidth=2, edgecolor="steelblue", facecolor="lightblue")
+                               linewidth=2, edgecolor="steelblue", facecolor="lightblue")]
     elif entity in ("key_event", "ke"):
-        patch = Circle((0.5, 0.5), 0.25,
-                       facecolor="orange", edgecolor="darkorange", linewidth=2)
+        patches = [Circle((0.5, 0.5), 0.25,
+                       facecolor="orange", edgecolor="darkorange", linewidth=2)]
     elif entity == "assay":
-        patch = Polygon([[0.2, 0.1], [0.8, 0.1], [0.5, 0.8]], closed=True,
-                        facecolor="mediumseagreen", edgecolor="seagreen", linewidth=2)
+        patches = [Polygon([[0.2, 0.1], [0.8, 0.1], [0.5, 0.8]], closed=True,
+                        facecolor="mediumseagreen", edgecolor="seagreen", linewidth=2)]
     elif entity in ("chemical", "substance"):
-        patch = RegularPolygon((0.5, 0.5), numVertices=6, radius=0.25,
-                               facecolor="violet", edgecolor="purple", linewidth=2)
+        patches = [RegularPolygon((0.5, 0.5), numVertices=6, radius=0.25,
+                               facecolor="violet", edgecolor="purple", linewidth=2)]
     elif entity in ("biological_object", "gene", "protein", "cell"):
-        patch = Ellipse((0.5, 0.5), 0.6, 0.35,
-                        facecolor="turquoise", edgecolor="teal", linewidth=2)
+        patches = [Ellipse((0.5, 0.5), 0.6, 0.35,
+                        facecolor="turquoise", edgecolor="teal", linewidth=2)]
     elif entity in ("endpoint", "effect"):
-        patch = RegularPolygon((0.5, 0.5), numVertices=4, radius=0.3, orientation=0.785,
-                               facecolor="lightcoral", edgecolor="red", linewidth=2)
+        patches = [RegularPolygon((0.5, 0.5), numVertices=4, radius=0.3, orientation=0.785,
+                               facecolor="lightcoral", edgecolor="red", linewidth=2)]
+    elif entity == "prediction interval":
+        text_inside = title
+        title = "90% prediction interval"
+        patches = [FancyBboxPatch((0.1, 0.3), 0.8, 0.4,
+                           boxstyle="round,pad=0.12",
+                           facecolor="none",          # important
+                           edgecolor="firebrick",
+                           linewidth=3,
+                           linestyle="--"),
+                    Rectangle((0.1, 0.35), 0.6, 0.1,
+                            facecolor="firebrick",
+                            alpha=0.35,
+                            edgecolor="none")]
+    elif entity == "prediction":
+        text_inside = title
+        title = "90% prediction set"
+        patches = [FancyBboxPatch((0.1, 0.3), 0.8, 0.4,
+                           boxstyle="round,pad=0.12",
+                           facecolor="none",          # important
+                           edgecolor="gray",
+                           linewidth=3,
+                           linestyle="--")]
+        for x in [0.3, 0.5, 0.7]:
+            patches.append(Circle((x, 0.25), 0.04,
+                        facecolor="firebrick",
+                        alpha=0.7,
+                        edgecolor="none"))
     elif entity in ("model", "tool"):
-        patch = Rectangle((0.2, 0.3), 0.6, 0.4,
-                          facecolor="lightgray", edgecolor="dimgray", linewidth=2)
+        patches = [Rectangle((0.2, 0.3), 0.6, 0.4,
+                          facecolor="lightgray", edgecolor="dimgray", linewidth=2)]
     else:
-        patch = Rectangle((0.2, 0.3), 0.6, 0.4,
-                          facecolor="white", edgecolor="black", linewidth=1)
+        patches = [Rectangle((0.2, 0.3), 0.6, 0.4,
+                          facecolor="white", edgecolor="black", linewidth=1)]
 
-    ax.add_patch(patch)
+    for patch in patches:
+        ax.add_patch(patch)
 
     # --- main label (centered type) ---
-    ax.text(0.5, 0.5, entity_type.upper(),
+    ax.text(0.5, 0.5, text_inside,
             ha="center", va="center", fontsize=label_fontsize, weight="bold")
 
     # --- title (optional, above figure) ---
@@ -270,32 +299,59 @@ def generate_etag(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
 
 
+async def doc2spectrum(doc, extraprm, thumbnail, figsize):
+    y = doc.get(SOLR_VECTOR, None)
+    if y is None:
+        # make this configurable
+        y = doc.get("dense_b512", None)
+        x = doc.get("dense_a512", None)
+        if y is None and x is None:
+            return None, None
+        plot_kwargs = {"color": "#FF7F0E"}
+        xtitle = ""
+    else:
+        x = x4search
+        plot_kwargs = {}
+        xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
+
+    _title = None if thumbnail else "{} {} {} ({})".format(
+        "" if extraprm is None else extraprm,
+        doc["name_s"], 
+        doc["reference_owner_s"], doc["reference_s"])
+    fig = plot_spectrum(x, y, _title, xtitle, "intensity [a.u.]",
+                        figsize=figsize, thumbnail=thumbnail,
+                        plot_kwargs=plot_kwargs)
+    etag = generate_etag("{}{}{}".format(
+        doc["textValue_s"], doc.get("updated_s",""), doc.get("_version_", "")))
+    return fig, etag    
+
+
 async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                      extraprm=None, thumbnail: bool = True,
                      collections: str = None,
                      token: str = None) -> Tuple[Figure, str]:
     rs = None
     try:
-        if domain.startswith("id:"):
-            query = domain
-            if extraprm == "composition":
-                params = {"q": query, "fq": [f"type_s:{extraprm}"], 
-                                "fl": "id,type_s,chemname:ChemicalName_s,SMILES:SMILES_s,updated_s,_version_"}
-            elif extraprm == "chemical":
-                params = {"q": query, "fq": [f"type_s:{extraprm}"], 
-                                "fl": "id,type_s,chemname:preferred_name_t,SMILES:SMILES_s,updated_s,_version_"}
-            elif extraprm == "prediction":
-                params = {"q": query, "fq": [f"type_s:{extraprm}"], 
-                                "fl": "id,type_s,chemname:dsstox_id_s,attr_method,updated_s,_version_"}                
-            elif extraprm == "inventory":
-                params = {"q": query, "fq": [f"type_s:{extraprm}"], 
-                                "fl": "id,type_s,chemname:Name_s,SMILES:SMILES_x_s,_version_"}                
-            else:
-                return entity_icon(entity_type=extraprm, title=f"{domain}", figsize=figsize), None
+        query = f"id:{domain}"
+        if extraprm == "composition":
+            params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                            "fl": "id,type_s,chemname:ChemicalName_s,SMILES:SMILES_s,updated_s,_version_"}
+        elif extraprm == "chemical":
+            params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                            "fl": "id,type_s,chemname:preferred_name_t,SMILES:SMILES_s,updated_s,_version_"}
+        elif extraprm == "prediction":
+            params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                            "fl": "id,type_s,chemname:dsstox_id_s,attr_method,updated_s,_version_"}
+        elif extraprm == "inventory":
+            params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                            "fl": "id,type_s,chemname:Name_s,SMILES:SMILES_x_s,_version_"}                
         else:
-            query = "textValue_s:{}{}{}".format('"', domain, '"')
-            params = {"q": query, "fq": [solr_doc_filter()], 
-                    "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
+            if domain is None or domain.startswith("id:"):
+                return entity_icon(entity_type=extraprm, title=f"{domain}", figsize=figsize), None
+            else:
+                query = "textValue_s:{}{}{}".format('"', domain, '"')
+                params = {"q": query, "fq": [solr_doc_filter()], 
+                        "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
         if collections is not None:
             params["collection"] = collections
         rs = await solr_query_get(solr_url, params, token=token)
@@ -316,33 +372,21 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                             "{}{}{}".format(doc["id"], doc.get("updated_s", ""),
                                             doc.get("_version_", "")))
                         return fig, etag
-                elif extraprm != "study":
-                    return empty_figure(figsize, title=extraprm, label=f"{domain}"), None
-                x = None
-                for doc in response_json["response"]["docs"]:
-                    y = doc.get(SOLR_VECTOR, None)
-                    if y is None:
-                        # make this configurable
-                        y = doc.get("dense_b512", None)
-                        x = doc.get("dense_a512", None)
-                        if y is None and x is None:
+                elif extraprm == "study":
+                    for doc in response_json["response"]["docs"]:
+                        fig, etag = doc2spectrum(doc, extraprm, thumbnail, figsize)
+                        if fig is None:
                             continue
-                        plot_kwargs = {"color": "#FF7F0E"}
-                        xtitle = ""
-                    else:
-                        x = x4search
-                        plot_kwargs = {}
-                        xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
-
-                    _title = None if thumbnail else "{} {} {} ({})".format(
-                        "" if extraprm is None else extraprm,
-                        doc["name_s"], 
-                        doc["reference_owner_s"], doc["reference_s"])
-                    fig = plot_spectrum(x, y, _title, xtitle, "intensity [a.u.]",
-                                        figsize=figsize, thumbnail=thumbnail, plot_kwargs=plot_kwargs)
-                    etag = generate_etag("{}{}{}".format(doc["textValue_s"],
-                            doc.get("updated_s",""), doc.get("_version_", "")))
-                    return fig, etag
+                        return fig, etag
+                elif extraprm == "prediction":
+                    for doc in response_json["response"]["docs"]: 
+                        methods = doc.get("attr_method", None)
+                        #chemname = doc.get("chemname", None)
+                        etag = generate_etag("{}{}{}".format(
+                            doc["id"], doc.get("updated_s",""), doc.get("_version_", "")))
+                        return entity_icon(entity_type=extraprm, title=f"{methods}", figsize=figsize), etag
+                    
+                return empty_figure(figsize, title=extraprm, label=f"{domain}"), None                    
         return empty_figure(figsize, "{} {}".format(rs.status_code, getattr(rs, "reason", "")), "{}".format(domain.split("/")[-1])), None
     except Exception as err:
         traceback.format_exc()
