@@ -66,7 +66,6 @@ async def process(request: Request,
             q_provider=q_provider, q_method=q_method)
         post_params = {"query": textQuery, "filter": _filter,
                        "fields": query_fields}
-
         response = None
         try:
             response = await solr_query_post(solr_url, query_params, post_params, token)

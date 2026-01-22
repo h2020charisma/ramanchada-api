@@ -15,6 +15,7 @@ router = APIRouter()
 
 @router.api_route(
     "/query",
+    operation_id="db_query_universal",
     methods=["GET", "POST"],
     response_model=StandardResponse[List[dict]],
     summary="Search experiments",
@@ -259,7 +260,6 @@ async def get_field_terms(
             if collection_param is not None:
                 params["collection"] = collection_param
 
-            print(solr_url, params)
             rs = await solr_query_get(solr_url, params, token)
             docs = rs.json().get("response", {}).get("docs", [])
 

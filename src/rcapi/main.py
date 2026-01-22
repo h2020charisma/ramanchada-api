@@ -59,10 +59,6 @@ def cleanup_tasks():
         tasks_db.pop(task_id)
 
 
-def cleanup_templates():
-    template_service.cleanup(timedelta(hours=24*30*6))
-
-
 fastapi_utils.settings.base_dir = os.path.abspath(NEXUS_DIR)
 app.include_router(upload.router, prefix="", tags=["dataset"])
 app.include_router(process.router, prefix="", tags=["process"])
@@ -76,10 +72,14 @@ app.include_router(mcp.router, tags=["mcp"])
 
 for route in app.routes:
     print(f"Route: {route.path} | Methods: {route.methods}")
+
+
 scheduler = BackgroundScheduler()
 scheduler.add_job(cleanup_tasks, 'interval', minutes=120)  # Clean up every 120 minutes
 #scheduler.add_job(cleanup_templates, 'interval', hours=24)  # test, otherwise once a day would be ok
 scheduler.start()
+
+
 
 if __name__ == "__main__":
     import uvicorn
