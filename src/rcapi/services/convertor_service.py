@@ -25,7 +25,8 @@ from matplotlib.figure import Figure  # noqa: E402
 from matplotlib.patches import Circle, Rectangle, RegularPolygon, FancyBboxPatch, Ellipse, Polygon
 import matplotlib.pyplot as plt  # noqa: E402
 from rdkit import Chem
-from rdkit.Chem import Draw
+from rdkit.Chem import Draw, AllChem
+from rdkit.DataStructs import ConvertToNumpyArray
 from functools import reduce
 
 
@@ -459,6 +460,17 @@ def read_spectrum_native(file, file_name, prefix="rcapi_"):
             os.remove(native_filename)
 
 
+def get_ecfp(mol):
+    fp = AllChem.GetMorganFingerprintAsBitVect(
+        mol,
+        radius=2,        # ECFP4
+        nBits=2048
+    )
+    arr = np.zeros((2048,), dtype=int)
+    ConvertToNumpyArray(fp, arr)
+    return arr
+
+
 def read_molecule(file, file_name, n=1, prefix="rcapi_"):
     filename, file_extension = os.path.splitext(file_name)
     result_json = {}
@@ -474,7 +486,6 @@ def read_molecule(file, file_name, n=1, prefix="rcapi_"):
         suppl = Chem.SmilesMolSupplier(native_filename)
         mols = [mol for mol in suppl if mol is not None][:n]
         mol = reduce(Chem.CombineMols, mols)
-    print(mol)
     combined_smiles = Chem.MolToSmiles(mol)
     px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
     fig = plot_mol(mol, title=None, thumbnail=True, figsize=(320*px, 80*px))
@@ -483,5 +494,6 @@ def read_molecule(file, file_name, n=1, prefix="rcapi_"):
     base64_bytes = base64.b64encode(output.getvalue())
     result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
     result_json["smiles"] = combined_smiles
+    result_json["cdf"] = compress(get_ecfp(mol).tolist(), precision=6)
     return result_json
     
