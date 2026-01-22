@@ -122,8 +122,8 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
     response = response_data.get("response", {})
     for doc in response.get("docs", []):
         type_s = doc.get("type_s", "")
-        value = doc.get("textValue_s", None)
-        text = f"{doc.get('name_s', '')}"
+        domain = doc.get("domain", None)
+        text = f"{doc.get(f'{type_s}_name', '')}"
         if embedded_images:
             try:
                 #px = 1/plt.rcParams['figure.dpi']  # pixel in inches
@@ -140,14 +140,16 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
                 data_source = ""
             else:
                 data_source = "&".join(f"data_source={c}" for c in collections.split(","))
-            if value is None:
-                id = urllib.parse.quote(doc.get("id", None))
-                image_link = f"{base_url}db/download?what={thumbnail}&domain=id:{id}&extra={type_s}&{data_source}"
+            id = urllib.parse.quote(doc.get("id", None))                
+            if domain is None:
+                image_link = f"{base_url}db/download?what={thumbnail}&domain=id:{id}&id={id}&extra={type_s}&{data_source}"
             else:
-                encoded_domain = urllib.parse.quote(value)
-                image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra={type_s}&{data_source}"
+                encoded_domain = urllib.parse.quote(domain)
+                image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&id={id}&extra={type_s}&{data_source}"
         _tmp = {
-            "value": value,
+            "value": domain,
+            "id": id,
+            "type": type_s,
             "text": text,
             "imageLink": image_link
         }            

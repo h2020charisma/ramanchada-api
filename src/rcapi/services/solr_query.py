@@ -15,17 +15,17 @@ APPLICATION_NAME = config.application_name
 def get_query_fields():
     _fields = "id,type_s"
     if "study" in config.SOLR_DOCS:
-        _fields = f"{_fields},name_s,textValue_s"
+        _fields = f"{_fields},study_name:name_s,domain:textValue_s"
     if "substance" in config.SOLR_DOCS:
-        _fields = f"{_fields},name_s:name_hs"        
+        _fields = f"{_fields},substance_name:name_hs"
     if "composition" in config.SOLR_DOCS:
-        _fields = f"{_fields},name_s:ChemicalName_s"
+        _fields = f"{_fields},composition_name:ChemicalName_s"
     if "chemical" in config.SOLR_DOCS:
-        _fields = f"{_fields},name_s:preferred_name_t"
+        _fields = f"{_fields},chemical_name:preferred_name_t"
     if "prediction" in config.SOLR_DOCS:
-        _fields = f"{_fields},name_s:concat(dsstox_id_s, ': ' ,guidance_s, ' ', reference_s, ' model predictions'), textValue_s:id"
-    if "aop" in config.SOLR_DOCS or "key_event" in config.SOLR_DOCS:
-        _fields = f"{_fields},title_t,name_s:name_t"
+        _fields = f"{_fields},prediction_name:concat(dsstox_id_s, ': ' ,guidance_s, ' ', reference_s, ' model predictions')"
+    #if "aop" in config.SOLR_DOCS or "key_event" in config.SOLR_DOCS:
+    #    _fields = f"{_fields},title_t,name_s:name_t"
     return _fields
 
 

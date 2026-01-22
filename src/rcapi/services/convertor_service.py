@@ -299,7 +299,7 @@ def generate_etag(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
 
 
-async def doc2spectrum(doc, extraprm, thumbnail, figsize):
+def doc2spectrum(doc, extraprm, thumbnail, figsize):
     y = doc.get(SOLR_VECTOR, None)
     if y is None:
         # make this configurable
@@ -313,7 +313,6 @@ async def doc2spectrum(doc, extraprm, thumbnail, figsize):
         x = x4search
         plot_kwargs = {}
         xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
-
     _title = None if thumbnail else "{} {} {} ({})".format(
         "" if extraprm is None else extraprm,
         doc["name_s"], 
@@ -332,7 +331,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                      token: str = None) -> Tuple[Figure, str]:
     rs = None
     try:
-        query = f"id:{domain}"
+        query = domain
         if extraprm == "composition":
             params = {"q": query, "fq": [f"type_s:{extraprm}"], 
                             "fl": "id,type_s,chemname:ChemicalName_s,SMILES:SMILES_s,updated_s,_version_"}
@@ -354,27 +353,33 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                         "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
         if collections is not None:
             params["collection"] = collections
+
         rs = await solr_query_get(solr_url, params, token=token)
         if rs is not None and rs.status_code == 200:
             response_json = rs.json()
             if "response" in response_json:
-                # print(domain, extraprm)
+
                 if response_json["response"]["numFound"] == 0:
                     return empty_figure(figsize, title="not found", label="{}".format(domain.split("/")[-1])), None
                 elif extraprm in ["composition", "inventory", "chemical"]:
                     #print(response_json["response"]["docs"])
                     for doc in response_json["response"]["docs"]:
-                        fig = plot_structure(
-                            smiles=doc.get("SMILES", None), 
-                            title=doc.get("chemname", None),
-                            thumbnail=thumbnail, figsize=figsize)
-                        etag = generate_etag(
-                            "{}{}{}".format(doc["id"], doc.get("updated_s", ""),
-                                            doc.get("_version_", "")))
-                        return fig, etag
-                elif extraprm == "study":
+                        smiles = doc.get("SMILES", None)
+                        chemname = doc.get("chemname", None)
+                        if smiles is not None:
+                            fig = plot_structure(
+                                smiles=smiles,
+                                title=chemname,
+                                thumbnail=thumbnail, figsize=figsize)
+                            etag = generate_etag(
+                                "{}{}{}".format(doc["id"], doc.get("updated_s", ""),
+                                                doc.get("_version_", "")))
+                            return fig, etag
+                        else:
+                            return entity_icon(entity_type=extraprm, title=f"{chemname}", figsize=figsize), etag
+                elif extraprm in ["study"]:
                     for doc in response_json["response"]["docs"]:
-                        fig, etag = doc2spectrum(doc, extraprm, thumbnail, figsize)
+                        fig, etag = doc2spectrum(doc, extraprm=extraprm, thumbnail=thumbnail, figsize=figsize)
                         if fig is None:
                             continue
                         return fig, etag
