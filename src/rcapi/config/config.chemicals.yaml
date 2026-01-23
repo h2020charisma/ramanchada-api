@@ -7,7 +7,8 @@ SOLR_SIMILARITY:
   - name: "Raman spectrum"
     vector: "spectrum_p1024"
   - name: "Chemical"
-    vector: "dense_512"
+    vector: "dense_a512"
+    vector_len: 512
 
 SOLR_COLLECTIONS:
   default: "dsstox"

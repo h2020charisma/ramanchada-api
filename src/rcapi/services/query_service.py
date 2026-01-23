@@ -2,7 +2,8 @@ from typing import Optional, Literal
 from fastapi import Request, HTTPException
 from numcompress import  decompress
 from rcapi.services.solr_query import (
-    get_query_fields, solr_query_post, solr_doc_filter
+    get_query_fields, solr_query_post, solr_doc_filter,
+    SOLR_SIMILARITY
 )
 import urllib.parse
 from rcapi.api.utils import get_baseurl
@@ -50,7 +51,7 @@ async def process(request: Request,
     query_fields = get_query_fields()
     embedded_images = img == "embedded"
     if embedded_images:
-        query_fields = "{},{}".format(query_fields,vector_field)
+        query_fields = "{},{}".format(query_fields, vector_field)
 
     thumbnail = "image" if img == "original" else "thumbnail"
     query_params = { "start": page*pagesize, "rows": pagesize}
@@ -89,7 +90,8 @@ async def process(request: Request,
         if (knnQuery is None) or (knnQuery ==""):
             raise HTTPException(status_code=400, detail="?ann parameter missing")
         else:
-            knnQuery = ','.join(map(str, decompress(knnQuery)))
+            vector = decompress(knnQuery)
+            knnQuery = ','.join(map(str, vector))
             query = "!knn f={} topK={}".format(vector_field, 40)
             _filter = [solr_doc_filter()]
             _filter = build_solr_filters(

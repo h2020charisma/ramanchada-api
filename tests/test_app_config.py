@@ -22,8 +22,8 @@ def temp_config_file():
             ],
         },
         'SOLR_SIMILARITY': [
-                {'name': 'Raman spectrum', 'vector': 'spectrum_p1024'},
-                {'name': 'Chemical', 'vector': 'dense_512'}
+                {'name': 'Raman spectrum', 'vector': 'spectrum_p1024', 'vector_len': 2048},
+                {'name': 'Chemical', 'vector': 'dense_a512', 'vector_len': 512}
             ],
         "KEYCLOAK": {
             "OPENID_CONFIG_URI": "https://example.org/realms/test/.well-known/openid-configuration",
@@ -96,4 +96,4 @@ def test_load_config(temp_config_file):
 
     vectors = {s.vector for s in similarities}
     assert 'spectrum_p1024' in vectors
-    assert 'dense_512' in vectors
+    assert 'dense_a512' in vectors

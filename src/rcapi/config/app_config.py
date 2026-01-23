@@ -103,6 +103,7 @@ class SolrCollectionSettings(BaseModel):
 class SolrSimilarityEntry(BaseModel):
     name: str
     vector: str
+    vector_len: int = 2048
     
 
 class KeycloakConfig(BaseModel):

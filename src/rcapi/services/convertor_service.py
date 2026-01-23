@@ -472,29 +472,62 @@ def get_ecfp(mol, radius=2, nBits=2048):
     return arr
 
 
-def read_molecule(file, file_name, n=1, prefix="rcapi_"):
-    filename, file_extension = os.path.splitext(file_name)
-    result_json = {}
-    with tempfile.NamedTemporaryFile(delete=False,
-                                     prefix=prefix,
-                                     suffix=file_extension) as tmp:
-        shutil.copyfileobj(file, tmp)
-        native_filename = tmp.name
+def read_n_molecules_from_fileobj(fileobj, n=1):
+    """
+    fileobj: file-like object from web form 
+    n: number of molecules to read
+    """
+    mols = []
+    for raw_line in fileobj:
+        line = raw_line.decode('utf-8').strip()  # decode bytes -> str
+        if not line:
+            continue
+        if line.lower().startswith("smiles"):  # skip header line
+            continue
+        smi = line.split()[0]  # first column = SMILES
+        mol = Chem.MolFromSmiles(smi)
+        if mol:
+            mols.append(mol)
+        if len(mols) >= n:
+            break
 
-    if file_extension == ".mol":
-        mol = Chem.MolFromMolFile(native_filename)
-    else:
-        suppl = Chem.SmilesMolSupplier(native_filename)
-        mols = [mol for mol in suppl if mol is not None][:n]
-        mol = reduce(Chem.CombineMols, mols)
-    combined_smiles = Chem.MolToSmiles(mol)
-    px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
-    fig = plot_mol(mol, title=None, thumbnail=True, figsize=(320*px, 80*px))
-    output = BytesIO()
-    FigureCanvas(fig).print_png(output)
-    base64_bytes = base64.b64encode(output.getvalue())
-    result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
-    result_json["smiles"] = combined_smiles
-    result_json["cdf"] = compress(get_ecfp(mol, nBits=512).tolist(), precision=0)
-    return result_json
-    
+    if not mols:
+        raise ValueError("No valid molecules found")
+
+    # combine into one molecule
+    combined = reduce(Chem.CombineMols, mols)
+    return combined
+
+
+def read_molecule(file, file_name, n=1, prefix="rcapi_"):
+    native_filename = None
+    try:
+        filename, file_extension = os.path.splitext(file_name)
+        result_json = {}
+
+        if file_extension == ".mol":
+            with tempfile.NamedTemporaryFile(delete=False,
+                                            prefix=prefix,
+                                            suffix=file_extension) as tmp:
+                shutil.copyfileobj(file, tmp)
+                native_filename = tmp.name
+            mol = Chem.MolFromMolFile(native_filename)
+        else:
+            # rdkit smiles supplier is too picky
+            mol = read_n_molecules_from_fileobj(file, 1)
+
+        combined_smiles = Chem.MolToSmiles(mol)
+        px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
+        fig = plot_mol(mol, title=None, thumbnail=True, figsize=(320*px, 80*px))
+        output = BytesIO()
+        FigureCanvas(fig).print_png(output)
+        base64_bytes = base64.b64encode(output.getvalue())
+        result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
+        result_json["smiles"] = combined_smiles
+        result_json["cdf"] = compress(get_ecfp(mol, nBits=512).tolist(), precision=0)
+        return result_json
+    except Exception as err:
+        raise err    
+    finally:
+        if native_filename != None:
+            os.remove(native_filename)
