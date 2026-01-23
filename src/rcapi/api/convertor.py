@@ -10,7 +10,7 @@ import os.path
 from numcompress import compress
 from rcapi.services.convertor_service import (
     empty_figure, dict2figure, solr2image, recursive_copy,
-    read_molecule
+    read_molecule, SOLR_VECTOR
     )
 from rcapi.services.convertor_service import (
     read_spectrum_native, plot_spectrum, preprocess_spectrum, x4search
@@ -205,6 +205,7 @@ async def convert_post(
                     FigureCanvas(fig).print_png(output)
                     base64_bytes = base64.b64encode(output.getvalue())
                     result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
+                    result_json["vector_field"] = SOLR_VECTOR
                     return result_json
 
                 elif what == "b64png":

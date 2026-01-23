@@ -238,7 +238,7 @@ def knnquery(domain, dataset="raw"):
             y = h5[dataset][1]
             spe = rc2.spectrum.Spectrum(x, y)
             spe_processed = preprocess_spectrum(spe, x4search, baseline=False)
-            result_json = {}
+            result_json = {"vector_field": SOLR_VECTOR}
             result_json["cdf"] = compress(spe_processed.y.tolist(), precision=6)
             # result_json["pdf"] = compress(pdf.tolist(),precision=6)
             # return ','.join(map(str, cdf))
@@ -525,6 +525,7 @@ def read_molecule(file, file_name, n=1, prefix="rcapi_"):
         result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
         result_json["smiles"] = combined_smiles
         result_json["cdf"] = compress(get_ecfp(mol, nBits=512).tolist(), precision=0)
+        result_json["vector_field"] = "dense_a512"
         return result_json
     except Exception as err:
         raise err    

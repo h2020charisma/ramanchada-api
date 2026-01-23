@@ -4,15 +4,26 @@ nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"
 SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"
 SOLR_VECTOR: "spectrum_p1024"
 SOLR_SIMILARITY:
+  - name: "Text search"
+    vector: None
   - name: "Raman spectrum"
     vector: "spectrum_p1024"
-  - name: "Chemical"
+  - name: "Molecule"
     vector: "dense_a512"
     vector_len: 512
+  
 
 SOLR_COLLECTIONS:
   default: "dsstox"
   collections:
+    - name: "charisma"
+      description: "CHARISMA"
+      license: "TBD"
+      roles: ["public"]  
+    - name: "plastic"
+      description: "PLASTIC"
+      license: "TBD"
+      roles: ["public"]        
     - name: "vega"
       description: "VEGA QSAR predictions"
       license: "Public"
@@ -51,7 +62,7 @@ SOLR_FIELDS:
     use: "qdynamic"
     search: "/db/query/field"
 
-SOLR_DOCS: ["study", "aop", "assay", "substance", "composition", "biological_object", "biological_action", "key_event", "stressor", "chemical", "inventory", "prediction"]
+SOLR_DOCS: ["study", "model", "chemical", "inventory", "prediction"]
 
 KEYCLOAK:
   OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"
