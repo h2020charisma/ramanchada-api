@@ -103,9 +103,10 @@ async def process(request: Request,
                 response = await solr_query_post(solr_url,query_params,post_params,token)
                 response_data = response.json()
                 results = parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field,collections=collections)
+                numFound = response_data.get("response", {}).get("numFound", 0)
                 return StandardResponse(
                     status=0,
-                    numFound=response_data.get("response", {}).get("numFound", 0),
+                    numFound=numFound,
                     start=response_data.get("response", {}).get("start", 0),
                     response=results)
             except Exception as err:

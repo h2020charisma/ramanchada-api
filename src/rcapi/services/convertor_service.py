@@ -461,13 +461,13 @@ def read_spectrum_native(file, file_name, prefix="rcapi_"):
             os.remove(native_filename)
 
 
-def get_ecfp(mol):
+def get_ecfp(mol, radius=2, nBits=2048):
     fp = AllChem.GetMorganFingerprintAsBitVect(
         mol,
         radius=2,        # ECFP4
-        nBits=2048
+        nBits=nBits
     )
-    arr = np.zeros((2048,), dtype=int)
+    arr = np.zeros((nBits,), dtype=int)
     ConvertToNumpyArray(fp, arr)
     return arr
 
@@ -495,6 +495,6 @@ def read_molecule(file, file_name, n=1, prefix="rcapi_"):
     base64_bytes = base64.b64encode(output.getvalue())
     result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
     result_json["smiles"] = combined_smiles
-    result_json["cdf"] = compress(get_ecfp(mol).tolist(), precision=6)
+    result_json["cdf"] = compress(get_ecfp(mol, nBits=512).tolist(), precision=0)
     return result_json
     

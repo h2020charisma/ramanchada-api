@@ -24,6 +24,7 @@ def get_query_fields():
         _fields = f"{_fields},chemical_name:preferred_name_t"
     if "prediction" in config.SOLR_DOCS:
         _fields = f"{_fields},prediction_name:concat(dsstox_id_s, ': ' ,guidance_s, ' ', reference_s, ' model predictions')"
+        #_fields = f"{_fields},prediction_name: reference_s"
     #if "aop" in config.SOLR_DOCS or "key_event" in config.SOLR_DOCS:
     #    _fields = f"{_fields},title_t,name_s:name_t"
     return _fields
@@ -55,8 +56,9 @@ async def solr_query_post(
         except httpx.HTTPStatusError as e:
             raise HTTPException(
                 status_code=e.response.status_code,
-                detail="external service ({})".
-                format("-" if token is None else "+"))
+                detail=f"external service {e} {post_param.keys()} {query_params} {('-' if token is None else '+')}"
+            )
+
 
 
 async def solr_query_get(solr_url, params=None, token=None):
