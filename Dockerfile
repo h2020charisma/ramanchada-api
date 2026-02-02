@@ -22,14 +22,14 @@ RUN pip install --no-cache-dir --upgrade -r /tmp/requirements.txt
 RUN find /tmp -mindepth 1 -delete
 
 COPY ./src/rcapi /app/rcapi
+COPY ./src/configs /app/configs
 COPY ./__rcapi_*__.* /app/
 
-RUN sed -i '/^upload_dir:/s|:.*|: "/var/uploads"|' /app/rcapi/config/config.yaml
+RUN sed -i '/^upload_dir:/s|:.*|: "/var/uploads"|' /app/configs/*
 
 RUN mkdir -p /var/uploads/TEMPLATES
 COPY ./tests/resources/templates/dose_response.json /var/uploads/TEMPLATES/3c22a1f0-a933-4855-848d-05fcc26ceb7a.json
 
-ENV RAMANCHADA_API_CONFIG="/app/rcapi/config/config.yaml"
 EXPOSE 80
 WORKDIR /app
 
