@@ -2816,14 +2816,14 @@ tests = ["pytest"]
 
 [[package]]
 name = "pyambit"
-version = "0.0.1"
+version = "0.0.2"
 description = "Python implementation of AMBIT data model"
 optional = false
-python-versions = "<3.13,>=3.9"
+python-versions = "<3.14,>=3.10"
 groups = ["main"]
 files = [
-    {file = "pyambit-0.0.1-py3-none-any.whl", hash = "sha256:7d47f91a67399204a034a1abd7094f0c0d7b4b4aa7a129e1f8c77a1ebcf73674"},
-    {file = "pyambit-0.0.1.tar.gz", hash = "sha256:fbd8c0409c23e258fb227888f5f371f8a42f751043fe167d4667a85ee97568b5"},
+    {file = "pyambit-0.0.2-py3-none-any.whl", hash = "sha256:4ba926f099809f3da8ecc966642aa6a83d592ea24c1cf9d24a00c95b1cba4c45"},
+    {file = "pyambit-0.0.2.tar.gz", hash = "sha256:bdb92e0bdab29b28ad25e529f4184258ca51ecae41f450b54804978678d116ca"},
 ]
 
 [package.dependencies]
@@ -3048,14 +3048,14 @@ tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
 
 [[package]]
 name = "pynanomapper"
-version = "2.0.1"
+version = "2.3.0"
 description = "eNanoMapper API client"
 optional = false
-python-versions = "<3.13,>=3.9"
+python-versions = "<3.14,>=3.10"
 groups = ["main"]
 files = [
-    {file = "pynanomapper-2.0.1-py3-none-any.whl", hash = "sha256:08602f1d6691210334133f9a4293155419f6e5d4bbb6fcacf48cd18fff729a51"},
-    {file = "pynanomapper-2.0.1.tar.gz", hash = "sha256:7fc0b22a2149a0614bb333261e308a9ea1c5f0ca984b61a523887dae023ebff5"},
+    {file = "pynanomapper-2.3.0-py3-none-any.whl", hash = "sha256:f9c0b8e4e69c5b1c04fa98b7827d54f2b9b499a27fd160014de3ba54692b97a0"},
+    {file = "pynanomapper-2.3.0.tar.gz", hash = "sha256:a24c8be8e497d1bb0a794415de421fe6c6e56b887a1c7dadceed0fbf29df594d"},
 ]
 
 [package.dependencies]
@@ -3064,7 +3064,7 @@ measurement = ">=3.2.2,<4.0.0"
 nexusformat = ">=1.0.2,<2.0.0"
 openpyxl = ">=3.1.2,<4.0.0"
 pandas = ">=2.0.3,<3.0.0"
-pyambit = ">=0.0.1,<0.0.2"
+pyambit = ">=0.0.2,<0.0.3"
 pyyaml = ">=5.1"
 requests = ">=2.31.0,<3.0.0"
 xlsxwriter = ">=3.1.9,<4.0.0"
@@ -4505,4 +4505,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "8deff6c5fcfca52fa2c6f5ff3062b2e483fb7d24e608b51d02412be5396dfe4b"
+content-hash = "e41938b99d19e7f3a092bb90236f58d754d2e9a82ff77f059a454524a6528aa6"
