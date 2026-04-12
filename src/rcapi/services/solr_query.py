@@ -24,6 +24,8 @@ def get_query_fields():
         _fields = f"{_fields},chemical_name:preferred_name_t"
     if "prediction" in config.SOLR_DOCS:
         _fields = f"{_fields},prediction_name:concat(dsstox_id_s, ': ' ,guidance_s, ' ', reference_s, ' model predictions')"
+    if "inventory" in config.SOLR_DOCS:
+        _fields = f"{_fields},inventory_name:concat(CASRN_s, ' ', PREFERRED_NAME_s, ' level of concern: ', level_of_concern_s)"
         #_fields = f"{_fields},prediction_name: reference_s"
     #if "aop" in config.SOLR_DOCS or "key_event" in config.SOLR_DOCS:
     #    _fields = f"{_fields},title_t,name_s:name_t"
