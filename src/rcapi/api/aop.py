@@ -37,11 +37,11 @@ router = APIRouter()
 # ---------------------------------------------------------------------------
 
 class StudyEndpointOut(BaseModel):
-    study_uuid: str
-    name: str
-    guidance: str
-    ontology_terms: List[str]
-    has_data: bool
+    study_uuid: Optional[str] = None
+    name: Optional[str] = None
+    guidance: Optional[str] = None
+    ontology_terms: Optional[List[str]] = None
+    has_data: Optional[bool] = None
 
     @classmethod
     def from_dc(cls, ep: StudyEndpoint) -> "StudyEndpointOut":
