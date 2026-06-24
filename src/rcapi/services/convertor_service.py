@@ -406,8 +406,53 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
     except Exception as err:
         print(err)
         traceback.format_exc()
-        return empty_figure(figsize, title="{}".format(err), 
+        return empty_figure(figsize, title="{}".format(err),
                             label="{}".format(domain.split("/")[-1])), None
+    finally:
+        if rs is not None:
+            await rs.aclose()
+
+
+# Per-type Solr field-list (fl) used when returning items as JSON.
+# Default (any other type) returns all stored fields with fl="*".
+SOLR_JSON_FIELDS = {
+    "prediction": (
+        "id,type_s,dsstox_id_s,reference_s,endpointcategory_s,guidance_s,"
+        "attr_method,updated_s,_version_,"
+        "*_pred_d,*_lower90_d,*_upper90_d,"
+        "*_ad_s,*_exp_d,*_covered_b,*_pred_set_s,*_set_size_i"
+    ),
+}
+
+
+async def solr2json(solr_url: str, domain: str,
+                    extraprm: str = None,
+                    collections: str = None,
+                    token: str = None) -> list:
+    """Generic JSON sibling of solr2image.
+
+    Retrieve the full Solr document(s) of a given type (``extraprm`` == ``type_s``)
+    matching ``domain`` (a primary-key query, e.g. ``id:<itemid>``) and return them
+    as a list of plain dicts. Mirrors solr2image's query plumbing but returns data
+    instead of a rendered Figure. Generic over collection/type — no assumption about
+    a chemical identifier.
+    """
+    rs = None
+    try:
+        fl = SOLR_JSON_FIELDS.get(extraprm, "*")
+        _filter = [f"type_s:{extraprm}"] if extraprm else [solr_doc_filter()]
+        params = {"q": domain, "fq": _filter, "fl": fl}
+        if collections is not None:
+            params["collection"] = collections
+
+        rs = await solr_query_get(solr_url, params, token=token)
+        if rs is not None and rs.status_code == 200:
+            return rs.json().get("response", {}).get("docs", [])
+        return []
+    except Exception as err:
+        print(err)
+        traceback.format_exc()
+        raise
     finally:
         if rs is not None:
             await rs.aclose()

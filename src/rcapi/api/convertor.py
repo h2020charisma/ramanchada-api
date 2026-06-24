@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Query, Depends
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from typing import Optional, Literal, Set
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import logging
@@ -9,7 +9,7 @@ import traceback
 import os.path
 from numcompress import compress
 from rcapi.services.convertor_service import (
-    empty_figure, dict2figure, solr2image, recursive_copy,
+    empty_figure, dict2figure, solr2image, solr2json, recursive_copy,
     read_molecule, SOLR_VECTOR
     )
 from rcapi.services.convertor_service import (
@@ -49,7 +49,7 @@ router = APIRouter()
 async def convert_get(
     request: Request,
     domain: str,
-    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail", "b64png"]] = "h5",
+    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail", "b64png", "json"]] = "h5",
     dataset: Optional[str] = "raw",
     w: Optional[int] = 300,
     h: Optional[int] = 200,
@@ -74,6 +74,16 @@ async def convert_get(
             output = io.BytesIO()
             FigureCanvas(fig).print_png(output)
             return Response(content=output.getvalue(), media_type='image/png')
+
+        if what == "json":
+            try:
+                docs = await solr2json(solr_url, domain,
+                                       extraprm=extra,
+                                       collections=collection_param,
+                                       token=token)
+                return JSONResponse(content=docs)
+            except Exception as err:
+                raise HTTPException(status_code=500, detail=f" error: {str(err)}")
 
         if what == "dict":
             prm = dict(request.query_params)
