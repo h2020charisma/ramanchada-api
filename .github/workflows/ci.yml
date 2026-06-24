@@ -47,7 +47,7 @@ jobs:
         run: git log -1 --no-merges --pretty=reference >__rcapi_version__.txt
 
       - name: Setup Python
-        uses: actions/setup-python@v6.0.0
+        uses: actions/setup-python@v6.3.0
         with:
           python-version: ${{ matrix.python-version }}
 
