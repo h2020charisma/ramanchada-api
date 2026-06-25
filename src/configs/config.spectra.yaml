@@ -60,11 +60,6 @@ SOLR_FIELDS:
     icon: fa6/FaFlaskVial
     name: Method
     search: /db/query/field
-  - field: qdynamic.type_s
-    icon: fa6/FaFileLines
-    name: Documents
-    search: /db/query/field
-    use: qdynamic
 SOLR_ROOT: https://solr-kc.ideaconsult.net/solr/
 SOLR_SIMILARITY:
   - name: Raman spectrum
