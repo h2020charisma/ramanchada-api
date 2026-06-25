@@ -5,7 +5,7 @@ KEYCLOAK:
   OPENID_CONFIG_URI: https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration
 SOLR_COLLECTIONS:
   collections:
-    - description: 'Plastic: SLoPP, SLoPP-E  and Ocean Polymers Raman Spectral Libraries'
+    - description: 'Plastic: SLoPP, SLoPP-E and Ocean Polymers Raman Spectral Libraries'
       license: TBD
       name: plastic
       roles:
