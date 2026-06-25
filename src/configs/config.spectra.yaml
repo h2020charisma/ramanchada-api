@@ -35,28 +35,35 @@ SOLR_DOCS:
   - study
 SOLR_FIELDS:
   - field: q_provider
-    icon: fa-solid fa-user
+    icon: fa6/FaUser
     name: Data provider
+    search: /db/query/field
   - field: q_reference
-    icon: FaBookOpen
+    icon: fa6/FaBookOpen
     name: Investigation
+    search: /db/query/field
   - field: qdynamic.name_s
-    icon: FaVial
+    icon: fa6/FaVial
     name: Sample
+    search: /db/query/field/terms
     use: qdynamic
   - field: publicname_s
-    icon: FaCube
+    icon: fa6/FaCube
     name: Material
+    search: /db/query/field/terms
   - field: qdynamic.instrument_s
-    icon: FaMicroscope
+    icon: fa6/FaMicroscope
     name: Instrument
+    search: /db/query/field/terms
     use: qdynamic
   - field: q_method
-    icon: FaFlaskVial
+    icon: fa6/FaFlaskVial
     name: Method
+    search: /db/query/field
   - field: qdynamic.type_s
-    icon: FaFileAlt
+    icon: fa6/FaFileLines
     name: Documents
+    search: /db/query/field
     use: qdynamic
 SOLR_ROOT: https://solr-kc.ideaconsult.net/solr/
 SOLR_SIMILARITY:
