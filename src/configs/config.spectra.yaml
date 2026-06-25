@@ -35,29 +35,28 @@ SOLR_DOCS:
   - study
 SOLR_FIELDS:
   - field: q_provider
-    icon: fa-solid fa-user
+    icon: fa6/FaUser
     name: Data provider
   - field: q_reference
-    icon: FaBookOpen
+    icon: fa6/FaBookOpen
     name: Investigation
   - field: qdynamic.name_s
-    icon: FaVial
+    icon: fa6/FaVial
     name: Sample
     use: qdynamic
   - field: publicname_s
-    icon: FaCube
+    icon: fa6/FaCube
     name: Material
   - field: qdynamic.instrument_s
-    icon: FaMicroscope
+    icon: fa6/FaMicroscope
     name: Instrument
     use: qdynamic
   - field: q_method
-    icon: FaFlaskVial
+    icon: fa6/FaFlaskVial
     name: Method
   - field: qdynamic.type_s
-    icon: FaFileAlt
-    name: Documents
-    use: qdynamic
+    icon: fa6/FaFileLines
+
 SOLR_ROOT: https://solr-kc.ideaconsult.net/solr/
 SOLR_SIMILARITY:
   - name: Raman spectrum
