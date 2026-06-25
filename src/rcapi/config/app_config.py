@@ -6,10 +6,16 @@ import os
 from importlib import resources
 from pathlib import Path
 import shutil
+import traceback
+
 
 class SolrFieldEntry(BaseModel):
     name: str
     field: str
+    type: Optional[str] = "text"
+    icon: Optional[str] = "fa-solid fa-book"
+    use: Optional[str] = "predefined"
+    search: Optional[str] = "/db/query/field"
 
     
 class SolrCollectionEntry(BaseModel):
@@ -94,6 +100,12 @@ class SolrCollectionSettings(BaseModel):
         return self.for_roles(["public"])
 
 
+class SolrSimilarityEntry(BaseModel):
+    name: str
+    vector: str
+    vector_len: int = 2048
+    
+
 class KeycloakConfig(BaseModel):
     OPENID_CONFIG_URI: str
     JWT_AUDIENCE: str
@@ -101,12 +113,15 @@ class KeycloakConfig(BaseModel):
 
 
 class AppConfig(BaseSettings):
+    application_name: str = "Search App"
     upload_dir: str
     nmparse_url: str
     SOLR_ROOT: str = "https://solr-kc.ideaconsult.net/solr/"
     SOLR_VECTOR: str = "spectrum_p1024"
     SOLR_COLLECTIONS: SolrCollectionSettings = SolrCollectionSettings()
-    SOLR_FIELDS: List[SolrFieldEntry] = Field(default_factory=list)    
+    SOLR_SIMILARITY: List[SolrSimilarityEntry] = Field(default_factory=list)
+    SOLR_FIELDS: List[SolrFieldEntry] = Field(default_factory=list)
+    SOLR_DOCS: List[str] = Field(default_factory=lambda: ["study"])
     KEYCLOAK: KeycloakConfig
 
     @classmethod
@@ -120,8 +135,9 @@ def load_config():
     config_dict = {}
     yaml_config = os.environ.get("RAMANCHADA_API_CONFIG")
     if yaml_config is None:
+        config_file = os.environ.get("RCAPI_CONFIG_FILE") or 'config.yaml'
         config_path = resources.as_file(
-            resources.files('rcapi.config').joinpath('config.yaml')
+            resources.files('configs').joinpath(config_file)
         )
         with config_path as p:
             with p.open() as f:
@@ -138,7 +154,11 @@ def migrate_dir(UPLOAD_DIR, NEXUS_DIR):
 
 
 def initialize_dirs(migrate=False):
-    config = load_config()
+    try:
+        config = load_config()
+    except Exception as err:
+        traceback.print_exc()
+        raise err
     UPLOAD_DIR = config.upload_dir
     os.makedirs(UPLOAD_DIR, exist_ok=True)
     NEXUS_DIR = os.path.join(UPLOAD_DIR, "NEXUS")

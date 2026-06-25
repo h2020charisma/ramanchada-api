@@ -4,7 +4,9 @@ import numpy as np
 from numcompress import compress
 import h5py
 import h5pyd 
-from rcapi.services.solr_query import solr_query_get, SOLR_VECTOR
+from rcapi.services.solr_query import (
+    solr_query_get, SOLR_VECTOR, solr_doc_filter
+    )
 import traceback
 import tempfile
 import shutil
@@ -20,9 +22,120 @@ matplotlib.use('Agg')
 from matplotlib.backends.backend_agg import (  # noqa: E402
     FigureCanvasAgg as FigureCanvas)
 from matplotlib.figure import Figure  # noqa: E402
+from matplotlib.patches import Circle, Rectangle, RegularPolygon, FancyBboxPatch, Ellipse, Polygon
 import matplotlib.pyplot as plt  # noqa: E402
+from rdkit import Chem
+from rdkit.Chem import Draw, AllChem
+from rdkit.DataStructs import ConvertToNumpyArray
+from functools import reduce
+
 
 x4search = np.linspace(140, 3*1024+140, num=2048)
+
+
+def entity_icon(entity_type: str,
+                title: str = "",
+                figsize=(2, 2),
+                title_fontsize=9,
+                label_fontsize=8) -> Figure:
+    """
+    Generate a predefined symbolic matplotlib Figure for a given entity type,
+    with both a title (top) and a central type label.
+
+    Parameters
+    ----------
+    entity_type : str
+        Entity type (e.g. 'AOP', 'Key Event', 'Assay', 'Chemical', etc.)
+    title : str
+        Title text displayed above the figure (optional)
+    figsize : tuple
+        Figure size in inches (width, height)
+    title_fontsize : int
+        Font size for the title text
+    label_fontsize : int
+        Font size for the central type label
+
+    Returns
+    -------
+    matplotlib.figure.Figure
+        Figure object (no canvas, suitable for streaming)
+    """
+    fig = Figure(figsize=figsize)
+    ax = fig.add_subplot(1, 1, 1)
+    ax.axis("off")
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+
+    entity = entity_type.lower().replace(" ", "_")
+    text_inside = entity_type.upper()
+    patches = []
+    # --- define shape and color ---
+    if entity == "aop":
+        patches = [FancyBboxPatch((0.15, 0.35), 0.7, 0.3,
+                               boxstyle="round,pad=0.1",
+                               linewidth=2, edgecolor="steelblue", facecolor="lightblue")]
+    elif entity in ("key_event", "ke"):
+        patches = [Circle((0.5, 0.5), 0.25,
+                       facecolor="orange", edgecolor="darkorange", linewidth=2)]
+    elif entity == "assay":
+        patches = [Polygon([[0.2, 0.1], [0.8, 0.1], [0.5, 0.8]], closed=True,
+                        facecolor="mediumseagreen", edgecolor="seagreen", linewidth=2)]
+    elif entity in ("chemical", "substance"):
+        patches = [RegularPolygon((0.5, 0.5), numVertices=6, radius=0.25,
+                               facecolor="violet", edgecolor="purple", linewidth=2)]
+    elif entity in ("biological_object", "gene", "protein", "cell"):
+        patches = [Ellipse((0.5, 0.5), 0.6, 0.35,
+                        facecolor="turquoise", edgecolor="teal", linewidth=2)]
+    elif entity in ("endpoint", "effect"):
+        patches = [RegularPolygon((0.5, 0.5), numVertices=4, radius=0.3, orientation=0.785,
+                               facecolor="lightcoral", edgecolor="red", linewidth=2)]
+    elif entity == "prediction interval":
+        text_inside = title
+        title = "90% prediction interval"
+        patches = [FancyBboxPatch((0.1, 0.3), 0.8, 0.4,
+                           boxstyle="round,pad=0.12",
+                           facecolor="none",          # important
+                           edgecolor="firebrick",
+                           linewidth=3,
+                           linestyle="--"),
+                    Rectangle((0.1, 0.35), 0.6, 0.1,
+                            facecolor="firebrick",
+                            alpha=0.35,
+                            edgecolor="none")]
+    elif entity == "prediction":
+        text_inside = title
+        title = "90% prediction set"
+        patches = [FancyBboxPatch((0.1, 0.3), 0.8, 0.4,
+                           boxstyle="round,pad=0.12",
+                           facecolor="none",          # important
+                           edgecolor="gray",
+                           linewidth=3,
+                           linestyle="--")]
+        for x in [0.3, 0.5, 0.7]:
+            patches.append(Circle((x, 0.25), 0.04,
+                        facecolor="firebrick",
+                        alpha=0.7,
+                        edgecolor="none"))
+    elif entity in ("model", "tool"):
+        patches = [Rectangle((0.2, 0.3), 0.6, 0.4,
+                          facecolor="lightgray", edgecolor="dimgray", linewidth=2)]
+    else:
+        patches = [Rectangle((0.2, 0.3), 0.6, 0.4,
+                          facecolor="white", edgecolor="black", linewidth=1)]
+
+    for patch in patches:
+        ax.add_patch(patch)
+
+    # --- main label (centered type) ---
+    ax.text(0.5, 0.5, text_inside,
+            ha="center", va="center", fontsize=label_fontsize, weight="bold")
+
+    # --- title (optional, above figure) ---
+    if title:
+        ax.text(0.5, 0.92, title,
+                ha="center", va="center", fontsize=title_fontsize)
+
+    return fig
 
 
 def empty_figure(figsize, title, label) -> Figure:
@@ -73,6 +186,51 @@ def dict2figure(pm, figsize) -> Figure:
     return fig
 
 
+def plot_structure(smiles, title=None, thumbnail=True, figsize=None, **draw_kwargs):
+    """
+    Plot a 2D chemical structure from a SMILES string.
+
+    Parameters
+    ----------
+    smiles : str
+        SMILES representation of the molecule.
+    title : str, optional
+        Title of the plot.
+    thumbnail : bool, default=True
+        If True, hide title and axes for compact display.
+    figsize : tuple, optional
+        Size of the figure (in inches), default (4, 4).
+    **draw_kwargs :
+        Additional keyword arguments passed to RDKit's Draw.MolToImage.
+    """
+
+    if smiles is None:
+        raise ValueError("No structure")
+    if figsize is None:
+        figsize = (4, 4)
+
+    # Create molecule from SMILES
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        raise ValueError(f"Invalid SMILES: {smiles}")
+    return plot_mol(mol, title, thumbnail, figsize, **draw_kwargs)
+
+
+def plot_mol(mol, title=None, thumbnail=True, figsize=None, **draw_kwargs):
+    if mol is None:
+        raise ValueError("No structure")
+    if figsize is None:
+        figsize = (4, 4)
+    img = Draw.MolToImage(mol, size=(int(figsize[0]*100), int(figsize[1]*100)), **draw_kwargs)
+    fig = Figure(figsize=figsize, constrained_layout=True)
+    ax = fig.add_subplot(1, 1, 1)
+    ax.imshow(img)
+    ax.axis("off" if thumbnail else "on")
+    if not thumbnail and title:
+        ax.set_title(title)
+    return fig
+
+
 def knnquery(domain, dataset="raw"):
     try:
         with h5pyd.File(domain, mode="r") as h5:
@@ -80,7 +238,7 @@ def knnquery(domain, dataset="raw"):
             y = h5[dataset][1]
             spe = rc2.spectrum.Spectrum(x, y)
             spe_processed = preprocess_spectrum(spe, x4search, baseline=False)
-            result_json = {}
+            result_json = {"vector_field": SOLR_VECTOR}
             result_json["cdf"] = compress(spe_processed.y.tolist(), precision=6)
             # result_json["pdf"] = compress(pdf.tolist(),precision=6)
             # return ','.join(map(str, cdf))
@@ -151,53 +309,150 @@ def generate_etag(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
 
 
+def doc2spectrum(doc, extraprm, thumbnail, figsize):
+    y = doc.get(SOLR_VECTOR, None)
+    if y is None:
+        # make this configurable
+        y = doc.get("dense_b512", None)
+        x = doc.get("dense_a512", None)
+        if y is None and x is None:
+            return None, None
+        plot_kwargs = {"color": "#FF7F0E"}
+        xtitle = ""
+    else:
+        x = x4search
+        plot_kwargs = {}
+        xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
+    _title = None if thumbnail else "{} {} {} ({})".format(
+        "" if extraprm is None else extraprm,
+        doc["name_s"], 
+        doc["reference_owner_s"], doc["reference_s"])
+    fig = plot_spectrum(x, y, _title, xtitle, "intensity [a.u.]",
+                        figsize=figsize, thumbnail=thumbnail,
+                        plot_kwargs=plot_kwargs)
+    etag = generate_etag("{}{}{}".format(
+        doc["textValue_s"], doc.get("updated_s",""), doc.get("_version_", "")))
+    return fig, etag    
+
+
 async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                      extraprm=None, thumbnail: bool = True,
                      collections: str = None,
                      token: str = None) -> Tuple[Figure, str]:
     rs = None
     try:
-        query = "textValue_s:{}{}{}".format('"', domain, '"')
-        params = {"q": query, "fq": ["type_s:study"], 
-                  "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
+        query = domain
+        if extraprm == "composition":
+            params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                            "fl": "id,type_s,chemname:ChemicalName_s,SMILES:SMILES_s,updated_s,_version_"}
+        elif extraprm == "chemical":
+            params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                            "fl": "id,type_s,chemname:preferred_name_t,SMILES:SMILES_s,updated_s,_version_"}
+        elif extraprm == "prediction":
+            params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                            "fl": "id,type_s,chemname:dsstox_id_s,attr_method,updated_s,_version_"}
+        elif extraprm == "inventory":
+            params = {"q": query, "fq": [f"type_s:{extraprm}"], 
+                            "fl": "id,type_s,chemname:Name_s,SMILES:SMILES_x_s,_version_"}                
+        else:
+            if domain is None or domain.startswith("id:"):
+                return entity_icon(entity_type=extraprm, title=f"{domain}", figsize=figsize), None
+            else:
+                query = "textValue_s:{}{}{}".format('"', domain, '"')
+                params = {"q": query, "fq": [solr_doc_filter()], 
+                        "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
         if collections is not None:
             params["collection"] = collections
+
         rs = await solr_query_get(solr_url, params, token=token)
         if rs is not None and rs.status_code == 200:
             response_json = rs.json()
-            # print(response_json)
             if "response" in response_json:
+
                 if response_json["response"]["numFound"] == 0:
                     return empty_figure(figsize, title="not found", label="{}".format(domain.split("/")[-1])), None
-                x = None
-                for doc in response_json["response"]["docs"]:
-                    y = doc.get(SOLR_VECTOR, None)
-                    if y is None:
-                        y = doc.get("dense_b512", None)
-                        x = doc.get("dense_a512", None)
-                        if y is None and x is None:
+                elif extraprm in ["composition", "inventory", "chemical"]:
+                    #print(response_json["response"]["docs"])
+                    for doc in response_json["response"]["docs"]:
+                        smiles = doc.get("SMILES", None)
+                        chemname = doc.get("chemname", None)
+                        if smiles is not None:
+                            fig = plot_structure(
+                                smiles=smiles,
+                                title=chemname,
+                                thumbnail=thumbnail, figsize=figsize)
+                            etag = generate_etag(
+                                "{}{}{}".format(doc["id"], doc.get("updated_s", ""),
+                                                doc.get("_version_", "")))
+                            return fig, etag
+                        else:
+                            return entity_icon(entity_type=extraprm, title=f"{chemname}", figsize=figsize), etag
+                elif extraprm in ["study"]:
+                    for doc in response_json["response"]["docs"]:
+                        fig, etag = doc2spectrum(doc, extraprm=extraprm, thumbnail=thumbnail, figsize=figsize)
+                        if fig is None:
                             continue
-                        plot_kwargs={"color": "#FF7F0E"}
-                        xtitle = ""
-                    else:
-                        x = x4search
-                        plot_kwargs={}
-                        xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
-
-                    _title = None if thumbnail else "{} {} {} ({})".format(
-                        "" if extraprm is None else extraprm,
-                        doc["name_s"], 
-                        doc["reference_owner_s"], doc["reference_s"])
-                    fig = plot_spectrum(x, y, _title, xtitle, "intensity [a.u.]",
-                                        figsize=figsize, thumbnail=thumbnail, plot_kwargs=plot_kwargs)
-                    etag = generate_etag("{}{}{}".format(doc["textValue_s"],
-                            doc.get("updated_s",""), doc.get("_version_", "")))
-                    return fig, etag
+                        return fig, etag
+                elif extraprm == "prediction":
+                    for doc in response_json["response"]["docs"]: 
+                        methods = doc.get("attr_method", None)
+                        #chemname = doc.get("chemname", None)
+                        etag = generate_etag("{}{}{}".format(
+                            doc["id"], doc.get("updated_s",""), doc.get("_version_", "")))
+                        return entity_icon(entity_type=extraprm, title=f"{methods}", figsize=figsize), etag
+                    
+                return empty_figure(figsize, title=extraprm, label=f"{domain}"), None                    
         return empty_figure(figsize, "{} {}".format(rs.status_code, getattr(rs, "reason", "")), "{}".format(domain.split("/")[-1])), None
     except Exception as err:
-        print(traceback.format_exc())
-        return empty_figure(figsize, title="{}".format(err), 
+        print(err)
+        traceback.format_exc()
+        return empty_figure(figsize, title="{}".format(err),
                             label="{}".format(domain.split("/")[-1])), None
+    finally:
+        if rs is not None:
+            await rs.aclose()
+
+
+# Per-type Solr field-list (fl) used when returning items as JSON.
+# Default (any other type) returns all stored fields with fl="*".
+SOLR_JSON_FIELDS = {
+    "prediction": (
+        "id,type_s,dsstox_id_s,reference_s,endpointcategory_s,guidance_s,"
+        "attr_method,updated_s,_version_,"
+        "*_pred_d,*_lower90_d,*_upper90_d,"
+        "*_ad_s,*_exp_d,*_covered_b,*_pred_set_s,*_set_size_i"
+    ),
+}
+
+
+async def solr2json(solr_url: str, domain: str,
+                    extraprm: str = None,
+                    collections: str = None,
+                    token: str = None) -> list:
+    """Generic JSON sibling of solr2image.
+
+    Retrieve the full Solr document(s) of a given type (``extraprm`` == ``type_s``)
+    matching ``domain`` (a primary-key query, e.g. ``id:<itemid>``) and return them
+    as a list of plain dicts. Mirrors solr2image's query plumbing but returns data
+    instead of a rendered Figure. Generic over collection/type — no assumption about
+    a chemical identifier.
+    """
+    rs = None
+    try:
+        fl = SOLR_JSON_FIELDS.get(extraprm, "*")
+        _filter = [f"type_s:{extraprm}"] if extraprm else [solr_doc_filter()]
+        params = {"q": domain, "fq": _filter, "fl": fl}
+        if collections is not None:
+            params["collection"] = collections
+
+        rs = await solr_query_get(solr_url, params, token=token)
+        if rs is not None and rs.status_code == 200:
+            return rs.json().get("response", {}).get("docs", [])
+        return []
+    except Exception as err:
+        print(err)
+        traceback.format_exc()
+        raise
     finally:
         if rs is not None:
             await rs.aclose()
@@ -246,6 +501,79 @@ def read_spectrum_native(file, file_name, prefix="rcapi_"):
         return spe
     except Exception as err:
         raise err
+    finally:
+        if native_filename != None:
+            os.remove(native_filename)
+
+
+def get_ecfp(mol, radius=2, nBits=2048):
+    fp = AllChem.GetMorganFingerprintAsBitVect(
+        mol,
+        radius=2,        # ECFP4
+        nBits=nBits
+    )
+    arr = np.zeros((nBits,), dtype=int)
+    ConvertToNumpyArray(fp, arr)
+    return arr
+
+
+def read_n_molecules_from_fileobj(fileobj, n=1):
+    """
+    fileobj: file-like object from web form 
+    n: number of molecules to read
+    """
+    mols = []
+    for raw_line in fileobj:
+        line = raw_line.decode('utf-8').strip()  # decode bytes -> str
+        if not line:
+            continue
+        if line.lower().startswith("smiles"):  # skip header line
+            continue
+        smi = line.split()[0]  # first column = SMILES
+        mol = Chem.MolFromSmiles(smi)
+        if mol:
+            mols.append(mol)
+        if len(mols) >= n:
+            break
+
+    if not mols:
+        raise ValueError("No valid molecules found")
+
+    # combine into one molecule
+    combined = reduce(Chem.CombineMols, mols)
+    return combined
+
+
+def read_molecule(file, file_name, n=1, prefix="rcapi_"):
+    native_filename = None
+    try:
+        filename, file_extension = os.path.splitext(file_name)
+        result_json = {}
+
+        if file_extension == ".mol":
+            with tempfile.NamedTemporaryFile(delete=False,
+                                            prefix=prefix,
+                                            suffix=file_extension) as tmp:
+                shutil.copyfileobj(file, tmp)
+                native_filename = tmp.name
+            mol = Chem.MolFromMolFile(native_filename)
+        else:
+            # rdkit smiles supplier is too picky
+            mol = read_n_molecules_from_fileobj(file, 1)
+
+        combined_smiles = Chem.MolToSmiles(mol)
+        px = 1 / plt.rcParams['figure.dpi']  # pixel in inches
+        fig = plot_mol(mol, title=None, thumbnail=True, figsize=(320*px, 80*px))
+        output = BytesIO()
+        FigureCanvas(fig).print_png(output)
+        base64_bytes = base64.b64encode(output.getvalue())
+        result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
+        result_json["smiles"] = combined_smiles
+        result_json["cdf"] = compress(get_ecfp(mol, nBits=512).tolist(), precision=0)
+        result_json["vector_field"] = "dense_a512"
+        return result_json
+    except Exception as err:
+        raise err    
     finally:
         if native_filename != None:
             os.remove(native_filename)

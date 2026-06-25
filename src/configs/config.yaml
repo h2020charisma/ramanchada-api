@@ -1,0 +1,92 @@
+application_name: "Raman Spectra search"
+upload_dir: "uploads"
+nmparse_url: "https://api.ideaconsult.net/gracious/enm/gracious/nmparser"
+SOLR_ROOT: "https://solr-kc.ideaconsult.net/solr/"
+SOLR_VECTOR: "spectrum_p1024"
+SOLR_SIMILARITY:
+  - name: "Raman spectrum"
+    vector: "spectrum_p1024"
+  - name: "Chemical"
+    vector: "dense_512"
+
+SOLR_COLLECTIONS:
+  default: "charisma"
+  collections:
+    - name: "charisma"
+      description: "CHARISMA"
+      license: "TBD"
+      roles: ["public"]
+    - name: "charisma_protected"
+      description: "CHARISMA protected"
+      license: "TBD"
+      roles: ["charisma", "test-role-1"]
+    - name: "gracious"
+      description: "GRACIOUS"
+      license: "TBD"
+      roles: ["public"]
+    - name: "polyrisk"
+      description: "POLYRISK"
+      license: "TBD"
+      roles: ["polyrisk"]
+    - name: "zerof"
+      description: "ZEROF"
+      license: "TBD"
+      roles: ["zerof"]      
+    - name: "nanoreg2"
+      description: "Nanoreg2"
+      license: "TBD"
+      roles: ["public"]
+    - name: "ambitlri_plasticmap"
+      description: "PlasticMap"
+      license: "TBD"
+      roles: ["public"]
+    - name: "repdose"
+      description: "Repeated Dose tox database"
+      license: "TBD"
+      roles: ["public"]         
+    - name: "openfoodtox"
+      description: "OpenFoodTox database"
+      license: "TBD"
+      roles: ["public"]               
+    - name: "aop4enm"
+      description: "Aop Mapper"
+      license: "TBD"
+      roles: ["public"]      
+SOLR_FIELDS:
+  - name: "Data provider"
+    field: "q_provider"
+    icon: "fa6/FaUser"
+    search: "/db/query/field"
+  - name: "Investigation"
+    field: "q_reference"
+    icon: "fa6/FaBookOpen"
+    search: "/db/query/field"
+  - name: "Sample"
+    field: "qdynamic.name_s"
+    icon: "fa6/FaVial"
+    use: "qdynamic"
+    search: "/db/query/field/terms"
+  - name: "Material"
+    field: "publicname_s"
+    icon: "fa6/FaCube"
+    search: "/db/query/field/terms"
+  - name: "Instrument"
+    field: "qdynamic.instrument_s"
+    icon: "fa6/FaMicroscope"
+    use: "qdynamic"
+    search: "/db/query/field/terms"
+  - name: "Method"
+    field: "q_method"
+    icon: "fa6/FaFlaskVial"
+    search: "/db/query/field"
+  - name: "Documents"
+    field: "qdynamic.type_s"
+    icon: "fa6/FaFileLines"
+    use: "qdynamic"
+    search: "/db/query/field"
+SOLR_DOCS: ["study", "aop", "assay", "substance", "composition", "biological_object", "biological_action", "key_event", "stressor", "chemical", "inventory"]
+
+KEYCLOAK:
+  OPENID_CONFIG_URI: "https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration"
+  JWT_AUDIENCE: "account"
+  JWT_ISSUER: "https://iam.ideaconsult.net/realms/nano"

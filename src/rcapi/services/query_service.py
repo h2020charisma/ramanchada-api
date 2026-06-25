@@ -1,55 +1,79 @@
 from typing import Optional, Literal
 from fastapi import Request, HTTPException
 from numcompress import  decompress
-from rcapi.services.solr_query import solr_query_post
+from rcapi.services.solr_query import (
+    get_query_fields, solr_query_post, solr_doc_filter,
+    SOLR_SIMILARITY
+)
 import urllib.parse
 from rcapi.api.utils import get_baseurl
 from rcapi.services.standard_response import StandardResponse
 
 
+def get_predefined(param):
+    PREDEFINED = {
+        "q_reference": "reference_s",
+        "q_provider": "reference_owner_s",
+        "q_method": "guidance_s"
+        }
+    return PREDEFINED.get(param, param)
+
+
+def build_solr_filters(filters=[], **kwargs):
+    """
+    Build a list of Solr filter queries based on provided keyword arguments.
+    
+    Example:
+        build_solr_filters(solr_doc_filter, q_reference='abc', q_method='*')
+    """
+    for param, value in kwargs.items():
+        if value != "*":  # skip wildcards
+            field_name = get_predefined(param)
+            filters.append(f"{field_name}:\"{value}\"")
+    return filters
+
+
 async def process(request: Request,
-    solr_url: str,
-    q: Optional[str] = "*",
-    query_type: Optional[str] = None,
-    q_reference: Optional[str] = "*",
-    q_provider: Optional[str] = "*",
-    q_method: Optional[str] = "*",
-    ann: Optional[str] = None,
-    page: Optional[int] = 0,
-    pagesize: Optional[int] = 10,
-    img: Optional[Literal["embedded", "original", "thumbnail"]] = "thumbnail",
-    vector_field = "spectrum_p1024",
-    collections = None,
-    token=None) -> StandardResponse:
+                  solr_url: str,
+                  q: Optional[str] = "*",
+                  query_type: Optional[str] = None,
+                  q_reference: Optional[str] = None,
+                  q_provider: Optional[str] = None,
+                  q_method: Optional[str] = None,
+                  ann: Optional[str] = None,
+                  page: Optional[int] = 0,
+                  pagesize: Optional[int] = 10,
+                  img: Optional[Literal["embedded", "original", "thumbnail"]]="thumbnail",
+                  vector_field: str = "spectrum_p1024",
+                  collections = None,
+                  token=None) -> StandardResponse:
 
-    query_fields = "id,name_s,textValue_s"
-    embedded_images = img=="embedded"
+    query_fields = get_query_fields()
+    embedded_images = img == "embedded"
     if embedded_images:
-        query_fields = "{},{}".format(query_fields,vector_field)
+        query_fields = "{},{}".format(query_fields, vector_field)
 
-    thumbnail = "image" if img=="original" else "thumbnail"
-    query_params = { "start" : page*pagesize, "rows" : pagesize}
+    thumbnail = "image" if img == "original" else "thumbnail"
+    query_params = { "start": page*pagesize, "rows": pagesize}
     if collections is not None:
         query_params["collection"] = collections
 
     if query_type != "knnquery":
         textQuery = q
         textQuery = "*" if textQuery is None or textQuery=="" else textQuery
-        solr_params = {
-            "query": textQuery, 
-            "filter" : [
-                "type_s:study",
-                f"reference_s:{q_reference}",
-                f"reference_owner_s:{q_provider}",
-                f"guidance_s:{q_method}"
-                ], 
-                "fields" : query_fields}
+        _filter = [solr_doc_filter()]
+        _filter = build_solr_filters(
+            _filter, q_reference=q_reference,
+            q_provider=q_provider, q_method=q_method)
+        post_params = {"query": textQuery, "filter": _filter,
+                       "fields": query_fields}
         response = None
         try:
-            response = await solr_query_post(solr_url, query_params, solr_params, token)
+            response = await solr_query_post(solr_url, query_params, post_params, token)
             response_data = response.json()
-            results = parse_solr_response(response_data,get_baseurl(request),embedded_images,thumbnail,vector_field=None,collections=collections)
-
+            results = parse_solr_response(
+                response_data, get_baseurl(request), embedded_images,
+                thumbnail, vector_field=None, collections=collections)
             return StandardResponse(
                 status=0,
                 numFound=response_data.get("response", {}).get("numFound", 0),
@@ -66,21 +90,25 @@ async def process(request: Request,
         if (knnQuery is None) or (knnQuery ==""):
             raise HTTPException(status_code=400, detail="?ann parameter missing")
         else:
-            knnQuery = ','.join(map(str, decompress(knnQuery)))
-            query = "!knn f={} topK={}".format(vector_field,40)
-            solr_params= {"query": "{"+query+"}[" + knnQuery + "]", 
-                "filter" : ["type_s:study",
-                            "reference_s:{}".format(q_reference),
-                            "reference_owner_s:{}".format(q_provider)  ], 
-                            "fields" : query_fields}
+            vector = decompress(knnQuery)
+            knnQuery = ','.join(map(str, vector))
+            query = "!knn f={} topK={}".format(vector_field, 40)
+            _filter = [solr_doc_filter()]
+            _filter = build_solr_filters(
+                _filter, q_reference=q_reference, 
+                q_provider=q_provider, q_method=q_method)
+            post_params = {"query": "{"+query+"}[" + knnQuery + "]",
+                           "filter": _filter, "fields": query_fields}
+
             response = None
             try:
-                response = await solr_query_post(solr_url,query_params,solr_params,token)
+                response = await solr_query_post(solr_url,query_params,post_params,token)
                 response_data = response.json()
                 results = parse_solr_response(response_data,request.base_url,embedded_images,thumbnail,vector_field,collections=collections)
+                numFound = response_data.get("response", {}).get("numFound", 0)
                 return StandardResponse(
                     status=0,
-                    numFound=response_data.get("response", {}).get("numFound", 0),
+                    numFound=numFound,
                     start=response_data.get("response", {}).get("start", 0),
                     response=results)
             except Exception as err:
@@ -90,13 +118,15 @@ async def process(request: Request,
                     await response.aclose()        
 
 
-def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbnail="image",vector_field=None,collections=None):
+def parse_solr_response(response_data, base_url=None, embedded_images=False,thumbnail="image",vector_field=None,collections=None):
 # Process Solr response and construct the output
     results = []
     response = response_data.get("response", {})
     for doc in response.get("docs", []):
-        value = doc.get("textValue_s", "")
-        text = f"{doc.get('name_s', '')}"
+        type_s = doc.get("type_s", "")
+        domain = doc.get(f'{type_s}_domain', None)
+        text = doc.get(f'{type_s}_name', '')
+        id = urllib.parse.quote(doc.get("id", None))
         if embedded_images:
             try:
                 #px = 1/plt.rcParams['figure.dpi']  # pixel in inches
@@ -109,15 +139,20 @@ def parse_solr_response(response_data,base_url=None,embedded_images=False,thumbn
             except Exception as err:
                 print(err)    
         else:
-            encoded_domain = urllib.parse.quote(value)
             if collections is None:
                 data_source = ""
             else:
                 data_source = "&".join(f"data_source={c}" for c in collections.split(","))
 
-            image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&extra=&{data_source}"
+            if domain is None:
+                image_link = f"{base_url}db/download?what={thumbnail}&domain=id:{id}&id={id}&extra={type_s}&{data_source}"
+            else:
+                encoded_domain = urllib.parse.quote(domain)
+                image_link = f"{base_url}db/download?what={thumbnail}&domain={encoded_domain}&id={id}&extra={type_s}&{data_source}"
         _tmp = {
-            "value": value,
+            "value": domain,
+            "id": id,
+            "type": type_s,
             "text": text,
             "imageLink": image_link
         }            

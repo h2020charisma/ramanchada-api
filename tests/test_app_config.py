@@ -3,12 +3,13 @@ import os
 import yaml
 import pytest
 
-from rcapi.config.app_config import load_config, AppConfig, SolrCollectionEntry
+from rcapi.config.app_config import load_config, AppConfig, SolrCollectionEntry, SolrSimilarityEntry
 
 
 @pytest.fixture
 def temp_config_file():
     config_data = {
+        'application_name' : "My Search App",
         'upload_dir': '/tmp/uploads',
         'nmparse_url': 'http://localhost:8080/nmparse',
         'SOLR_COLLECTIONS': {
@@ -20,6 +21,10 @@ def temp_config_file():
                 {'name': 'custom_private_2', 'description': 'Private 2', 'roles': ['private']}
             ],
         },
+        'SOLR_SIMILARITY': [
+                {'name': 'Raman spectrum', 'vector': 'spectrum_p1024', 'vector_len': 2048},
+                {'name': 'Chemical', 'vector': 'dense_a512', 'vector_len': 512}
+            ],
         "KEYCLOAK": {
             "OPENID_CONFIG_URI": "https://example.org/realms/test/.well-known/openid-configuration",
             "JWT_AUDIENCE": "account",
@@ -42,6 +47,7 @@ def test_load_config(temp_config_file):
     config = load_config()
 
     assert isinstance(config, AppConfig)
+    assert config.application_name == 'My Search App'
     assert config.upload_dir == '/tmp/uploads'
     assert config.nmparse_url == 'http://localhost:8080/nmparse'
     assert config.SOLR_COLLECTIONS.default == 'custom_public_1'
@@ -76,3 +82,18 @@ def test_load_config(temp_config_file):
 
     assert config.SOLR_ROOT == "https://solr-kc.ideaconsult.net/solr/"
     assert config.SOLR_VECTOR == "spectrum_p1024"
+
+
+    # --- Similarities ---
+    similarities = config.SOLR_SIMILARITY
+    assert isinstance(similarities, list)
+    assert all(isinstance(s, SolrSimilarityEntry) for s in similarities)
+
+    # Validate contents
+    names = {s.name for s in similarities}
+    assert 'Raman spectrum' in names
+    assert 'Chemical' in names
+
+    vectors = {s.vector for s in similarities}
+    assert 'spectrum_p1024' in vectors
+    assert 'dense_a512' in vectors

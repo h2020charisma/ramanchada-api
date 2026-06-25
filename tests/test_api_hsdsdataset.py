@@ -19,6 +19,7 @@ def domain():
     assert response.status_code == 200
     parsed = StandardDictListResponse.model_validate(response.json())
     domain_url = parsed.response[0]["value"]
+    assert domain_url is not None
     return domain_url.partition("#")[0]
 
 

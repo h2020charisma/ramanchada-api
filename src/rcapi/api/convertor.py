@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, HTTPException, UploadFile, File, Query, Depends
-from fastapi.responses import Response
+from fastapi.responses import Response, JSONResponse
 from typing import Optional, Literal, Set
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 import logging
@@ -9,7 +9,8 @@ import traceback
 import os.path
 from numcompress import compress
 from rcapi.services.convertor_service import (
-    empty_figure, dict2figure, solr2image, recursive_copy
+    empty_figure, dict2figure, solr2image, solr2json, recursive_copy,
+    read_molecule, SOLR_VECTOR
     )
 from rcapi.services.convertor_service import (
     read_spectrum_native, plot_spectrum, preprocess_spectrum, x4search
@@ -21,6 +22,8 @@ from rcapi.services.solr_query import SOLR_ROOT, SOLR_COLLECTIONS
 import matplotlib  # noqa: E402
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa: E402
+from rdkit import Chem
+
 
 router = APIRouter()
 
@@ -46,7 +49,7 @@ router = APIRouter()
 async def convert_get(
     request: Request,
     domain: str,
-    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail", "b64png"]] = "h5",
+    what: Optional[Literal["h5", "image", "empty", "dict", "thumbnail", "b64png", "json"]] = "h5",
     dataset: Optional[str] = "raw",
     w: Optional[int] = 300,
     h: Optional[int] = 200,
@@ -71,6 +74,16 @@ async def convert_get(
             output = io.BytesIO()
             FigureCanvas(fig).print_png(output)
             return Response(content=output.getvalue(), media_type='image/png')
+
+        if what == "json":
+            try:
+                docs = await solr2json(solr_url, domain,
+                                       extraprm=extra,
+                                       collections=collection_param,
+                                       token=token)
+                return JSONResponse(content=docs)
+            except Exception as err:
+                raise HTTPException(status_code=500, detail=f" error: {str(err)}")
 
         if what == "dict":
             prm = dict(request.query_params)
@@ -168,8 +181,16 @@ async def convert_post(
         for uf in files:
             f_name = uf.filename
             _filename, file_extension = os.path.splitext(f_name)
-            
-            if file_extension not in (".cha", ".nxs"):
+            if file_extension in (".smi", ".mol"):
+                result_json = read_molecule(uf.file, uf.filename)
+                if what == "knnquery":
+                    return result_json
+                elif what == "b64png":
+                    return result_json["imageLink"].replace("data:image/png;base64,","")
+                else:
+                    raise HTTPException(status_code=500, detail=f"Unsupported 'what' parameter: {what}")
+                #read molecule
+            elif file_extension not in (".cha", ".nxs"):
                 spe = read_spectrum_native(uf.file, uf.filename)
                 if what == "knnquery":
                     spe_processed = preprocess_spectrum(spe, x4search, baseline=True)
@@ -185,7 +206,7 @@ async def convert_post(
                         ylabel = None if spe.meta["@signal"]=="" else spe.meta["@signal"]
                     except Exception:
                         ylabel = None
-                    print(xlabel, ylabel)
+                    
                     fig = plot_spectrum(spe_processed.x,
                                         spe_processed.y, uf.filename,
                                         xlabel=xlabel, ylabel=ylabel, figsize=(640*px, 160*px),
@@ -194,6 +215,7 @@ async def convert_post(
                     FigureCanvas(fig).print_png(output)
                     base64_bytes = base64.b64encode(output.getvalue())
                     result_json["imageLink"] = f"data:image/png;base64,{base64_bytes.decode('utf-8')}"
+                    result_json["vector_field"] = SOLR_VECTOR
                     return result_json
 
                 elif what == "b64png":

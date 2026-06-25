@@ -86,7 +86,7 @@ def extract_native_metadata(meta,json_meta={}):
             _value = "".join(meta[tag])
         except: 
             _value = meta[tag]
-        print(_tag, meta[tag],_value)
+
         if _tag in ["laser_wavelength","wavelength","laser wavelength"]:
             json_meta["wavelength"]=_value
         elif _tag in ["laser_powerlevel","laser power"]:
