@@ -54,8 +54,6 @@ SOLR_FIELDS:
   - field: q_method
     icon: fa6/FaFlaskVial
     name: Method
-  - field: qdynamic.type_s
-    icon: fa6/FaFileLines
 
 SOLR_ROOT: https://solr-kc.ideaconsult.net/solr/
 SOLR_SIMILARITY:
