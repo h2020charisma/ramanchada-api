@@ -1,0 +1,68 @@
+---
+KEYCLOAK:
+  JWT_AUDIENCE: account
+  JWT_ISSUER: https://iam.ideaconsult.net/realms/nano
+  OPENID_CONFIG_URI: https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration
+SOLR_COLLECTIONS:
+  collections:
+    - description: 'Plastic: SLoPP, SLoPP-E and Ocean Polymers Raman Spectral Libraries'
+      license: TBD
+      name: plastic
+      roles:
+        - public
+    - description: RRUFF
+      license: TBD
+      name: rruf
+      roles:
+        - public
+    - description: CHARISMA
+      license: TBD
+      name: charisma-public
+      roles:
+        - public
+    - description: POLYRISK
+      license: TBD
+      name: polyrisk_spectra
+      roles:
+        - polyrisk
+    - description: CHARISMA non-public
+      license: TBD
+      name: charisma-private
+      roles:
+        - charisma
+  default: plastic
+SOLR_DOCS:
+  - study
+SOLR_FIELDS:
+  - field: q_provider
+    icon: fa-solid fa-user
+    name: Data provider
+  - field: q_reference
+    icon: FaBookOpen
+    name: Investigation
+  - field: qdynamic.name_s
+    icon: FaVial
+    name: Sample
+    use: qdynamic
+  - field: publicname_s
+    icon: FaCube
+    name: Material
+  - field: qdynamic.instrument_s
+    icon: FaMicroscope
+    name: Instrument
+    use: qdynamic
+  - field: q_method
+    icon: FaFlaskVial
+    name: Method
+  - field: qdynamic.type_s
+    icon: FaFileAlt
+    name: Documents
+    use: qdynamic
+SOLR_ROOT: https://solr-kc.ideaconsult.net/solr/
+SOLR_SIMILARITY:
+  - name: Raman spectrum
+    vector: spectrum_p1024
+SOLR_VECTOR: spectrum_p1024
+application_name: Spectra search
+nmparse_url: https://api.ideaconsult.net/gracious/enm/gracious/nmparser
+upload_dir: uploads

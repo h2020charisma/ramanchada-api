@@ -85,7 +85,6 @@
 - GitHub Actions are under `.github/workflows/`; Dependabot configuration is `.github/dependabot.yml`.
 - CI installs with Poetry, tests on Python `3.10`, `3.11`, and `3.12`, builds Docker images, and publishes to GHCR.
 - The Docker image serves `uvicorn rcapi.main:app` on container port `80` with multiple workers.
-- `docker-compose.yml` documents current Traefik routing, CORS middleware labels, upload volumes, and deployment service names.
 - Keep Docker, Compose, CI, and config-loading assumptions synchronized when deployment behavior changes.
 
 ## Maintenance Rules
