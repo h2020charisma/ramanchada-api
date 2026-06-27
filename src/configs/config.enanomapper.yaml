@@ -5,63 +5,67 @@ KEYCLOAK:
   OPENID_CONFIG_URI: https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration
 SOLR_COLLECTIONS:
   collections:
-    - description: CHARISMA
-      license: TBD
-      name: charisma
+    - description: NANOREG eNanoMapper database
+      license: CC-BY-NC
+      name: nanoreg
       roles:
         - public
-    - description: CHARISMA protected
-      license: TBD
-      name: charisma_protected
+    - description: Nanoreg2 eNanoMapper database
+      license: CC-BY-NC
+      name: nanoreg
       roles:
-        - charisma
-        - test-role-1
-    - description: GRACIOUS
+        - public        
+    - description: GRACIOUS eNanoMapper database
       license: TBD
       name: gracious
       roles:
         - public
-    - description: POLYRISK
+    - description: caLIBRAte eNanoMapper database
       license: TBD
-      name: polyrisk
+      name: calibrate
       roles:
-        - polyrisk
-    - description: Nanoreg2
+        - public        
+    - description: HARMLESS eNanoMapper database
       license: TBD
-      name: nanoreg2
+      name: harmless
       roles:
-        - public
-    - description: PlasticMap
+        - harmless  
+    - description: NanoInformatix eNanoMapper database
       license: TBD
-      name: ambitlri_plasticmap
+      name: nanoinformatix
       roles:
-        - public
-    - description: Repeated Dose tox database
+        - nanoinformatix          
+    - description: PATROLS eNanoMapper database
       license: TBD
-      name: repdose
+      name: patrols
       roles:
-        - public
-    - description: OpenFoodTox database
+        - patrols
+    - description: RiskGone eNanoMapper database
       license: TBD
-      name: openfoodtox
+      name: riskgone
       roles:
-        - public
+        - riskgone
+    - description: RiskGone eNanoMapper database
+      license: TBD
+      name: riskgone
+      roles:
+        - riskgone
+    - description: SABYDOMA eNanoMapper database
+      license: TBD
+      name: sabydoma
+      roles:
+        - sabydoma
+    - description: SBD4NANO eNanoMapper database
+      license: TBD
+      name: sbd4nano
+      roles:
+        - sbd4nano        
     - description: AopMapper
       license: TBD
       name: aop4enm
       roles:
         - public
-    - description: DSSTox https://www.epa.gov/comptox-tools/distributed-structure-searchable-toxicity-dsstox-database
-      license: Public
-      name: dsstox
-      roles:
-        - public       
-    - description: VEGA QSAR predictions
-      license: Public
-      name: vega
-      roles:
-        - public         
-  default: charisma
+  default: nanoreg
 SOLR_DOCS:
   - study
   - aop
@@ -112,6 +116,6 @@ SOLR_SIMILARITY:
   - name: Chemical
     vector: dense_512
 SOLR_VECTOR: spectrum_p1024
-application_name: NAMbit (dev)
+application_name: Raman Spectra search
 nmparse_url: https://api.ideaconsult.net/gracious/enm/gracious/nmparser
 upload_dir: uploads

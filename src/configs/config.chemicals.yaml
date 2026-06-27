@@ -71,6 +71,6 @@ SOLR_SIMILARITY:
     vector: dense_a512
     vector_len: 512
 SOLR_VECTOR: spectrum_p1024
-application_name: AMBIT
+application_name: NAMbit
 nmparse_url: https://api.ideaconsult.net/gracious/enm/gracious/nmparser
 upload_dir: uploads

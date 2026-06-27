@@ -20,7 +20,7 @@
 ## Configuration
 
 - Default bundled config: `src/configs/config.yaml`.
-- Alternative bundled config: `src/configs/config.chemicals.yaml`.
+- Alternative bundled configs: `src/configs/config.chemicals.yaml`, `src/configs/config.enanomapper.yaml`, `src/configs/config.plastic.yaml`.
 - Select a bundled config with `RCAPI_CONFIG_FILE=<name>.yaml`.
 - Select an explicit external config with `RAMANCHADA_API_CONFIG=/absolute/path/to/config.yaml`.
 - Config controls `application_name`, upload directory, Solr root/vector, collections, collection roles, fields, similarity modes, document types, and Keycloak metadata.
@@ -51,7 +51,7 @@
 - `GET /db/query/field/terms?name=<field>&prefix=<term>&limit=<n>` returns autocomplete terms.
 - `GET /db/query/sources` returns the client discovery contract: `application_name`, `default`, `data_sources`, `fields`, and `similarity`.
 - `GET /db/dataset?domain=<domain>&values=True` returns dataset/chart-compatible values when available.
-- `GET /db/download` returns HDF5, image, thumbnail, b64png, json, or other supported download representations depending on `what`.
+- `GET /db/download` returns HDF5, image, thumbnail, b64png, json, or other supported download representations depending on `what`. Unlike `/db/query`, `/db/download` (including `solr2json`) does **not** apply the `SOLR_DOCS` type filter — if a collection's `type_s` is absent from `SOLR_DOCS`, `/db/query` returns `numFound:0` while `/db/download` still returns data. Keep `SOLR_DOCS` in sync with served collections; `tests/test_solr_docs_config.py` guards this invariant.
 - `POST /db/download?what=knnquery` expects multipart form field `files`; spectrum uploads return compressed vector data and molecule uploads from `.smi` or `.mol` return molecule vector data.
 - `/db/aop/material` and `/db/aop/ke` expose AOP lookup functionality.
 - `/.well-known/mcp/manifest.json` and `/.well-known/mcp/tools.json` expose MCP metadata derived from the FastAPI app and query configuration.
@@ -77,7 +77,7 @@
 - Run focused tests after code changes; run `poetry run pytest` for broad verification when feasible.
 - Some tests exercise external Solr/HSDS behavior and CI provides `HS_ENDPOINT`, `HS_USERNAME`, and `HS_PASSWORD` where needed.
 - CI deselects selected HSDS/download tests for Dependabot runs; keep those deselections current if test names change.
-- Add or update tests when changing API contracts, config loading, source/role filtering, field discovery, vector upload behavior, AOP behavior, or MCP metadata.
+- Add or update tests when changing API contracts, config loading, source/role filtering, field discovery, vector upload behavior, AOP behavior, MCP metadata, or `SOLR_DOCS` / served-collection membership. See `tests/test_solr_docs_config.py` for the pattern used to guard collection-type visibility without a live Solr instance.
 - There is no dedicated formatter or linter configured beyond pytest and yamllint config; follow the existing Python style and keep changes small.
 
 ## CI And Container

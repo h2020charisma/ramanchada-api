@@ -428,6 +428,7 @@ SOLR_JSON_FIELDS = {
 async def solr2json(solr_url: str, domain: str,
                     extraprm: str = None,
                     collections: str = None,
+                    rows: int = 10000,
                     token: str = None) -> list:
     """Generic JSON sibling of solr2image.
 
@@ -435,13 +436,14 @@ async def solr2json(solr_url: str, domain: str,
     matching ``domain`` (a primary-key query, e.g. ``id:<itemid>``) and return them
     as a list of plain dicts. Mirrors solr2image's query plumbing but returns data
     instead of a rendered Figure. Generic over collection/type — no assumption about
-    a chemical identifier.
+    a chemical identifier. ``rows`` bounds bulk fetches (e.g. ``domain=*:*`` for a
+    whole metadata registry); the Solr default of 10 would otherwise truncate.
     """
     rs = None
     try:
         fl = SOLR_JSON_FIELDS.get(extraprm, "*")
         _filter = [f"type_s:{extraprm}"] if extraprm else [solr_doc_filter()]
-        params = {"q": domain, "fq": _filter, "fl": fl}
+        params = {"q": domain, "fq": _filter, "fl": fl, "rows": rows}
         if collections is not None:
             params["collection"] = collections
 
