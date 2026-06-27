@@ -5,63 +5,42 @@ KEYCLOAK:
   OPENID_CONFIG_URI: https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration
 SOLR_COLLECTIONS:
   collections:
-    - description: CHARISMA
-      license: TBD
-      name: charisma
-      roles:
-        - public
-    - description: CHARISMA protected
-      license: TBD
-      name: charisma_protected
-      roles:
-        - charisma
-        - test-role-1
-    - description: GRACIOUS
-      license: TBD
-      name: gracious
-      roles:
-        - public
     - description: POLYRISK
       license: TBD
       name: polyrisk
       roles:
         - polyrisk
-    - description: Nanoreg2
+    - description: POLYRISK Spectra
       license: TBD
-      name: nanoreg2
+      name: polyrisk_spectra
       roles:
-        - public
+        - polyrisk        
+    - description: PLASTICFATE
+      license: TBD
+      name: plasticfate
+      roles:
+        - plasticfate
+    - description: PLASTICHEAL
+      license: TBD
+      name: plasticheal
+      roles:
+        - plasticheal
+    - description: MOMENTUM
+      license: TBD
+      name: momentum
+      roles:
+        - momentum        
     - description: PlasticMap
       license: TBD
       name: ambitlri_plasticmap
       roles:
         - public
-    - description: Repeated Dose tox database
-      license: TBD
-      name: repdose
-      roles:
-        - public
-    - description: OpenFoodTox database
-      license: TBD
-      name: openfoodtox
-      roles:
-        - public
-    - description: AopMapper
+    - description: Aop Mapper
       license: TBD
       name: aop4enm
       roles:
         - public
-    - description: DSSTox https://www.epa.gov/comptox-tools/distributed-structure-searchable-toxicity-dsstox-database
-      license: Public
-      name: dsstox
-      roles:
-        - public       
-    - description: VEGA QSAR predictions
-      license: Public
-      name: vega
-      roles:
-        - public         
-  default: dsstox
+  default: plasticmap
 SOLR_DOCS:
   - study
   - aop
@@ -69,10 +48,8 @@ SOLR_DOCS:
   - substance
   - key_event
   - stressor
-  - prediction
   - chemical
   - inventory
-  - metadata
 SOLR_FIELDS:
   - field: q_provider
     icon: fa6/FaUser
@@ -112,6 +89,6 @@ SOLR_SIMILARITY:
   - name: Chemical
     vector: dense_512
 SOLR_VECTOR: spectrum_p1024
-application_name: NAMbit (dev)
+application_name: PLASTIC database
 nmparse_url: https://api.ideaconsult.net/gracious/enm/gracious/nmparser
 upload_dir: uploads
