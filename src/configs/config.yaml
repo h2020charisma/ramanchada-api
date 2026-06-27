@@ -61,7 +61,7 @@ SOLR_COLLECTIONS:
       name: vega
       roles:
         - public         
-  default: dsstox
+  default: charisma
 SOLR_DOCS:
   - study
   - aop
