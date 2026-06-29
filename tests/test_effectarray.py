@@ -70,6 +70,35 @@ def test_to_effectarrays_splits_controls_and_builds_concentration_axis():
     assert by_t["negative control"]["signal"]["values"] == [100.0]
 
 
+def test_dose_axis_is_bridged_to_concentration():
+    # ECOTOX-style study whose dose axis is "DOSE" (not CONCENTRATION). The backend bridge
+    # renames it so pyambit builds the curve; the resulting array must carry a CONCENTRATION axis.
+    subs = Substances(**{
+        "substance": [{
+            "name": "DOSE-axis fixture",
+            "study": [{
+                "uuid": "NNRG-dose-1",
+                "protocol": {"topcategory": "ECOTOX",
+                             "category": {"code": "EC_ALGAETOX_SECTION", "title": "Algae"},
+                             "endpoint": "FRESHWATER TOXICITY", "guideline": ["SOP"]},
+                "citation": {"owner": "USP", "title": "ref", "year": "2016"},
+                "effects": [
+                    {"endpoint": "EC50", "result": {"loValue": 1.48, "unit": "mg/l"},
+                     "conditions": {"DOSE": {"loValue": 0.1, "unit": "mg/l"}, "Treatment": "exposure"}},
+                    {"endpoint": "EC50", "result": {"loValue": 43.0, "unit": "mg/l"},
+                     "conditions": {"DOSE": {"loValue": 1.0, "unit": "mg/l"}, "Treatment": "exposure"}},
+                    {"endpoint": "EC50", "result": {"loValue": 50.5, "unit": "mg/l"},
+                     "conditions": {"DOSE": {"loValue": 10.0, "unit": "mg/l"}, "Treatment": "exposure"}},
+                ],
+            }],
+        }],
+    })
+    out = to_effectarrays(subs)
+    arrays = out[0]["arrays"]
+    assert arrays, "expected at least one converted array"
+    assert any("CONCENTRATION" in (a.get("axes") or {}) for a in arrays)
+
+
 def test_convert_endpoint_effectarray_streams_json_no_file():
     resp = client.post(
         "/dataset/convert", params={"format": "effectarray"}, json=_load_substances()

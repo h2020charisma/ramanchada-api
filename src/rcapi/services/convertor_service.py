@@ -35,6 +35,26 @@ from pyambit.datamodel import Substances, EffectArray
 x4search = np.linspace(140, 3*1024+140, num=2048)
 
 
+def _bridge_dose_axis(papp):
+    """STOPGAP: rename DOSE* effect conditions to CONCENTRATION* so pyambit's
+    ``convert_effectrecords2array`` (which only treats ``CONCENTRATION*`` as an axis)
+    builds the curve for ECOTOX-style categories that use a ``DOSE`` axis.
+
+    This is a bridge until pyambit owns dose-axis selection properly — ideally via a
+    category-specific config (like the jToxKit ``config_study``: per endpoint category,
+    which condition is the dose axis / cell type / exposure time / method). Operates on the
+    freshly parsed, per-request papp, so it never mutates shared state.
+    """
+    for e in (getattr(papp, "effects", None) or []):
+        cond = getattr(e, "conditions", None)
+        if not isinstance(cond, dict):
+            continue
+        if any(str(k).upper().startswith("CONCENTRATION") for k in cond):
+            continue  # a real concentration axis already present — leave as is
+        for dk in [k for k in list(cond.keys()) if str(k).upper().startswith("DOSE")]:
+            cond["CONCENTRATION" + dk[4:]] = cond.pop(dk)  # "DOSE"→"CONCENTRATION", "DOSE unit"→"CONCENTRATION unit"
+
+
 def to_effectarrays(substances: Substances):
     """Convert AMBIT ``Substances`` into plottable dose-response arrays.
 
@@ -55,6 +75,7 @@ def to_effectarrays(substances: Substances):
             arrays = []
             error = None
             try:
+                _bridge_dose_axis(papp)
                 converted, _df = papp.convert_effectrecords2array()
                 arrays = [
                     json.loads(a.model_dump_json())
