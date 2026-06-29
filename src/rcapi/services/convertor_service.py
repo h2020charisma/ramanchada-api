@@ -55,6 +55,32 @@ def _bridge_dose_axis(papp):
             cond["CONCENTRATION" + dk[4:]] = cond.pop(dk)  # "DOSE"→"CONCENTRATION", "DOSE unit"→"CONCENTRATION unit"
 
 
+def _json_safe(o):
+    """JSON default that coerces numpy types and pydantic models. pyambit's own
+    EffectArray.model_dump_json returns unknown objects unchanged, so a numpy scalar
+    (e.g. NUMBER_OF_REPLICATES -> np.int64) makes json.dumps recurse and raise
+    'Circular reference detected'. (TODO upstream: fix pyambit's serialize default.)"""
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    if isinstance(o, np.generic):
+        return o.item()
+    if hasattr(o, "model_dump"):
+        return o.model_dump()
+    raise TypeError(f"not JSON serializable: {type(o)}")
+
+
+def _earray_to_dict(a):
+    """EffectArray -> JSON-safe dict (mirrors EffectArray.model_dump_json, numpy-safe)."""
+    data = a.model_dump(exclude={"axes", "signal"})
+    if a.signal is not None:
+        data["signal"] = a.signal.model_dump()
+    if a.axes:
+        data["axes"] = {k: v.model_dump() for k, v in a.axes.items()}
+    if a.axis_groups:
+        data["axis_groups"] = a.axis_groups
+    return json.loads(json.dumps(data, default=_json_safe))
+
+
 def to_effectarrays(substances: Substances):
     """Convert AMBIT ``Substances`` into plottable dose-response arrays.
 
@@ -78,7 +104,7 @@ def to_effectarrays(substances: Substances):
                 _bridge_dose_axis(papp)
                 converted, _df = papp.convert_effectrecords2array()
                 arrays = [
-                    json.loads(a.model_dump_json())
+                    _earray_to_dict(a)
                     for a in converted
                     if isinstance(a, EffectArray)
                 ]
