@@ -28,9 +28,54 @@ from rdkit import Chem
 from rdkit.Chem import Draw, AllChem
 from rdkit.DataStructs import ConvertToNumpyArray
 from functools import reduce
+import json
+from pyambit.datamodel import Substances, EffectArray
 
 
 x4search = np.linspace(140, 3*1024+140, num=2048)
+
+
+def to_effectarrays(substances: Substances):
+    """Convert AMBIT ``Substances`` into plottable dose-response arrays.
+
+    Mirrors how ``Substances.to_nexus`` is the shared NeXus converter, but produces
+    JSON instead of an HDF5 file. For every study (ProtocolApplication) it calls
+    pyambit's ``convert_effectrecords2array`` — the authoritative grouping that splits
+    records by the non-numeric conditions (controls/treatments/facets), groups by
+    endpoint+unit, and takes ``CONCENTRATION*`` conditions as axes. Each study is keyed
+    by its ``document_uuid`` (= papp.uuid).
+
+    Returns a list of ``{document_uuid, substance, protocol, citation, arrays:[EffectArray]}``.
+    Studies that fail to convert yield an empty ``arrays`` list (the table view still
+    shows them via the AMBIT REST path); one bad study never breaks the response.
+    """
+    datasets = []
+    for substance in substances.substance:
+        for papp in (substance.study or []):
+            arrays = []
+            error = None
+            try:
+                converted, _df = papp.convert_effectrecords2array()
+                arrays = [
+                    json.loads(a.model_dump_json())
+                    for a in converted
+                    if isinstance(a, EffectArray)
+                ]
+            except Exception as err:  # noqa: BLE001 — one bad study must not 500 the rest
+                error = str(err)
+            datasets.append({
+                "document_uuid": papp.uuid,
+                "substance": {
+                    "i5uuid": substance.i5uuid,
+                    "name": substance.name,
+                    "publicname": substance.publicname,
+                },
+                "protocol": papp.protocol.model_dump() if papp.protocol else None,
+                "citation": papp.citation.model_dump() if papp.citation else None,
+                "arrays": arrays,
+                "error": error,
+            })
+    return datasets
 
 
 def entity_icon(entity_type: str,

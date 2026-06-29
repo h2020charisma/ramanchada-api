@@ -5,6 +5,7 @@ from rcapi.config.app_config import initialize_dirs
 from rcapi.models.models import Task  # Import the Task model
 from rcapi.models.models import tasks_db
 from rcapi.services import upload_service
+from rcapi.services.convertor_service import to_effectarrays
 import os
 import uuid
 import time
@@ -23,9 +24,12 @@ async def get_request(request: Request = Depends()):
     return request
 
 
-@router.post("/dataset/convert") 
+@router.post("/dataset/convert")
 async def convert(request: Request,
-                    background_tasks: BackgroundTasks
+                    background_tasks: BackgroundTasks,
+                    format: str = Query(
+                        None, description="output format",
+                        enum=["nxs", "effectarray"]),
                 ):
     """
     Converts AMBIT json to NeXus format using background tasks.
@@ -33,14 +37,22 @@ async def convert(request: Request,
     Expects AMBIT JSON in the body.
 
     Returns:
-    - Task Json representation, which includes link to the NeXus file.
-    """    
-    content_type = request.headers.get("content-type", "").lower()
-    base_url = str(request.base_url)  
-    task_id = str(uuid.uuid4())
-    dataset_uuid = task_id
+    - format=nxs (default): a Task Json, which includes a link to the NeXus file.
+    - format=effectarray: the dose-response EffectArray JSON, converted in-memory and
+      streamed back directly (no NeXus file, no background task). Each study is keyed by
+      its document_uuid; arrays carry signal + CONCENTRATION axes + control/treatment
+      grouping (pyambit convert_effectrecords2array).
+    """
+    base_url = str(request.base_url)
     ambit_json = await request.json()
     substances = Substances(**ambit_json)
+
+    if format == "effectarray":
+        return JSONResponse(content={"datasets": to_effectarrays(substances)})
+
+    content_type = request.headers.get("content-type", "").lower()
+    task_id = str(uuid.uuid4())
+    dataset_uuid = task_id
     task = Task(
             uri=f"{base_url}task/{task_id}",
             id=task_id,
