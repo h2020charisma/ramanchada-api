@@ -63,7 +63,7 @@ jobs:
 
       - name: Install Poetry
         if: steps.cached-poetry.outputs.cache-hit != 'true'
-        uses: snok/install-poetry@v1.4.1
+        uses: snok/install-poetry@v1.4.2
         with:
           version: ${{ env.POETRY_VERSION }}
           virtualenvs-create: true
