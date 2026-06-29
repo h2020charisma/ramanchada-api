@@ -1115,14 +1115,14 @@ files = [
 
 [[package]]
 name = "h5grove"
-version = "2.3.0"
+version = "4.0.0"
 description = "Core utilities to serve HDF5 file contents"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.10"
 groups = ["main"]
 files = [
-    {file = "h5grove-2.3.0-py3-none-any.whl", hash = "sha256:7000a5aa64a6d77997ad18296552ec4def62d4e24aa05219b59c535233017fdf"},
-    {file = "h5grove-2.3.0.tar.gz", hash = "sha256:8d438f2a4616d64b176e6ff352d23b39027b9f1ab2c9169fcfd6f5f1caca8728"},
+    {file = "h5grove-4.0.0-py3-none-any.whl", hash = "sha256:8bacfc2af4af0b302fd7688e9c1f463e6a80e142d0272f871d37019d6e6a16d5"},
+    {file = "h5grove-4.0.0.tar.gz", hash = "sha256:81bbd726743f31e78ff11f656a2558bbea3ed80ddde5e4e76285a9d15bfb4b9a"},
 ]
 
 [package.dependencies]
@@ -1133,9 +1133,9 @@ tifffile = "*"
 typing-extensions = "*"
 
 [package.extras]
-dev = ["black", "bump2version", "check-manifest", "eval-type-backport", "flake8", "h5grove[fastapi]", "h5grove[flask]", "h5grove[tornado]", "httpx (>=0.23)", "invoke", "mypy", "myst-parser", "pytest", "pytest-benchmark", "pytest-cov", "pytest-tornado", "sphinx", "sphinx-argparse", "sphinx-autobuild", "types-contextvars", "types-dataclasses", "types-orjson", "types-setuptools"]
+dev = ["bump2version", "fastapi", "flask", "flask-compress", "flask-cors", "hatch", "httpx (>=0.23)", "mypy", "myst-parser", "pydantic (>2)", "pydantic-settings", "pytest", "pytest-benchmark", "pytest-cov", "pytest-tornado", "ruff", "setuptools (<82)", "sphinx", "sphinx-argparse", "sphinx-autobuild", "tornado", "types-contextvars", "types-dataclasses", "types-orjson", "types-setuptools", "uvicorn"]
 fastapi = ["fastapi", "pydantic (>2)", "pydantic-settings", "uvicorn"]
-flask = ["Flask", "Flask-Compress", "Flask-Cors"]
+flask = ["flask", "flask-compress", "flask-cors"]
 tornado = ["tornado"]
 
 [[package]]
@@ -5452,4 +5452,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<3.13"
-content-hash = "ecb1fe1e67a8290a82a9f4684ba7f7336b81daa186e25ce712e86cca15020051"
+content-hash = "0b46ea8765786749e0d3ce96a574c8fdf350599e89bc08ed67a57629ed0bc929"
