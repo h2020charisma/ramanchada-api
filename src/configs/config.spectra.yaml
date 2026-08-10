@@ -10,11 +10,6 @@ SOLR_COLLECTIONS:
       name: plastic
       roles:
         - public
-    - description: RRUFF
-      license: TBD
-      name: rruf
-      roles:
-        - public
     - description: CHARISMA
       license: TBD
       name: charisma-public
