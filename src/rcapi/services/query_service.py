@@ -126,6 +126,9 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
         type_s = doc.get("type_s", "")
         domain = doc.get(f'{type_s}_domain', None)
         text = doc.get(f'{type_s}_name', '')
+        # Optional per-type uuid alias (e.g. substance_uuid:s_uuid_hs). Kept raw
+        # (not url-quoted) since the frontend encodes query params itself.
+        uuid = doc.get(f'{type_s}_uuid', None)
         id = urllib.parse.quote(doc.get("id", None))
         if embedded_images:
             try:
@@ -155,7 +158,9 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
             "type": type_s,
             "text": text,
             "imageLink": image_link
-        }            
+        }
+        if uuid is not None:
+            _tmp["uuid"] = uuid
         _score = doc.get("score", None)
         if _score is not None:
             _tmp["score"] = _score

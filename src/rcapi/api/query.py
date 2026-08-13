@@ -310,6 +310,61 @@ async def get_field_terms(
         raise HTTPException(status_code=500, detail=str(err))
 
 
+@router.get(
+    "/query/field/range",
+    summary="Facet counts over a numeric range for a query field",
+    description=(
+        "Returns per-bucket counts for a numeric field using Solr facet.range. "
+        "Useful for rendering a histogram or range slider (e.g. concentration_count_i)."
+    ),
+    response_model=StandardResponse[List[dict]],
+)
+async def get_field_range(
+    request: Request,
+    name: str = "concentration_count_i",
+    start: float = Query(default=0),
+    end: float = Query(default=20),
+    gap: float = Query(default=1),
+    fq: Optional[str] = Query(default=None),
+    data_source: Optional[Set[str]] = Query(default=None),
+    token: Optional[str] = Depends(get_token),
+):
+    solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None
+    )
+    try:
+        field = name.replace("qdynamic.", "")
+        field = query_service.get_predefined(field)
+        params = {
+            "q": "*",
+            "rows": 0,
+            "facet": "true",
+            "facet.range": field,
+            "f.{}.facet.range.start".format(field): start,
+            "f.{}.facet.range.end".format(field): end,
+            "f.{}.facet.range.gap".format(field): gap,
+            "f.{}.facet.range.other".format(field): "after",
+        }
+        if fq:
+            params["fq"] = fq
+        if collection_param is not None:
+            params["collection"] = collection_param
+        rs = await solr_query_get(solr_url, params, token)
+        counts = rs.json()["facet_counts"]["facet_ranges"][field]["counts"]
+        result = [{"value": counts[i], "count": counts[i + 1]}
+                  for i in range(0, len(counts), 2)]
+        # append the "after" bucket (values above end) if non-zero
+        after = rs.json()["facet_counts"]["facet_ranges"][field].get("after", 0)
+        if after:
+            result.append({"value": ">{}".format(end), "count": after})
+        return StandardResponse(status=1 if dropped else 0, response=result)
+    except HTTPException as err:
+        raise err
+    except Exception as err:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=str(err))
+
+
 # https://github.com/h2020charisma/ramanchada-api/issues/59
 @router.get(
     "/query/sources",

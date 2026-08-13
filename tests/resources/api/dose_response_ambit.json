@@ -1,0 +1,37 @@
+{
+  "substance": [
+    {
+      "i5uuid": "NNRG-1111aaaa-2222-bbbb-3333-cccccccccccc",
+      "name": "Ag 20 nm dose-response fixture",
+      "publicname": "Ag @ test",
+      "substanceType": "NPO_1892",
+      "study": [
+        {
+          "uuid": "NNRG-doc-aaaa-bbbb-cccc-dddddddddddd",
+          "protocol": {
+            "topcategory": "TOX",
+            "category": { "code": "CELL_VIABILITY_ASSAY_SECTION", "title": "Cell viability" },
+            "endpoint": "Cell viability",
+            "guideline": ["In-house"]
+          },
+          "citation": { "owner": "TEST-LAB", "title": "Dose-response fixture", "year": "2024" },
+          "parameters": { "ASSAY": "AlamarBlue" },
+          "effects": [
+            { "endpoint": "viability", "result": { "loValue": 98.0, "unit": "%", "errorValue": 2.0, "errQualifier": "SD" },
+              "conditions": { "CONCENTRATION": { "loValue": 0.1, "unit": "ug/mL" }, "Treatment": "exposure" } },
+            { "endpoint": "viability", "result": { "loValue": 80.0, "unit": "%", "errorValue": 3.0, "errQualifier": "SD" },
+              "conditions": { "CONCENTRATION": { "loValue": 1.0, "unit": "ug/mL" }, "Treatment": "exposure" } },
+            { "endpoint": "viability", "result": { "loValue": 55.0, "unit": "%", "errorValue": 4.0, "errQualifier": "SD" },
+              "conditions": { "CONCENTRATION": { "loValue": 10.0, "unit": "ug/mL" }, "Treatment": "exposure" } },
+            { "endpoint": "viability", "result": { "loValue": 20.0, "unit": "%", "errorValue": 5.0, "errQualifier": "SD" },
+              "conditions": { "CONCENTRATION": { "loValue": 100.0, "unit": "ug/mL" }, "Treatment": "exposure" } },
+            { "endpoint": "viability", "result": { "loValue": 8.0, "unit": "%", "errorValue": 2.0, "errQualifier": "SD" },
+              "conditions": { "CONCENTRATION": { "loValue": 100.0, "unit": "ug/mL" }, "Treatment": "positive control" } },
+            { "endpoint": "viability", "result": { "loValue": 100.0, "unit": "%", "errorValue": 1.0, "errQualifier": "SD" },
+              "conditions": { "CONCENTRATION": { "loValue": 0.0, "unit": "ug/mL" }, "Treatment": "negative control" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

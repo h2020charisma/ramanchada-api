@@ -20,7 +20,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.10,<3.14"
 apscheduler = "^3.11.1"
 fastapi = "^0.120.0"
 h5grove = "^2.0.0"

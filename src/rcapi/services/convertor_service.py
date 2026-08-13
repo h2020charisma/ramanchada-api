@@ -28,9 +28,101 @@ from rdkit import Chem
 from rdkit.Chem import Draw, AllChem
 from rdkit.DataStructs import ConvertToNumpyArray
 from functools import reduce
+import json
+from pyambit.datamodel import Substances, EffectArray
 
 
 x4search = np.linspace(140, 3*1024+140, num=2048)
+
+
+def _bridge_dose_axis(papp):
+    """STOPGAP: rename DOSE* effect conditions to CONCENTRATION* so pyambit's
+    ``convert_effectrecords2array`` (which only treats ``CONCENTRATION*`` as an axis)
+    builds the curve for ECOTOX-style categories that use a ``DOSE`` axis.
+
+    This is a bridge until pyambit owns dose-axis selection properly — ideally via a
+    category-specific config (like the jToxKit ``config_study``: per endpoint category,
+    which condition is the dose axis / cell type / exposure time / method). Operates on the
+    freshly parsed, per-request papp, so it never mutates shared state.
+    """
+    for e in (getattr(papp, "effects", None) or []):
+        cond = getattr(e, "conditions", None)
+        if not isinstance(cond, dict):
+            continue
+        if any(str(k).upper().startswith("CONCENTRATION") for k in cond):
+            continue  # a real concentration axis already present — leave as is
+        for dk in [k for k in list(cond.keys()) if str(k).upper().startswith("DOSE")]:
+            cond["CONCENTRATION" + dk[4:]] = cond.pop(dk)  # "DOSE"→"CONCENTRATION", "DOSE unit"→"CONCENTRATION unit"
+
+
+def _json_safe(o):
+    """JSON default that coerces numpy types and pydantic models. pyambit's own
+    EffectArray.model_dump_json returns unknown objects unchanged, so a numpy scalar
+    (e.g. NUMBER_OF_REPLICATES -> np.int64) makes json.dumps recurse and raise
+    'Circular reference detected'. (TODO upstream: fix pyambit's serialize default.)"""
+    if isinstance(o, np.ndarray):
+        return o.tolist()
+    if isinstance(o, np.generic):
+        return o.item()
+    if hasattr(o, "model_dump"):
+        return o.model_dump()
+    raise TypeError(f"not JSON serializable: {type(o)}")
+
+
+def _earray_to_dict(a):
+    """EffectArray -> JSON-safe dict (mirrors EffectArray.model_dump_json, numpy-safe)."""
+    data = a.model_dump(exclude={"axes", "signal"})
+    if a.signal is not None:
+        data["signal"] = a.signal.model_dump()
+    if a.axes:
+        data["axes"] = {k: v.model_dump() for k, v in a.axes.items()}
+    if a.axis_groups:
+        data["axis_groups"] = a.axis_groups
+    return json.loads(json.dumps(data, default=_json_safe))
+
+
+def to_effectarrays(substances: Substances):
+    """Convert AMBIT ``Substances`` into plottable dose-response arrays.
+
+    Mirrors how ``Substances.to_nexus`` is the shared NeXus converter, but produces
+    JSON instead of an HDF5 file. For every study (ProtocolApplication) it calls
+    pyambit's ``convert_effectrecords2array`` — the authoritative grouping that splits
+    records by the non-numeric conditions (controls/treatments/facets), groups by
+    endpoint+unit, and takes ``CONCENTRATION*`` conditions as axes. Each study is keyed
+    by its ``document_uuid`` (= papp.uuid).
+
+    Returns a list of ``{document_uuid, substance, protocol, citation, arrays:[EffectArray]}``.
+    Studies that fail to convert yield an empty ``arrays`` list (the table view still
+    shows them via the AMBIT REST path); one bad study never breaks the response.
+    """
+    datasets = []
+    for substance in substances.substance:
+        for papp in (substance.study or []):
+            arrays = []
+            error = None
+            try:
+                _bridge_dose_axis(papp)
+                converted, _df = papp.convert_effectrecords2array()
+                arrays = [
+                    _earray_to_dict(a)
+                    for a in converted
+                    if isinstance(a, EffectArray)
+                ]
+            except Exception as err:  # noqa: BLE001 — one bad study must not 500 the rest
+                error = str(err)
+            datasets.append({
+                "document_uuid": papp.uuid,
+                "substance": {
+                    "i5uuid": substance.i5uuid,
+                    "name": substance.name,
+                    "publicname": substance.publicname,
+                },
+                "protocol": papp.protocol.model_dump() if papp.protocol else None,
+                "citation": papp.citation.model_dump() if papp.citation else None,
+                "arrays": arrays,
+                "error": error,
+            })
+    return datasets
 
 
 def entity_icon(entity_type: str,
