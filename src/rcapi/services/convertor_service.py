@@ -383,7 +383,7 @@ def knnquery(domain, dataset="raw"):
         raise err
 
 
-def plot_spectrum(x, y, title=None, xlabel=None, ylabel=None, thumbnail=True, figsize=None, plot_kwargs=None):
+def plot_spectrum(x, y, title=None, xlabel=None, ylabel=None, thumbnail=True, figsize=None, plot_kwargs=None, scatter=False):
     if figsize is None:
         figsize = (6, 4)
     if xlabel is None:
@@ -394,7 +394,7 @@ def plot_spectrum(x, y, title=None, xlabel=None, ylabel=None, thumbnail=True, fi
     if plot_kwargs is None:
         plot_kwargs = {}
     axis = fig.add_subplot(1, 1, 1)
-    axis.plot(x, y, **plot_kwargs)
+    axis.scatter(x, y, **plot_kwargs) if scatter else axis.plot(x, y, **plot_kwargs)
     axis.set_xlabel(xlabel)
     plt.subplots_adjust(bottom=0.1)                  
     if not thumbnail:
@@ -439,19 +439,37 @@ def doc2spectrum(doc, extraprm, thumbnail, figsize):
         x = doc.get("dense_a512", None)
         if y is None and x is None:
             return None, None
-        plot_kwargs = {"color": "#FF7F0E"}
+        # dense_a512/dense_b512 can hold either a real signal (e.g. an
+        # ATR-FTIR spectrum resampled/padded into the fixed-length field --
+        # hundreds of nonzero samples) or a sparse embedding (e.g. a
+        # dose-response curve or fingerprint with a handful of nonzero
+        # points). Index order only carries continuity meaning in the
+        # former case, so a connecting line only makes sense there; a
+        # sparse vector connected by a line draws a meaningless zig-zag.
+        # Threshold on the absolute nonzero count, not the zero fraction --
+        # a padded/baseline-heavy real spectrum can be >90% zero by fraction
+        # while still having far more nonzero samples than a ~20-point
+        # dose-response curve.
+        nonzero = np.count_nonzero(y)
+        scatter = nonzero <= 50
+        if scatter:
+            marker_size = np.clip(12 - nonzero / 5, 4, 12)
+            plot_kwargs = {"color": "#FF7F0E", "s": marker_size}
+        else:
+            plot_kwargs = {"color": "#FF7F0E"}
         xtitle = ""
     else:
         x = x4search
         plot_kwargs = {}
         xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
+        scatter = False
     _title = None if thumbnail else "{} {} {} ({})".format(
         "" if extraprm is None else extraprm,
-        doc["name_s"], 
+        doc["name_s"],
         doc["reference_owner_s"], doc["reference_s"])
     fig = plot_spectrum(x, y, _title, xtitle, "intensity [a.u.]",
                         figsize=figsize, thumbnail=thumbnail,
-                        plot_kwargs=plot_kwargs)
+                        plot_kwargs=plot_kwargs, scatter=scatter)
     etag = generate_etag("{}{}{}".format(
         doc["textValue_s"], doc.get("updated_s",""), doc.get("_version_", "")))
     return fig, etag    
