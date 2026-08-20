@@ -15,11 +15,11 @@ SOLR_COLLECTIONS:
       name: polyrisk
       roles:
         - polyrisk
-    - description: POLYRISK public data  EU H2020 No 964766
+    - description: POLYRISK public data
       license: public
       name: polyrisk_spectra
       roles:
-        - polyrisk        
+        - public        
     - description: PLASTICFATE
       license: TBD
       name: plasticfate
@@ -39,14 +39,10 @@ SOLR_COLLECTIONS:
       license: TBD
       name: ambitlri_plasticmap
       roles:
-        - public
+        - polyrisk
   default: PLASTIC
 SOLR_DOCS:
   - study
-  - aop
-  - assay
-  - substance
-  - inventory
   - investigation
 
 SOLR_FIELDS:
