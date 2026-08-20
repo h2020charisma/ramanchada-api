@@ -496,6 +496,9 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                             "fl": "id,type_s,chemname:Name_s,SMILES:SMILES_x_s,_version_"}                
         else:
             if domain is None or domain.startswith("id:"):
+                # Short-circuits before the Solr query below, so no
+                # E.method_s is ever fetched here -- label is always None,
+                # giving the generic "STUDY" icon rather than a method name.
                 return entity_icon(entity_type=extraprm, title=f"{domain}", figsize=figsize), None
             else:
                 query = "textValue_s:{}{}{}".format('"', domain, '"')
