@@ -61,6 +61,11 @@ SOLR_COLLECTIONS:
       name: vega
       roles:
         - public         
+    - description: RRUFF
+      license: Public
+      name: rruf
+      roles:
+        - public
   default: charisma
 SOLR_DOCS:
   - study

@@ -5,13 +5,13 @@ KEYCLOAK:
   OPENID_CONFIG_URI: https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration
 SOLR_COLLECTIONS:
   collections:
-    - description: 'Plastic: SLoPP, SLoPP-E and Ocean Polymers Raman Spectral Libraries'
-      license: TBD
+    - description: 'Plastic: SLoPP, SLoPP-E, BLOP and Ocean Polymers Raman Spectral Libraries'
+      license: public
       name: plastic
       roles:
         - public
     - description: CHARISMA
-      license: TBD
+      license: public
       name: charisma-public
       roles:
         - public
@@ -25,6 +25,11 @@ SOLR_COLLECTIONS:
       name: charisma-private
       roles:
         - charisma
+    - description: RRUFF database
+      license: public
+      name: rruf
+      roles:
+        - public
   default: plastic
 SOLR_DOCS:
   - study

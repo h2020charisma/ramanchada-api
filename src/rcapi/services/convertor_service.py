@@ -127,6 +127,7 @@ def to_effectarrays(substances: Substances):
 
 def entity_icon(entity_type: str,
                 title: str = "",
+                label: str = None,
                 figsize=(2, 2),
                 title_fontsize=9,
                 label_fontsize=8) -> Figure:
@@ -140,6 +141,10 @@ def entity_icon(entity_type: str,
         Entity type (e.g. 'AOP', 'Key Event', 'Assay', 'Chemical', etc.)
     title : str
         Title text displayed above the figure (optional)
+    label : str
+        Central label text, overriding the default (entity_type.upper()) --
+        e.g. a study's technique/method name for entity_type="study", where
+        title already carries the sample name.
     figsize : tuple
         Figure size in inches (width, height)
     title_fontsize : int
@@ -159,7 +164,7 @@ def entity_icon(entity_type: str,
     ax.set_ylim(0, 1)
 
     entity = entity_type.lower().replace(" ", "_")
-    text_inside = entity_type.upper()
+    text_inside = entity_type.upper() if label is None else label
     patches = []
     # --- define shape and color ---
     if entity == "aop":
@@ -211,6 +216,16 @@ def entity_icon(entity_type: str,
     elif entity in ("model", "tool"):
         patches = [Rectangle((0.2, 0.3), 0.6, 0.4,
                           facecolor="lightgray", edgecolor="dimgray", linewidth=2)]
+    elif entity in ("study", "no_data", "spectrum"):
+        # A flat trace on a light panel, instead of a generic type icon --
+        # for a study doc with no dense_a512/dense_b512 or SOLR_VECTOR to
+        # actually render (see doc2spectrum/solr2image's study fallback).
+        # text_inside carries the technique/method name (E.method_s), same
+        # role as every other entity's central label -- describes what the
+        # study IS, not that a plot is missing.
+        patches = [FancyBboxPatch((0.08, 0.12), 0.84, 0.6,
+                               boxstyle="round,pad=0.02",
+                               facecolor="#f7f7f7", edgecolor="#d8d8d8", linewidth=1)]
     else:
         patches = [Rectangle((0.2, 0.3), 0.6, 0.4,
                           facecolor="white", edgecolor="black", linewidth=1)]
@@ -218,9 +233,24 @@ def entity_icon(entity_type: str,
     for patch in patches:
         ax.add_patch(patch)
 
-    # --- main label (centered type) ---
-    ax.text(0.5, 0.5, text_inside,
-            ha="center", va="center", fontsize=label_fontsize, weight="bold")
+    if entity in ("study", "no_data", "spectrum"):
+        # A flat, gently wavering line inside the panel drawn above, with
+        # the technique/method name (text_inside, e.g. "Py-GC-MS") below
+        # it -- describes what the study IS rather than commenting on a
+        # missing plot. Small fixed jitter (not random) so repeated calls
+        # for the same doc produce byte-identical PNGs -- this drives an
+        # HTTP etag downstream (see doc2spectrum's generate_etag).
+        line_x = np.linspace(0.16, 0.84, 9)
+        line_y = 0.5 + np.array([0, 1, -1, 0, 1, -1, 0, 1, 0]) * 0.025
+        ax.plot(line_x, line_y, color="#9aa5b1", linewidth=1.5,
+                solid_capstyle="round")
+        if text_inside:
+            ax.text(0.5, 0.24, text_inside, ha="center", va="center",
+                    fontsize=label_fontsize, color="#5a6472", weight="bold")
+    else:
+        # --- main label (centered type) ---
+        ax.text(0.5, 0.5, text_inside,
+                ha="center", va="center", fontsize=label_fontsize, weight="bold")
 
     # --- title (optional, above figure) ---
     if title:
@@ -353,7 +383,7 @@ def knnquery(domain, dataset="raw"):
         raise err
 
 
-def plot_spectrum(x, y, title=None, xlabel=None, ylabel=None, thumbnail=True, figsize=None, plot_kwargs=None):
+def plot_spectrum(x, y, title=None, xlabel=None, ylabel=None, thumbnail=True, figsize=None, plot_kwargs=None, scatter=False):
     if figsize is None:
         figsize = (6, 4)
     if xlabel is None:
@@ -364,7 +394,7 @@ def plot_spectrum(x, y, title=None, xlabel=None, ylabel=None, thumbnail=True, fi
     if plot_kwargs is None:
         plot_kwargs = {}
     axis = fig.add_subplot(1, 1, 1)
-    axis.plot(x, y, **plot_kwargs)
+    axis.scatter(x, y, **plot_kwargs) if scatter else axis.plot(x, y, **plot_kwargs)
     axis.set_xlabel(xlabel)
     plt.subplots_adjust(bottom=0.1)                  
     if not thumbnail:
@@ -409,19 +439,37 @@ def doc2spectrum(doc, extraprm, thumbnail, figsize):
         x = doc.get("dense_a512", None)
         if y is None and x is None:
             return None, None
-        plot_kwargs = {"color": "#FF7F0E"}
+        # dense_a512/dense_b512 can hold either a real signal (e.g. an
+        # ATR-FTIR spectrum resampled/padded into the fixed-length field --
+        # hundreds of nonzero samples) or a sparse embedding (e.g. a
+        # dose-response curve or fingerprint with a handful of nonzero
+        # points). Index order only carries continuity meaning in the
+        # former case, so a connecting line only makes sense there; a
+        # sparse vector connected by a line draws a meaningless zig-zag.
+        # Threshold on the absolute nonzero count, not the zero fraction --
+        # a padded/baseline-heavy real spectrum can be >90% zero by fraction
+        # while still having far more nonzero samples than a ~20-point
+        # dose-response curve.
+        nonzero = np.count_nonzero(y)
+        scatter = nonzero <= 50
+        if scatter:
+            marker_size = np.clip(12 - nonzero / 5, 4, 12)
+            plot_kwargs = {"color": "#FF7F0E", "s": marker_size}
+        else:
+            plot_kwargs = {"color": "#FF7F0E"}
         xtitle = ""
     else:
         x = x4search
         plot_kwargs = {}
         xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
+        scatter = False
     _title = None if thumbnail else "{} {} {} ({})".format(
         "" if extraprm is None else extraprm,
-        doc["name_s"], 
+        doc["name_s"],
         doc["reference_owner_s"], doc["reference_s"])
     fig = plot_spectrum(x, y, _title, xtitle, "intensity [a.u.]",
                         figsize=figsize, thumbnail=thumbnail,
-                        plot_kwargs=plot_kwargs)
+                        plot_kwargs=plot_kwargs, scatter=scatter)
     etag = generate_etag("{}{}{}".format(
         doc["textValue_s"], doc.get("updated_s",""), doc.get("_version_", "")))
     return fig, etag    
@@ -448,11 +496,14 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                             "fl": "id,type_s,chemname:Name_s,SMILES:SMILES_x_s,_version_"}                
         else:
             if domain is None or domain.startswith("id:"):
+                # Short-circuits before the Solr query below, so no
+                # E.method_s is ever fetched here -- label is always None,
+                # giving the generic "STUDY" icon rather than a method name.
                 return entity_icon(entity_type=extraprm, title=f"{domain}", figsize=figsize), None
             else:
                 query = "textValue_s:{}{}{}".format('"', domain, '"')
                 params = {"q": query, "fq": [solr_doc_filter()], 
-                        "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
+                        "fl": f"id,name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512,E.method_s"}
         if collections is not None:
             params["collection"] = collections
 
@@ -480,11 +531,31 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                         else:
                             return entity_icon(entity_type=extraprm, title=f"{chemname}", figsize=figsize), etag
                 elif extraprm in ["study"]:
+                    first_doc = None
                     for doc in response_json["response"]["docs"]:
+                        if first_doc is None:
+                            first_doc = doc
                         fig, etag = doc2spectrum(doc, extraprm=extraprm, thumbnail=thumbnail, figsize=figsize)
                         if fig is None:
                             continue
                         return fig, etag
+                    # No doc had plottable data (no dense_a512/dense_b512 or
+                    # SOLR_VECTOR) -- a styled study icon reads better than
+                    # the bare empty_figure fallback below, which shows the
+                    # raw domain/URL as its label. Uses the first doc's own
+                    # sample name (title, same as doc2spectrum) and
+                    # technique/method name (label) instead -- E.method_s
+                    # may be absent on some docs, so falls back to "Study".
+                    if first_doc is not None:
+                        etag = generate_etag("{}{}{}".format(
+                            first_doc.get("id", ""), first_doc.get("updated_s", ""),
+                            first_doc.get("_version_", "")))
+                        return entity_icon(
+                            entity_type="study",
+                            title=first_doc.get("name_s", ""),
+                            label=first_doc.get("E.method_s") or "Study",
+                            figsize=figsize,
+                        ), etag
                 elif extraprm == "prediction":
                     for doc in response_json["response"]["docs"]: 
                         methods = doc.get("attr_method", None)

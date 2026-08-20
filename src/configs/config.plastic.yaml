@@ -5,8 +5,8 @@ KEYCLOAK:
   OPENID_CONFIG_URI: https://iam.ideaconsult.net/realms/nano/.well-known/openid-configuration
 SOLR_COLLECTIONS:
   collections:
-    - description: PLASTIC
-      license: TBD
+    - description: 'Plastic: SLoPP, SLoPP-E, BLOP and Ocean Polymers Raman Spectral Libraries'
+      license: public
       name: plastic
       roles:
         - public
@@ -15,8 +15,8 @@ SOLR_COLLECTIONS:
       name: polyrisk
       roles:
         - polyrisk
-    - description: POLYRISK Spectra
-      license: TBD
+    - description: POLYRISK public data  EU H2020 No 964766
+      license: public
       name: polyrisk_spectra
       roles:
         - polyrisk        
@@ -40,21 +40,15 @@ SOLR_COLLECTIONS:
       name: ambitlri_plasticmap
       roles:
         - public
-    - description: Aop Mapper
-      license: TBD
-      name: aop4enm
-      roles:
-        - public
   default: PLASTIC
 SOLR_DOCS:
   - study
   - aop
   - assay
   - substance
-  - key_event
-  - stressor
-  - chemical
   - inventory
+  - investigation
+
 SOLR_FIELDS:
   - field: q_provider
     icon: fa6/FaUser
