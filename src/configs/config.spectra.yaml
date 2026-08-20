@@ -25,6 +25,11 @@ SOLR_COLLECTIONS:
       name: charisma-private
       roles:
         - charisma
+    - description: RRUFF database
+      license: public
+      name: rruf
+      roles:
+        - public
   default: plastic
 SOLR_DOCS:
   - study
