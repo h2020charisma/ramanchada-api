@@ -500,7 +500,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
             else:
                 query = "textValue_s:{}{}{}".format('"', domain, '"')
                 params = {"q": query, "fq": [solr_doc_filter()], 
-                        "fl": f"name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512"}
+                        "fl": f"id,name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512,E.method_s"}
         if collections is not None:
             params["collection"] = collections
 
