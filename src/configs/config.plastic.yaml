@@ -10,6 +10,11 @@ SOLR_COLLECTIONS:
       name: plastic
       roles:
         - public
+    - description: PHANTASTIC public data
+      license: public
+      name: phantastic
+      roles:
+        - public        
     - description: POLYRISK
       license: TBD
       name: polyrisk
