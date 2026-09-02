@@ -14,7 +14,7 @@ SOLR_COLLECTIONS:
       license: public
       name: phantastic
       roles:
-        - public        
+        - public
     - description: POLYRISK
       license: TBD
       name: polyrisk
@@ -24,7 +24,7 @@ SOLR_COLLECTIONS:
       license: public
       name: polyrisk_spectra
       roles:
-        - public        
+        - public
     - description: PLASTICFATE
       license: TBD
       name: plasticfate
@@ -39,7 +39,12 @@ SOLR_COLLECTIONS:
       license: TBD
       name: momentum
       roles:
-        - momentum        
+        - momentum
+    - description: MOMENTUM-2
+      license: TBD
+      name: momentum2
+      roles:
+        - momentum
     - description: PlasticMap
       license: TBD
       name: ambitlri_plasticmap
