@@ -50,7 +50,7 @@ SOLR_COLLECTIONS:
       name: ambitlri_plasticmap
       roles:
         - polyrisk
-  default: PLASTIC
+  default: plastic
 SOLR_DOCS:
   - study
   - investigation
