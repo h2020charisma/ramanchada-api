@@ -56,7 +56,13 @@ async def get_dataset(
         query = f'textValue_s:"{domain}"'
         fields = "name_s,reference_s,reference_owner_s,document_uuid_s,updated_s, guidance_s, _version_"
         if values:
-            fields = f"{fields},{SOLR_VECTOR},dense_a512,dense_b512"
+            # unit_s / x_name_s / x_unit_s label the dense vectors and are
+            # written on the same document by the indexer, so they only
+            # matter when the values themselves are requested.
+            fields = (
+                f"{fields},{SOLR_VECTOR},dense_a512,dense_b512,"
+                "unit_s,x_name_s,x_unit_s"
+            )
         params = {"q": query, "fq": ["type_s:study"], "fl": fields}
         rs = None
         try:
@@ -75,8 +81,26 @@ async def get_dataset(
                 await rs.aclose()
 
 
+def axis_title(name, unit):
+    """Compose an axis title from whatever the indexed document knows --
+    "Concentration [ug/mL]", "Concentration", "[%]", or "" when it knows
+    neither. Units are passed through exactly as indexed (no LaTeX
+    rewriting); the frontend runs them through latexToUnicode, which
+    leaves a plain unit alone.
+    """
+    name = (name or "").strip()
+    unit = (unit or "").strip()
+    if name and unit:
+        return "{} [{}]".format(name, unit)
+    if name:
+        return name
+    if unit:
+        return "[{}]".format(unit)
+    return ""
+
+
 async def read_solr_study4dataset(
-        domain, response_data, with_values=False, 
+        domain, response_data, with_values=False,
         data_source: Optional[Set[str]] = Query(default=None),token=None):
     # print(response_data)
     _domain = domain.split('#', 1)[0] if '#' in domain else domain
@@ -95,11 +119,19 @@ async def read_solr_study4dataset(
         if with_values:
             y = doc.get(SOLR_VECTOR, None)
             if y is None:
+               # Generic x/y vector pair (dense_a512/dense_b512): could be a
+               # dose-response curve, a calibration curve, etc. -- not
+               # necessarily a Raman spectrum. The indexer writes whatever
+               # it knew about the axes onto this same document, so use
+               # that; a doc that carries neither name nor unit still gets
+               # a blank title rather than a guess.
                y = doc.get("dense_b512", None)
                x = doc.get("dense_a512", None)
-               xtitle = ""
-               ytitle = "intensity [a.u.]"
+               xtitle = axis_title(doc.get("x_name_s"), doc.get("x_unit_s"))
+               ytitle = axis_title(None, doc.get("unit_s"))
             else:
+               # SOLR_VECTOR is a Raman spectrum resampled onto the fixed
+               # wavenumber search grid, so these titles are always correct.
                dim = len(y)
                x = StudyRaman.x4search(dim).tolist()
                xtitle = r'wavenumber [$\mathrm{cm}^{-1}$]'
