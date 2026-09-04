@@ -38,6 +38,14 @@ def test_study_uuid_is_not_the_parent_substance(monkeypatch):
     assert "study_uuid:s_uuid_s" not in fields
 
 
+def test_study_carries_its_parent_substance(monkeypatch):
+    """The viewer opens a study inside its substance, so the parent ships too."""
+    monkeypatch.setattr(solr_query.config, "SOLR_DOCS", ["study"], raising=False)
+    fields = solr_query.get_query_fields()
+
+    assert "study_substance:s_uuid_s" in fields
+
+
 def test_no_study_uuid_when_studies_are_not_served(monkeypatch):
     """The alias is scoped to the study branch, not emitted unconditionally."""
     monkeypatch.setattr(solr_query.config, "SOLR_DOCS", ["chemical"], raising=False)
@@ -57,6 +65,7 @@ def test_parse_solr_response_surfaces_study_uuid():
                     "study_name": "Crystalline phase",
                     "study_domain": "some text value",
                     "study_uuid": "NRCR-2253d10c-4fd7-a7cc-317f-97e7ef16b3d1",
+                    "study_substance": "NNRG-a51b2e58-4105-9643-3016-3f4b431171e2",
                 }
             ]
         }
@@ -66,6 +75,7 @@ def test_parse_solr_response_surfaces_study_uuid():
 
     assert len(items) == 1
     assert items[0]["uuid"] == "NRCR-2253d10c-4fd7-a7cc-317f-97e7ef16b3d1"
+    assert items[0]["substance_uuid"] == "NNRG-a51b2e58-4105-9643-3016-3f4b431171e2"
     assert items[0]["type"] == "study"
 
 
