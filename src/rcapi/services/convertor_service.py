@@ -125,37 +125,112 @@ def to_effectarrays(substances: Substances):
     return datasets
 
 
+# --- placeholder-icon design tokens --------------------------------------
+# For entity types with nothing real to render. One soft card, a line-drawn
+# glyph per type, a single muted hue each -- replaces the saturated filled
+# polygons some of these used to be. The type name is a small caption under
+# the glyph, not stamped across it.
+_ICON_CARD = "#f6f6f4"
+_ICON_CARD_EDGE = "#e2e1dc"
+_ICON_CAPTION = "#5a6472"
+_ICON_BASELINE = "#c9c9c4"
+_ICON_HUE = {
+    "study": "#5b7aa8",       # slate blue
+    "substance": "#a8794b",   # warm brown -- a material / aggregate
+    "chemical": "#5c8f77",    # sage green -- a defined compound
+    "composition": "#5c8f77",
+    "inventory": "#8a7690",   # muted plum -- a catalogue entry
+    "assay": "#b8923f",       # amber -- a test protocol (microplate)
+}
+# Studies draw a card + a small measurement trace; symbolic types draw their
+# glyph. Both put the type/method name as a caption beneath, unlike every
+# other type which keeps the centred label.
+_ICON_STUDYLIKE = ("study", "no_data", "spectrum", "metadata_study")
+_ICON_SYMBOLIC = ("chemical", "composition", "substance", "inventory", "assay")
+
+
+def _study_trace(topcategory):
+    """(hue, curve-shape) for a study card's mini trace, by AMBIT
+    top-category. Each family gets its own colour, and the curve matches
+    what that family actually measures:
+
+        P-CHEM     spectrum / size distribution  -> a peak
+        ENV FATE   degradation over time         -> exponential decay
+        ECOTOX     aquatic dose-response         -> sigmoid
+        TOX / else dose-response                 -> sigmoid
+
+    Matched on the alphanumerics of the value upper-cased, so "P-CHEM",
+    "P_CHEM" and "PCHEM" all resolve, likewise "ENV FATE" / "ENV_FATE".
+    """
+    norm = "".join(c for c in str(topcategory or "").upper() if c.isalnum())
+    if norm.startswith("PCHEM"):
+        return "#5b7aa8", "peak"       # slate blue
+    if norm.startswith("ENV"):
+        return "#7a8a5b", "decay"      # olive
+    if norm.startswith("ECOTOX"):
+        return "#4f8a8b", "sigmoid"    # teal
+    if norm.startswith("TOX"):
+        return "#a8794b", "sigmoid"    # warm brown
+    return "#5b7aa8", "sigmoid"        # unknown -> neutral blue, dose-response
+
+
 def entity_icon(entity_type: str,
                 title: str = "",
                 label: str = None,
                 figsize=(2, 2),
                 title_fontsize=9,
-                label_fontsize=8) -> Figure:
-    """
-    Generate a predefined symbolic matplotlib Figure for a given entity type,
-    with both a title (top) and a central type label.
+                label_fontsize=8,
+                topcategory: str = None) -> Figure:
+    """A small placeholder Figure for a search result that has nothing real
+    to render -- a study with no (or too sparse a) vector, a substance /
+    chemical / assay / catalogue row, or any type without its own thumbnail.
+
+    Three rendering modes, chosen from ``entity_type``:
+
+    * ``_ICON_STUDYLIKE`` (``study`` / ``no_data`` / ``spectrum`` /
+      ``metadata_study``) -- a soft card with a small measurement trace. The
+      trace's colour and shape come from ``topcategory`` via
+      ``_study_trace``: a Gaussian peak for P-CHEM, an exponential decay for
+      ENV FATE, a sigmoid for TOX / ECOTOX / unknown. ``label`` (the method
+      name, e.g. "FTIR") is a caption under the card.
+    * ``_ICON_SYMBOLIC`` (``chemical`` / ``composition`` -> aromatic ring;
+      ``substance`` -> overlapping particles; ``inventory`` -> list rows;
+      ``assay`` -> microplate) -- a line-drawn glyph in one muted hue
+      (``_ICON_HUE``), with ``label`` as a caption beneath rather than
+      stamped across it.
+    * everything else -- the type-specific shapes below (``aop``,
+      ``key_event``, ``prediction`` ...), or, with no match, a plain soft
+      card with the type name centred in it.
+
+    All output is deterministic: no randomness anywhere, so repeated calls
+    for the same inputs produce byte-identical PNGs. Callers hash the result
+    (or the source doc) into an HTTP ETag -- see ``doc2spectrum`` /
+    ``solr2image``.
 
     Parameters
     ----------
     entity_type : str
-        Entity type (e.g. 'AOP', 'Key Event', 'Assay', 'Chemical', etc.)
+        The Solr ``type_s`` of the result (``study``, ``substance``,
+        ``chemical``, ``assay``, ``composition``, ``inventory``, ``aop``,
+        ``key_event``, ``prediction`` ...). Case- and space-insensitive.
     title : str
-        Title text displayed above the figure (optional)
+        Text above the figure -- typically the sample / chemical name.
     label : str
-        Central label text, overriding the default (entity_type.upper()) --
-        e.g. a study's technique/method name for entity_type="study", where
-        title already carries the sample name.
+        Caption / centre text; defaults to ``entity_type.upper()``. For a
+        study this is the method name (``E.method_s``).
     figsize : tuple
-        Figure size in inches (width, height)
-    title_fontsize : int
-        Font size for the title text
-    label_fontsize : int
-        Font size for the central type label
+        Figure size in inches.
+    title_fontsize, label_fontsize : int
+        Font sizes for the title and the label/caption.
+    topcategory : str
+        AMBIT top-category of a study (``P-CHEM`` / ``TOX`` / ``ECOTOX`` /
+        ``ENV FATE``), used only for ``_ICON_STUDYLIKE`` to pick the trace.
+        Ignored for every other type.
 
     Returns
     -------
     matplotlib.figure.Figure
-        Figure object (no canvas, suitable for streaming)
+        Figure object (no canvas, suitable for streaming).
     """
     fig = Figure(figsize=figsize)
     ax = fig.add_subplot(1, 1, 1)
@@ -175,11 +250,47 @@ def entity_icon(entity_type: str,
         patches = [Circle((0.5, 0.5), 0.25,
                        facecolor="orange", edgecolor="darkorange", linewidth=2)]
     elif entity == "assay":
-        patches = [Polygon([[0.2, 0.1], [0.8, 0.1], [0.5, 0.8]], closed=True,
-                        facecolor="mediumseagreen", edgecolor="seagreen", linewidth=2)]
-    elif entity in ("chemical", "substance"):
-        patches = [RegularPolygon((0.5, 0.5), numVertices=6, radius=0.25,
-                               facecolor="violet", edgecolor="purple", linewidth=2)]
+        # A microplate: a card with a 4x3 grid of wells. Reads as "a test
+        # protocol / measurement setup" in the tox/bio sense, in the same
+        # card idiom as the rest of the family.
+        hue = _ICON_HUE["assay"]
+        patches = [FancyBboxPatch((0.12, 0.32), 0.76, 0.42,
+                                  boxstyle="round,pad=0.02",
+                                  facecolor=_ICON_CARD, edgecolor=_ICON_CARD_EDGE,
+                                  linewidth=1.2)]
+        for well_x in (0.24, 0.40, 0.56, 0.72):
+            for well_y in (0.42, 0.53, 0.64):
+                patches.append(Circle((well_x, well_y), 0.032,
+                                      facecolor=hue, alpha=0.45,
+                                      edgecolor=hue, linewidth=1.2))
+    elif entity in ("chemical", "composition"):
+        # The aromatic-ring glyph: a hexagon with an inscribed circle, stroke
+        # only. Universally reads as "a compound".
+        hue = _ICON_HUE["chemical"]
+        patches = [RegularPolygon((0.5, 0.54), numVertices=6, radius=0.24,
+                                  facecolor="none", edgecolor=hue, linewidth=2.4),
+                   Circle((0.5, 0.54), 0.115,
+                          facecolor="none", edgecolor=hue, linewidth=1.8)]
+    elif entity == "substance":
+        # Three overlapping particles -- a material / aggregate, distinct
+        # from the single ring of a defined chemical.
+        hue = _ICON_HUE["substance"]
+        patches = [Circle((0.42, 0.56), 0.145, facecolor=hue, alpha=0.22,
+                          edgecolor=hue, linewidth=2.2),
+                   Circle((0.59, 0.585), 0.125, facecolor=hue, alpha=0.22,
+                          edgecolor=hue, linewidth=2.2),
+                   Circle((0.52, 0.43), 0.115, facecolor=hue, alpha=0.22,
+                          edgecolor=hue, linewidth=2.2)]
+    elif entity == "inventory":
+        # A short stack of list rows -- a catalogue entry.
+        hue = _ICON_HUE["inventory"]
+        patches = [FancyBboxPatch((0.17, 0.36), 0.66, 0.34,
+                                  boxstyle="round,pad=0.02",
+                                  facecolor=_ICON_CARD, edgecolor=_ICON_CARD_EDGE,
+                                  linewidth=1.2)]
+        for row_y in (0.585, 0.505, 0.425):
+            patches.append(Rectangle((0.25, row_y), 0.50, 0.04,
+                                     facecolor=hue, alpha=0.55, edgecolor="none"))
     elif entity in ("biological_object", "gene", "protein", "cell"):
         patches = [Ellipse((0.5, 0.5), 0.6, 0.35,
                         facecolor="turquoise", edgecolor="teal", linewidth=2)]
@@ -216,37 +327,56 @@ def entity_icon(entity_type: str,
     elif entity in ("model", "tool"):
         patches = [Rectangle((0.2, 0.3), 0.6, 0.4,
                           facecolor="lightgray", edgecolor="dimgray", linewidth=2)]
-    elif entity in ("study", "no_data", "spectrum"):
-        # A flat trace on a light panel, instead of a generic type icon --
-        # for a study doc with no dense_a512/dense_b512 or SOLR_VECTOR to
-        # actually render (see doc2spectrum/solr2image's study fallback).
-        # text_inside carries the technique/method name (E.method_s), same
-        # role as every other entity's central label -- describes what the
-        # study IS, not that a plot is missing.
-        patches = [FancyBboxPatch((0.08, 0.12), 0.84, 0.6,
-                               boxstyle="round,pad=0.02",
-                               facecolor="#f7f7f7", edgecolor="#d8d8d8", linewidth=1)]
+    elif entity in _ICON_STUDYLIKE:
+        # A card with a small measurement trace (drawn below), instead of a
+        # generic type icon -- for a study doc with no dense_a512/dense_b512
+        # or SOLR_VECTOR to actually render, or one whose vector is too
+        # sparse to plot (see doc2spectrum). text_inside carries the method
+        # name (E.method_s) -- describes what the study IS, not that a plot
+        # is missing.
+        patches = [FancyBboxPatch((0.10, 0.30), 0.80, 0.46,
+                                  boxstyle="round,pad=0.02",
+                                  facecolor=_ICON_CARD, edgecolor=_ICON_CARD_EDGE,
+                                  linewidth=1.2)]
     else:
-        patches = [Rectangle((0.2, 0.3), 0.6, 0.4,
-                          facecolor="white", edgecolor="black", linewidth=1)]
+        # Anything with no glyph of its own -- a soft card and the type
+        # name, so it still reads as one of the family.
+        patches = [FancyBboxPatch((0.14, 0.30), 0.72, 0.40,
+                                  boxstyle="round,pad=0.03",
+                                  facecolor=_ICON_CARD, edgecolor=_ICON_CARD_EDGE,
+                                  linewidth=1.2)]
 
     for patch in patches:
         ax.add_patch(patch)
 
-    if entity in ("study", "no_data", "spectrum"):
-        # A flat, gently wavering line inside the panel drawn above, with
-        # the technique/method name (text_inside, e.g. "Py-GC-MS") below
-        # it -- describes what the study IS rather than commenting on a
-        # missing plot. Small fixed jitter (not random) so repeated calls
-        # for the same doc produce byte-identical PNGs -- this drives an
-        # HTTP etag downstream (see doc2spectrum's generate_etag).
-        line_x = np.linspace(0.16, 0.84, 9)
-        line_y = 0.5 + np.array([0, 1, -1, 0, 1, -1, 0, 1, 0]) * 0.025
-        ax.plot(line_x, line_y, color="#9aa5b1", linewidth=1.5,
-                solid_capstyle="round")
+    if entity in _ICON_STUDYLIKE:
+        # A small trace on a baseline inside the card above -- "a study with
+        # a measurement", replacing the old 9-point zig-zag. Its colour and
+        # shape follow the AMBIT top-category (see _study_trace): a peak for
+        # P-CHEM, a decay for ENV FATE, a sigmoid for TOX / ECOTOX. Fixed
+        # (no randomness) so repeated calls for the same doc produce
+        # byte-identical PNGs -- this drives an HTTP etag downstream (see
+        # doc2spectrum's generate_etag).
+        hue, shape = _study_trace(topcategory)
+        trace_x = np.linspace(0.18, 0.82, 64)
+        if shape == "peak":
+            offset = (trace_x - 0.5) / 0.10
+            trace_y = 0.36 + 0.30 * np.exp(-offset * offset)
+        elif shape == "decay":
+            trace_y = 0.36 + 0.30 * np.exp(-(trace_x - 0.18) / 0.17)
+        else:
+            trace_y = 0.36 + 0.30 / (1.0 + np.exp(-(trace_x - 0.5) / 0.055))
+        ax.plot([0.16, 0.84], [0.36, 0.36], color=_ICON_BASELINE, linewidth=1.0)
+        ax.plot(trace_x, trace_y, color=hue, linewidth=1.8, solid_capstyle="round")
         if text_inside:
-            ax.text(0.5, 0.24, text_inside, ha="center", va="center",
-                    fontsize=label_fontsize, color="#5a6472", weight="bold")
+            ax.text(0.5, 0.19, text_inside, ha="center", va="center",
+                    fontsize=label_fontsize, color=_ICON_CAPTION, weight="bold")
+    elif entity in _ICON_SYMBOLIC:
+        # Glyph already drawn above; the type name is a caption beneath it,
+        # not stamped across the glyph.
+        if text_inside:
+            ax.text(0.5, 0.19, text_inside, ha="center", va="center",
+                    fontsize=label_fontsize, color=_ICON_CAPTION, weight="bold")
     else:
         # --- main label (centered type) ---
         ax.text(0.5, 0.5, text_inside,
@@ -431,6 +561,17 @@ def generate_etag(content: str) -> str:
     return hashlib.md5(content.encode()).hexdigest()
 
 
+# Fewer than this many nonzero samples in a dense_* vector means it is a
+# sparse embedding (a dose-response curve, a fingerprint), not a resampled
+# spectrum. Such a vector has no useful thumbnail -- a handful of markers on
+# an empty axis, or a line zig-zagging between padded zeros, says nothing
+# about the study -- so it gets the study panel instead. A padded,
+# baseline-heavy real spectrum can be >90% zero by fraction yet still carry
+# far more nonzero samples than a ~20-point dose-response curve, so this
+# thresholds the absolute count, not the fraction.
+SPARSE_VECTOR_MIN_POINTS = 50
+
+
 def doc2spectrum(doc, extraprm, thumbnail, figsize):
     y = doc.get(SOLR_VECTOR, None)
     if y is None:
@@ -439,24 +580,26 @@ def doc2spectrum(doc, extraprm, thumbnail, figsize):
         x = doc.get("dense_a512", None)
         if y is None and x is None:
             return None, None
-        # dense_a512/dense_b512 can hold either a real signal (e.g. an
-        # ATR-FTIR spectrum resampled/padded into the fixed-length field --
-        # hundreds of nonzero samples) or a sparse embedding (e.g. a
-        # dose-response curve or fingerprint with a handful of nonzero
-        # points). Index order only carries continuity meaning in the
-        # former case, so a connecting line only makes sense there; a
-        # sparse vector connected by a line draws a meaningless zig-zag.
-        # Threshold on the absolute nonzero count, not the zero fraction --
-        # a padded/baseline-heavy real spectrum can be >90% zero by fraction
-        # while still having far more nonzero samples than a ~20-point
-        # dose-response curve.
-        nonzero = np.count_nonzero(y)
-        scatter = nonzero <= 50
-        if scatter:
-            marker_size = np.clip(12 - nonzero / 5, 4, 12)
-            plot_kwargs = {"color": "#FF7F0E", "s": marker_size}
-        else:
-            plot_kwargs = {"color": "#FF7F0E"}
+        # A sparse dense_* vector is not worth drawing -- show the same study
+        # panel a vector-less doc gets, labelled with the method (E.method_s),
+        # rather than a plot that misleads (see SPARSE_VECTOR_MIN_POINTS). Same
+        # label/title as solr2image's own "no plottable doc" fallback below.
+        if np.count_nonzero(y) <= SPARSE_VECTOR_MIN_POINTS:
+            fig = entity_icon(
+                entity_type="study",
+                title="" if thumbnail else doc.get("name_s", ""),
+                label=doc.get("E.method_s") or "Study",
+                figsize=figsize,
+                topcategory=doc.get("topcategory_s"),
+            )
+            etag = generate_etag("{}{}{}".format(
+                doc.get("textValue_s", ""), doc.get("updated_s", ""),
+                doc.get("_version_", "")))
+            return fig, etag
+        # A densely sampled vector is a real resampled spectrum -- draw it as
+        # a continuous curve.
+        plot_kwargs = {"color": "#FF7F0E"}
+        scatter = False
         xtitle = ""
     else:
         x = x4search
@@ -503,7 +646,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
             else:
                 query = "textValue_s:{}{}{}".format('"', domain, '"')
                 params = {"q": query, "fq": [solr_doc_filter()], 
-                        "fl": f"id,name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512,E.method_s"}
+                        "fl": f"id,name_s,textValue_s,reference_s,reference_owner_s,{SOLR_VECTOR},updated_s,_version_,dense_a512,dense_b512,E.method_s,topcategory_s"}
         if collections is not None:
             params["collection"] = collections
 
@@ -555,6 +698,7 @@ async def solr2image(solr_url: str, domain: str, figsize=(6, 4),
                             title=first_doc.get("name_s", ""),
                             label=first_doc.get("E.method_s") or "Study",
                             figsize=figsize,
+                            topcategory=first_doc.get("topcategory_s"),
                         ), etag
                 elif extraprm == "prediction":
                     for doc in response_json["response"]["docs"]: 
