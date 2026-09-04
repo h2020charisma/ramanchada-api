@@ -15,7 +15,12 @@ APPLICATION_NAME = config.application_name
 def get_query_fields():
     _fields = "id,type_s"
     if "study" in config.SOLR_DOCS:
-        _fields = f"{_fields},study_name:name_s,study_domain:textValue_s"
+        # study_uuid is the study's own identity (document_uuid_s = one protocol
+        # application), NOT s_uuid_s, which is the parent substance copied onto the study
+        # doc. It resolves as {ambitUrl}study/{uuid} — jtoxkit-react's documentUuid prop.
+        # A NeXus-backed study carries one too but is not an AMBIT record; those are told
+        # apart by the ".nxs" in study_domain (textValue_s).
+        _fields = f"{_fields},study_name:name_s,study_domain:textValue_s,study_uuid:document_uuid_s"
     if "substance" in config.SOLR_DOCS:
         _fields = f"{_fields},substance_name:name_hs,substance_uuid:s_uuid_hs"
     if "metadata_study" in config.SOLR_DOCS:
