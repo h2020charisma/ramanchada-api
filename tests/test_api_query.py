@@ -130,3 +130,57 @@ def test_post_knnquery(knnquery4test):
 def test_fixture(knnquery4test):
     _knnquery = decompress(knnquery4test)
     assert len(_knnquery) == 2048
+
+
+# --------------------------------------------------------------------
+# Field type-ahead (/db/query/field/terms)
+# --------------------------------------------------------------------
+# These run against the public `plastic` collection, whose E.method_s values are
+# full phrases ("ATR-FTIR spectroscopy", "Raman spectroscopy") -- the shape that
+# made the previous TermsComponent implementation unusable as a type-ahead.
+
+TERMS_ENDPOINT = "/db/query/field/terms"
+
+
+def test_field_terms_matches_inside_a_value():
+    """A type-ahead must match within a value, not only at its start.
+
+    terms.prefix is left-anchored over the whole indexed string, so typing
+    "FTIR" could never find "ATR-FTIR spectroscopy". Regression guard for that.
+    """
+    params = {"name": "qdynamic.E.method_s", "prefix": "FTIR",
+              "data_source": "plastic"}
+    response = client.get(TERMS_ENDPOINT, params=params)
+    assert response.status_code == 200
+    values = response.json()["response"]
+
+    assert values, "no match for a substring present in the data"
+    assert all("FTIR" in v for v in values)
+    assert any(not v.startswith("FTIR") for v in values), (
+        "only start-of-string matches returned -- prefix semantics are back"
+    )
+
+
+def test_field_terms_ignores_case():
+    params = {"name": "qdynamic.E.method_s", "prefix": "ftir",
+              "data_source": "plastic"}
+    response = client.get(TERMS_ENDPOINT, params=params)
+    assert response.status_code == 200
+    assert response.json()["response"]
+
+
+def test_field_terms_without_prefix_lists_values():
+    params = {"name": "publicname_s", "limit": 3, "data_source": "plastic"}
+    response = client.get(TERMS_ENDPOINT, params=params)
+    assert response.status_code == 200
+    values = response.json()["response"]
+    assert 0 < len(values) <= 3
+    assert all(isinstance(v, str) for v in values)
+
+
+def test_field_terms_unmatched_prefix_is_empty():
+    params = {"name": "qdynamic.E.method_s", "prefix": "zzz-no-such-method",
+              "data_source": "plastic"}
+    response = client.get(TERMS_ENDPOINT, params=params)
+    assert response.status_code == 200
+    assert response.json()["response"] == []

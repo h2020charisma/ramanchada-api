@@ -223,27 +223,42 @@ async def get_field_terms(
         field = query_service.get_predefined(field)
 
         # ---------------------------------------------
-        # CASE 1: String fields (_s) — TermsComponent
+        # CASE 1: String fields (_s) — facet over values
         # ---------------------------------------------
+        # Faceting rather than the TermsComponent, for two reasons:
+        #   * `terms` is not a stock /select component -- it has to be registered on the
+        #     handler, so it answers on some collections and silently returns nothing on
+        #     others (an empty "terms" section reads exactly like "no matches").
+        #     facet.* is core /select behaviour everywhere.
+        #   * terms.prefix is a left-anchored prefix over the whole indexed string, but
+        #     these are string fields holding phrases: typing "FTIR" could never match
+        #     "ATR-FTIR spectroscopy", nor "GC" match "Py-GC-MS". facet.contains does
+        #     substring matching, which is what a type-ahead is expected to do.
         if field.endswith("_s") or field.endswith("_ss"):
             params = {
                 "wt": "json",
-                "terms": "true",
-                "terms.fl": field,
-                "terms.sort": "index",
-                "terms.limit": limit,
+                "q": "*",
+                "rows": 0,
+                "facet": "true",
+                "facet.field": field,
+                "facet.limit": limit,
+                "facet.mincount": 1,
+                # Alphabetical, as the TermsComponent listing was (terms.sort=index);
+                # a suggestion list is scanned by name, not by popularity.
+                "facet.sort": "index",
             }
             if prefix:
-                params["terms.prefix"] = prefix
+                params["facet.contains"] = prefix
+                params["facet.contains.ignoreCase"] = "true"
             if collection_param is not None:
                 params["collection"] = collection_param
 
             rs = await solr_query_get(solr_url, params, token)
             j = rs.json()
-            term_data = j.get("terms", {}).get(field, [])
+            counts = j.get("facet_counts", {}).get("facet_fields", {}).get(field, [])
 
-            # Extract only terms (every 2nd element)
-            terms = [term_data[i] for i in range(0, len(term_data), 2)]
+            # facet_fields is a flat [value, count, value, count, ...] list
+            terms = [counts[i] for i in range(0, len(counts), 2)]
 
             return StandardResponse(status=1 if dropped else 0, response=terms)
 
@@ -282,30 +297,9 @@ async def get_field_terms(
             return StandardResponse(status=1 if dropped else 0,
                                     response=values[:limit])
 
-        # -----------------------------------------------------
-        # Other field types → try TermsComponent anyway
-        # -----------------------------------------------------
-        params = {
-            "wt": "json",
-            "terms": "true",
-            "terms.fl": field,
-            "terms.limit": limit,
-        }
-        if prefix:
-            params["terms.prefix"] = prefix
-        if collection_param is not None:
-            params["collection"] = collection_param
-
-        rs = await solr_query_get(solr_url, params, token)
-        j = rs.json()
-        term_data = j.get("terms", {}).get(field, [])
-        terms = [term_data[i] for i in range(0, len(term_data), 2)]
-
-        return StandardResponse(status=1 if dropped else 0, response=terms)
-
     except HTTPException:
         raise
-    except Exception:
+    except Exception as err:
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(err))
 
