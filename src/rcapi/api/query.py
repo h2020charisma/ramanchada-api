@@ -1,16 +1,128 @@
 from fastapi import APIRouter, Request, HTTPException, Depends, Query, Body
 from typing import Optional, Literal, Set, List, Dict, Any
+import json
 import traceback
 
 from rcapi.services import query_service
 from rcapi.services.standard_response import StandardResponse
 from rcapi.services.solr_query import (
     SOLR_ROOT, SOLR_VECTOR, SOLR_COLLECTIONS, SOLR_FIELDS, SOLR_SIMILARITY,
-    solr_query_get, APPLICATION_NAME
+    solr_query_get, solr_doc_filter, APPLICATION_NAME
 )
 from rcapi.services.kc import get_token, get_roles_from_token
 
 router = APIRouter()
+
+# --- /query/summary ------------------------------------------------------------------
+# Fields that can identify "one imported thing", best first. __input_file_s is the
+# original file a record was imported from -- the only one of the three that answers
+# "was my spreadsheet imported?". nexus_file_ss is the *transformed* .nxs, a usable
+# stand-in for a NeXus-backed collection that has no input-file provenance yet.
+# reference_s (the dataset/investigation) is the last resort for a collection that
+# records no file at all.
+SUMMARY_GROUP_FIELDS = ("__input_file_s", "nexus_file_ss", "reference_s")
+
+# Whitelisted aggregations. A caller never supplies a Solr function -- these are the
+# only expressions that can reach json.facet, so no caller string is ever interpolated
+# into it (see CODE_REVIEW.md 2.1 on Solr escaping).
+SUMMARY_METRICS = {
+    "studies": "hll(document_uuid_s)",
+    "materials": "hll(publicname_s)",
+    "methods": "hll(E.method_s)",
+    "endpoints": "hll(effectendpoint_s)",
+    "investigations": "hll(investigation_title_s)",
+    "effects": "sum(n_effects_d)",
+    "spectra": "sum(n_vectors_d)",
+}
+DEFAULT_SUMMARY_METRICS = ("studies", "materials", "methods", "endpoints")
+
+# One representative document per bucket, so a row has something to open. These are
+# the same three fields get_query_fields hands the frontend for a study hit: the
+# viewers registry dispatches on textValue_s (".nxs#" -> the NeXus viewers, anything
+# else -> the AMBIT study viewer), and needs both uuids to load it.
+SUMMARY_REPRESENTATIVE = {
+    "uuid": "document_uuid_s",
+    "substance_uuid": "s_uuid_s",
+    "value": "textValue_s",
+}
+
+# Values, not just a count: the "one file, several investigations" and "title reused
+# across files" checks need the titles themselves, and re-querying per row would be
+# one request per file.
+SUMMARY_INVESTIGATION_LIMIT = 10
+
+
+def _summary_facet(group_fields: List[str], metrics: List[str]) -> dict:
+    """Nested json.facet for `group_fields`, innermost carrying the measures.
+
+    `missing: True` is deliberate and load-bearing: the bucket of documents with no
+    value for the grouping field is exactly the "no provenance recorded" finding the
+    report exists to surface. Dropping it would hide the very defect being looked for.
+    """
+    leaf = {name: SUMMARY_METRICS[name] for name in metrics}
+    leaf["investigation"] = {
+        "type": "terms",
+        "field": "investigation_title_s",
+        "limit": SUMMARY_INVESTIGATION_LIMIT,
+    }
+    for alias, field in SUMMARY_REPRESENTATIVE.items():
+        leaf[alias] = {"type": "terms", "field": field, "limit": 1}
+
+    facet = leaf
+    for field in reversed(group_fields):
+        facet = {
+            "group": {
+                "type": "terms",
+                "field": field,
+                "limit": -1,
+                "mincount": 1,
+                "missing": True,
+                "facet": facet,
+            }
+        }
+    return facet
+
+
+def _summary_rows(bucket_holder: dict, group_fields: List[str],
+                  metrics: List[str], prefix: Optional[dict] = None) -> List[dict]:
+    """Flatten the nested facet response to one row per innermost bucket."""
+    group = bucket_holder.get("group")
+    if group is None:
+        return []
+    field = group_fields[0]
+    rest = group_fields[1:]
+    rows = []
+
+    buckets = list(group.get("buckets", []))
+    missing = group.get("missing")
+    if missing is not None and missing.get("count", 0) > 0:
+        # Surfaced as an explicit null rather than dropped or renamed to a
+        # sentinel string, so a caller can tell "no value recorded" apart from
+        # a document whose value happens to be the word "missing".
+        rows.extend(_bucket_rows({**missing, "val": None}, field, rest, metrics, prefix))
+    for bucket in buckets:
+        rows.extend(_bucket_rows(bucket, field, rest, metrics, prefix))
+    return rows
+
+
+def _bucket_rows(bucket: dict, field: str, rest: List[str],
+                 metrics: List[str], prefix: Optional[dict]) -> List[dict]:
+    here = dict(prefix or {})
+    here[field] = bucket.get("val")
+    if rest:
+        return _summary_rows(bucket, rest, metrics, here)
+
+    row = dict(here)
+    row["count"] = bucket.get("count", 0)
+    for name in metrics:
+        row[name] = bucket.get(name)
+    row["investigation"] = [
+        b.get("val") for b in bucket.get("investigation", {}).get("buckets", [])
+    ]
+    for alias in SUMMARY_REPRESENTATIVE:
+        values = bucket.get(alias, {}).get("buckets", [])
+        row[alias] = values[0].get("val") if values else None
+    return [row]
 
 
 @router.api_route(
@@ -357,6 +469,151 @@ async def get_field_range(
     except Exception as err:
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail=str(err))
+
+
+@router.get(
+    "/query/summary",
+    summary="Group a data source by import provenance, with counts",
+    description=(
+        "One row per imported file (or whatever provenance field the collection "
+        "actually records), with distinct-value counts and a representative document "
+        "to open. Answers 'what is in this collection and where did it come from', "
+        "which the per-field facet endpoints cannot: they take one field at a time and "
+        "cannot say which collection a count came from."
+    ),
+    openapi_extra={
+        "x-mcp-prompt": (
+            "Use this tool to inventory what has been imported into a data source. "
+            "Returns one entry per data source, each with the provenance field it was "
+            "grouped by and one row per distinct value. Example: "
+            "{'data_source': 'charisma', 'metrics': ['studies', 'materials']}. "
+            "Omit group_by to let the server pick the best available provenance field."
+        )
+    },
+    response_model=StandardResponse[List[dict]],
+)
+async def get_summary(
+    request: Request,
+    group_by: Optional[List[str]] = Query(
+        default=None,
+        description=(
+            "Field(s) to group by, at most 3. Omit to let the server pick the best "
+            "provenance field this collection actually populates."
+        ),
+    ),
+    metrics: Optional[List[str]] = Query(
+        default=None,
+        description="Any of: {}".format(", ".join(sorted(SUMMARY_METRICS))),
+    ),
+    fq: Optional[str] = Query(default=None),
+    data_source: Optional[Set[str]] = Query(default=None),
+    token: Optional[str] = Depends(get_token),
+):
+    """One entry per data source, each grouped independently.
+
+    Deliberately one Solr request per collection rather than one joined
+    multi-collection query: a merged response cannot be attributed back: hits carry no
+    collection marker and get_query_fields does not request the [shard] augmenter, so
+    "which of the selected sources does this row belong to" would be unanswerable --
+    and that attribution is the whole point of the report. It also means one
+    unreachable collection degrades to an error on its own entry instead of failing
+    the request.
+    """
+    # Gate once, for the whole selection: this raises 401/403 for a caller who cannot
+    # see the sources they asked for, exactly as every other route does.
+    _url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
+        SOLR_ROOT, data_source, drop_private=token is None
+    )
+    sources = (
+        collection_param.split(",") if collection_param
+        else [SOLR_COLLECTIONS.default]
+    )
+
+    if metrics:
+        unknown = [m for m in metrics if m not in SUMMARY_METRICS]
+        if unknown:
+            raise HTTPException(
+                status_code=400,
+                detail="Unknown metric(s): {}. Available: {}".format(
+                    ", ".join(sorted(unknown)), ", ".join(sorted(SUMMARY_METRICS))
+                ),
+            )
+        selected_metrics = list(dict.fromkeys(metrics))
+    else:
+        selected_metrics = list(DEFAULT_SUMMARY_METRICS)
+
+    requested_groups = None
+    if group_by:
+        if len(group_by) > 3:
+            raise HTTPException(
+                status_code=400,
+                detail="At most 3 group_by fields, got {}".format(len(group_by)),
+            )
+        # Same normalization the other field endpoints apply, so a caller can pass
+        # either the qdynamic-prefixed name the frontend holds or the raw Solr field.
+        requested_groups = [
+            query_service.get_predefined(g.replace("qdynamic.", "")) for g in group_by
+        ]
+
+    result = []
+    for source in sources:
+        solr_url = "{}/{}/select".format(SOLR_ROOT.rstrip("/"), source)
+        entry: Dict[str, Any] = {"data_source": source}
+        try:
+            # What provenance does this collection actually record? Answering from the
+            # index rather than from configuration is what keeps the report generic:
+            # nothing here knows which collection is AMBIT-backed and which is
+            # NeXus-backed, and a collection added later needs no change.
+            probe_params = {
+                # "*:*", not the "*" the older endpoints use -- that is a wildcard on
+                # the default field, not "all documents".
+                "q": "*:*",
+                "rows": 0,
+                "fq": solr_doc_filter(),
+                "json.facet": json.dumps({
+                    field: {"type": "query", "q": "{}:*".format(field)}
+                    for field in SUMMARY_GROUP_FIELDS
+                }),
+            }
+            probe = (await solr_query_get(solr_url, probe_params, token)).json()
+            provenance = {
+                field: probe.get("facets", {}).get(field, {}).get("count", 0)
+                for field in SUMMARY_GROUP_FIELDS
+            }
+            entry["provenance"] = provenance
+            entry["numFound"] = probe.get("response", {}).get("numFound", 0)
+
+            groups = requested_groups or [
+                next(
+                    (f for f in SUMMARY_GROUP_FIELDS if provenance.get(f)),
+                    SUMMARY_GROUP_FIELDS[0],
+                )
+            ]
+            entry["group_by"] = groups
+
+            params = {
+                "q": "*:*",
+                "rows": 0,
+                "fq": solr_doc_filter(),
+                "json.facet": json.dumps(_summary_facet(groups, selected_metrics)),
+            }
+            if fq:
+                params["fq"] = [params["fq"], fq]
+            rs = await solr_query_get(solr_url, params, token)
+            entry["rows"] = _summary_rows(
+                rs.json().get("facets", {}), groups, selected_metrics
+            )
+        except HTTPException as err:
+            # One collection being unreadable must not lose the others.
+            entry["error"] = err.detail
+            entry.setdefault("rows", [])
+        except Exception as err:  # noqa: BLE001
+            print(traceback.format_exc())
+            entry["error"] = str(err)
+            entry.setdefault("rows", [])
+        result.append(entry)
+
+    return StandardResponse(status=1 if dropped else 0, response=result)
 
 
 # https://github.com/h2020charisma/ramanchada-api/issues/59
