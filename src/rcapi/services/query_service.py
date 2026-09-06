@@ -129,6 +129,9 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
         # Optional per-type uuid alias (e.g. substance_uuid:s_uuid_hs). Kept raw
         # (not url-quoted) since the frontend encodes query params itself.
         uuid = doc.get(f'{type_s}_uuid', None)
+        # Optional per-type parent alias (study_substance:s_uuid_s). A study is opened
+        # inside its substance, so a client needs the parent as well as the study itself.
+        parent = doc.get(f'{type_s}_substance', None)
         id = urllib.parse.quote(doc.get("id", None))
         if embedded_images:
             try:
@@ -161,6 +164,8 @@ def parse_solr_response(response_data, base_url=None, embedded_images=False,thum
         }
         if uuid is not None:
             _tmp["uuid"] = uuid
+        if parent is not None:
+            _tmp["substance_uuid"] = parent
         _score = doc.get("score", None)
         if _score is not None:
             _tmp["score"] = _score

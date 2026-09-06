@@ -1,5 +1,6 @@
 from pydantic_settings import BaseSettings
 from pydantic import BaseModel, Field
+from fastapi import HTTPException
 from typing import List, Dict, Set, Optional, Tuple
 import yaml
 import os
@@ -48,14 +49,27 @@ class SolrCollectionSettings(BaseModel):
             base_url = f"{root.rstrip('/')}/{effective_default}/select"
             return base_url, collection_param, False
 
-        # Get valid data sources from user input
-        # valid_sources = data_source & valid_names
-        
-        # If no valid sources, fallback to default
+        # None of the requested sources can be served. Answering with the default
+        # collection instead would hand back another collection's data under the
+        # name the caller asked for -- indistinguishable from "this collection is
+        # empty", and the `dropped` flag alone has proven too quiet to notice.
+        #
+        # The answer must not depend on whether the name exists, or an anonymous
+        # caller could enumerate the non-public collections by probing names and
+        # reading the status code. So: no token, always "sign in" -- the same
+        # reply for a private collection and for one that does not exist. Only
+        # the caller's own input is echoed back, never what is configured here.
         if not valid_sources:
-            effective_default = default_collection
-            collection_param = None
-        elif len(valid_sources) == 1:
+            requested = ", ".join(sorted(requested_names))
+            if drop_private:
+                raise HTTPException(
+                    status_code=401,
+                    detail="Sign in to access: {}".format(requested))
+            raise HTTPException(
+                status_code=403,
+                detail="No accessible data source among: {}".format(requested))
+
+        if len(valid_sources) == 1:
             # Single valid source becomes default, no collections param
             effective_default = next(iter(valid_sources))
             # but if we want to pass to e.g. /download, we need collection_param!

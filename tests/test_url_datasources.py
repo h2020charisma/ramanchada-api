@@ -1,4 +1,5 @@
 import pytest
+from fastapi import HTTPException
 from rcapi.config.app_config import SolrCollectionSettings, SolrCollectionEntry
 
 
@@ -30,9 +31,56 @@ def test_empty_data_source(settings):
 
 
 def test_invalid_data_source(settings):
-    url, coll, dropped = settings.get_url(root, {"invalid"})
+    """An unserved source is refused, not quietly swapped for the default.
+
+    Answering with the default collection returned another collection's data
+    under the name the caller asked for, which is indistinguishable from that
+    collection being empty.
+    """
+    with pytest.raises(HTTPException) as excinfo:
+        settings.get_url(root, {"invalid"})
+    assert excinfo.value.status_code == 403
+    assert "invalid" in excinfo.value.detail
+
+
+def test_private_data_source_without_token_asks_for_signin(settings):
+    """A known-but-private source is a session problem: say so with 401."""
+    with pytest.raises(HTTPException) as excinfo:
+        settings.get_url(root, {"tox"}, drop_private=True)
+    assert excinfo.value.status_code == 401
+    assert "tox" in excinfo.value.detail
+
+
+def test_anonymous_cannot_tell_private_from_nonexistent(settings):
+    """No enumeration oracle: both answers must be identical to a stranger.
+
+    If a private collection answered 401 while an unknown name answered 403,
+    probing names would reveal which collections this deployment holds.
+    """
+    with pytest.raises(HTTPException) as private:
+        settings.get_url(root, {"tox"}, drop_private=True)
+    with pytest.raises(HTTPException) as unknown:
+        settings.get_url(root, {"no-such-collection"}, drop_private=True)
+
+    assert private.value.status_code == unknown.value.status_code == 401
+    # Only the caller's own input differs; the wording must not
+    assert private.value.detail.replace("tox", "X") == \
+        unknown.value.detail.replace("no-such-collection", "X")
+
+
+def test_private_data_source_with_token_is_served(settings):
+    """With a token the same private source resolves normally."""
+    url, coll, _ = settings.get_url(root, {"tox"}, drop_private=False)
+    assert url == f"{root}/tox/select"
+    assert coll == "tox"
+
+
+def test_partially_valid_data_sources_still_serve_the_valid_ones(settings):
+    """One unserved name among several does not fail the whole request."""
+    url, coll, dropped = settings.get_url(root, {"charisma", "invalid"})
     assert url == f"{root}/charisma/select"
-    assert coll is None
+    assert coll == "charisma"
+    assert dropped is True
 
 
 def test_single_valid_data_source_default(settings):
