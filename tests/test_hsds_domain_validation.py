@@ -25,8 +25,20 @@ client = TestClient(app)
         ),
         ("/RRUF/example.nxs#/entry/spectrum", "/RRUF/example.nxs"),
         (
-            "/PROJECT/[sample]+offset=1&label='raw'.nxs",
-            "/PROJECT/[sample]+offset=1&label='raw'.nxs",
+            "/PROJECT/café\u00a050%_EtOH@[lab]:1?.nxs",
+            "/PROJECT/café\u00a050%_EtOH@[lab]:1?.nxs",
+        ),
+        (
+            "/PROJECT/ sample /50%_EtOH%ZZ.nxs",
+            "/PROJECT/ sample /50%_EtOH%ZZ.nxs",
+        ),
+        (
+            "/RRUF/example.nxs#/ endpoint 50% /café#raw",
+            "/RRUF/example.nxs",
+        ),
+        (
+            "/RRUF/example.nxs#/" + "x" * (MAX_HSDS_DOMAIN_LENGTH + 1),
+            "/RRUF/example.nxs",
         ),
         (
             "/" + "a" * (MAX_HSDS_DOMAIN_LENGTH - 5) + ".nxs",
@@ -55,14 +67,7 @@ def test_validate_hsds_file_domain_accepts_product_paths(reference, expected):
         "/RRUF//example.nxs",
         "/RRUF/example.nxs/",
         "/RRUF\\example.nxs",
-        "/RRUF/example.nxs?bucket=other",
-        "/user@example.test/file.nxs",
-        "/host:443/file.nxs",
         "/RRUF/%2e%2e/example.nxs",
-        "/RRUF/example.nxs#relative",
-        "/RRUF/example.nxs#/../entry",
-        "/RRUF/example.nxs#/entry#other",
-        "/RRUF/café.nxs",
         "/RRUF/example.cha",
         "/RRUF/example.chaold",
         "/RRUF/example.NXS",
@@ -89,6 +94,30 @@ def test_download_rejects_invalid_domain_before_h5pyd(monkeypatch):
     open_file.assert_not_called()
 
 
+def test_download_passes_only_file_domain_to_h5pyd(monkeypatch):
+    remote_file = Mock()
+    remote_file.__enter__ = Mock(return_value=Mock())
+    remote_file.__exit__ = Mock(return_value=False)
+    open_file = Mock(return_value=remote_file)
+    monkeypatch.setattr(convertor.h5pyd, "File", open_file)
+    monkeypatch.setattr(convertor, "recursive_copy", Mock())
+
+    response = client.get(
+        "/db/download",
+        params={
+            "what": "h5",
+            "domain": "/PROJECT/café 50%_EtOH.nxs#/ endpoint 50% /signal#raw",
+        },
+    )
+
+    assert response.status_code == 200
+    open_file.assert_called_once_with(
+        "/PROJECT/café 50%_EtOH.nxs",
+        mode="r",
+        api_key=None,
+    )
+
+
 def test_legacy_reader_rejects_invalid_domain_before_h5pyd(monkeypatch):
     open_file = Mock(side_effect=AssertionError("h5pyd.File must not be called"))
     monkeypatch.setattr(hsds_dataset.h5pyd, "File", open_file)
@@ -100,6 +129,29 @@ def test_legacy_reader_rejects_invalid_domain_before_h5pyd(monkeypatch):
         )
 
     open_file.assert_not_called()
+
+
+def test_legacy_reader_preserves_chaold_suffix(monkeypatch):
+    remote_file = Mock()
+    remote_file.__enter__ = Mock(return_value=Mock())
+    remote_file.__exit__ = Mock(return_value=False)
+    open_file = Mock(return_value=remote_file)
+    monkeypatch.setattr(hsds_dataset.h5pyd, "File", open_file)
+    monkeypatch.setattr(
+        hsds_dataset,
+        "get_file_annotations",
+        Mock(return_value=(None, None)),
+    )
+
+    result = {"annotation": [], "datasets": []}
+    assert hsds_dataset.read_cha(
+        "/legacy/café 50%_EtOH.chaold#/ignored",
+        result,
+    ) == result
+    open_file.assert_called_once_with(
+        "/legacy/café 50%_EtOH.chaold",
+        api_key=None,
+    )
 
 
 def test_unused_knnquery_rejects_invalid_domain_before_h5pyd(monkeypatch):
