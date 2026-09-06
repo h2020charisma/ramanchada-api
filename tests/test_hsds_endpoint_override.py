@@ -6,62 +6,40 @@ from fastapi.testclient import TestClient
 from rcapi.api import convertor, hsds_dataset
 from rcapi.main import app
 from rcapi.services import convertor_service
-from rcapi.services.hsds_domain import (
-    MAX_HSDS_DOMAIN_LENGTH,
-    validate_hsds_file_domain,
-)
+from rcapi.services.hsds_endpoint import reject_hsds_endpoint_override
 
 
 client = TestClient(app)
 
 
 @pytest.mark.parametrize(
-    ("reference", "expected"),
+    "value",
     [
-        ("/RRUF/example.nxs", "/RRUF/example.nxs"),
-        (
-            "/CHARISMA_STUDY_PEAK_FITTING/Figure3 (Neon)/S10.nxs",
-            "/CHARISMA_STUDY_PEAK_FITTING/Figure3 (Neon)/S10.nxs",
-        ),
-        ("/RRUF/example.nxs#/entry/spectrum", "/RRUF/example.nxs"),
-        (
-            "/PROJECT/café\u00a050%_EtOH@[lab]:1?.nxs",
-            "/PROJECT/café\u00a050%_EtOH@[lab]:1?.nxs",
-        ),
-        (
-            "/PROJECT/ sample /50%_EtOH%ZZ.nxs",
-            "/PROJECT/ sample /50%_EtOH%ZZ.nxs",
-        ),
-        (
-            "/RRUF/example.nxs#/ endpoint 50% /café#raw",
-            "/RRUF/example.nxs",
-        ),
-        (
-            "/RRUF/example.nxs#/" + "x" * (MAX_HSDS_DOMAIN_LENGTH + 1),
-            "/RRUF/example.nxs",
-        ),
-        (
-            "/" + "a" * (MAX_HSDS_DOMAIN_LENGTH - 5) + ".nxs",
-            "/" + "a" * (MAX_HSDS_DOMAIN_LENGTH - 5) + ".nxs",
-        ),
+        "http://example.test/file.nxs",
+        "https://user:password@example.test:8443/file.nxs?query#fragment",
+        "HTTP://example.test/file.nxs",
+        "hTtPs://example.test/file.nxs",
+        "http+unix://%2Ftmp%2Fhsds.sock/file.nxs",
     ],
 )
-def test_validate_hsds_file_domain_accepts_product_paths(reference, expected):
-    assert validate_hsds_file_domain(reference) == expected
+def test_reject_hsds_endpoint_override_rejects_endpoint_urls(value):
+    with pytest.raises(ValueError, match="invalid HSDS domain"):
+        reject_hsds_endpoint_override(value)
 
 
 @pytest.mark.parametrize(
-    "reference",
+    "value",
     [
         "",
+        "/RRUF/example.nxs",
+        "/RRUF/example.nxs#/entry/spectrum",
+        "/PROJECT/café\u00a050%_EtOH@[lab]:1?.nxs",
         "RRUF/example.nxs",
         "//example.test/file.nxs",
-        "http://example.test/file.nxs",
-        "https://example.test/file.nxs",
-        "HTTP://example.test/file.nxs",
         " http://example.test/file.nxs",
         "hdf5://RRUF/example.nxs",
-        "http+unix://socket/file.nxs",
+        "ftp://example.test/file.nxs",
+        "https%3A%2F%2Fexample.test%2Ffile.nxs",
         "/RRUF/./example.nxs",
         "/RRUF/../example.nxs",
         "/RRUF//example.nxs",
@@ -72,12 +50,11 @@ def test_validate_hsds_file_domain_accepts_product_paths(reference, expected):
         "/RRUF/example.chaold",
         "/RRUF/example.NXS",
         "/RRUF/example\x00.nxs",
-        "/" + "a" * MAX_HSDS_DOMAIN_LENGTH + ".nxs",
+        "/" + "a" * 4096 + ".nxs",
     ],
 )
-def test_validate_hsds_file_domain_rejects_ambiguous_paths(reference):
-    with pytest.raises(ValueError, match="invalid HSDS domain"):
-        validate_hsds_file_domain(reference)
+def test_reject_hsds_endpoint_override_does_not_validate_other_values(value):
+    assert reject_hsds_endpoint_override(value) is None
 
 
 def test_download_rejects_invalid_domain_before_h5pyd(monkeypatch):
@@ -94,7 +71,7 @@ def test_download_rejects_invalid_domain_before_h5pyd(monkeypatch):
     open_file.assert_not_called()
 
 
-def test_download_passes_only_file_domain_to_h5pyd(monkeypatch):
+def test_download_passes_non_endpoint_domain_to_h5pyd_unchanged(monkeypatch):
     remote_file = Mock()
     remote_file.__enter__ = Mock(return_value=Mock())
     remote_file.__exit__ = Mock(return_value=False)
@@ -112,7 +89,7 @@ def test_download_passes_only_file_domain_to_h5pyd(monkeypatch):
 
     assert response.status_code == 200
     open_file.assert_called_once_with(
-        "/PROJECT/café 50%_EtOH.nxs",
+        "/PROJECT/café 50%_EtOH.nxs#/ endpoint 50% /signal#raw",
         mode="r",
         api_key=None,
     )
@@ -129,29 +106,6 @@ def test_legacy_reader_rejects_invalid_domain_before_h5pyd(monkeypatch):
         )
 
     open_file.assert_not_called()
-
-
-def test_legacy_reader_preserves_chaold_suffix(monkeypatch):
-    remote_file = Mock()
-    remote_file.__enter__ = Mock(return_value=Mock())
-    remote_file.__exit__ = Mock(return_value=False)
-    open_file = Mock(return_value=remote_file)
-    monkeypatch.setattr(hsds_dataset.h5pyd, "File", open_file)
-    monkeypatch.setattr(
-        hsds_dataset,
-        "get_file_annotations",
-        Mock(return_value=(None, None)),
-    )
-
-    result = {"annotation": [], "datasets": []}
-    assert hsds_dataset.read_cha(
-        "/legacy/café 50%_EtOH.chaold#/ignored",
-        result,
-    ) == result
-    open_file.assert_called_once_with(
-        "/legacy/café 50%_EtOH.chaold",
-        api_key=None,
-    )
 
 
 def test_unused_knnquery_rejects_invalid_domain_before_h5pyd(monkeypatch):

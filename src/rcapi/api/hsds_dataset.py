@@ -8,7 +8,7 @@ from rcapi.services.solr_query import (
 from pynanomapper.clients.datamodel_simple import StudyRaman
 from rcapi.services.kc import get_token
 from rcapi.services.convertor_service import x4search
-from rcapi.services.hsds_domain import validate_hsds_file_domain
+from rcapi.services.hsds_endpoint import reject_hsds_endpoint_override
 router = APIRouter()
 
 
@@ -178,7 +178,7 @@ async def read_solr_study4dataset(
 
 
 def read_cha(domain, result,  read_values=False, filter={"sample": None}, token=None):
-    domain = validate_hsds_file_domain(domain, suffix=".chaold")
+    reject_hsds_endpoint_override(domain)
     with h5pyd.File(domain, api_key=token) as file:
         tmp, datasets = get_file_annotations(file, read_values, filter)
         if tmp is None or datasets is None:

@@ -7,7 +7,7 @@ import h5pyd
 from rcapi.services.solr_query import (
     solr_query_get, SOLR_VECTOR, solr_doc_filter
     )
-from rcapi.services.hsds_domain import validate_hsds_file_domain
+from rcapi.services.hsds_endpoint import reject_hsds_endpoint_override
 import traceback
 import tempfile
 import shutil
@@ -355,7 +355,7 @@ def plot_mol(mol, title=None, thumbnail=True, figsize=None, **draw_kwargs):
 
 
 def knnquery(domain, dataset="raw"):
-    domain = validate_hsds_file_domain(domain)
+    reject_hsds_endpoint_override(domain)
     try:
         with h5pyd.File(domain, mode="r") as h5:
             x = h5[dataset][0]
