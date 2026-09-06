@@ -16,6 +16,7 @@ from rcapi.services.convertor_service import (
     read_spectrum_native, plot_spectrum, preprocess_spectrum, x4search
 )
 from rcapi.services.kc import get_token
+from rcapi.services.hsds_endpoint import reject_hsds_endpoint_override
 import h5py
 import h5pyd
 from rcapi.services.solr_query import SOLR_ROOT, SOLR_COLLECTIONS
@@ -60,6 +61,11 @@ async def convert_get(
     if not domain:
         # tr.set_error("missing domain")
         raise HTTPException(status_code=400, detail=str("missing domain"))
+    if what == "h5":
+        try:
+            reject_hsds_endpoint_override(domain)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid HSDS domain")
 
     solr_url, collection_param, dropped = SOLR_COLLECTIONS.get_url(
         SOLR_ROOT, data_source, drop_private=token is None)
