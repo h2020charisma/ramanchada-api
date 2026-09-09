@@ -15,6 +15,11 @@ SOLR_COLLECTIONS:
       name: phantastic
       roles:
         - public
+    - description: PHANTASTIC private data
+      license: public
+      name: phantastic_private
+      roles:
+        - phantastic        
     - description: POLYRISK
       license: TBD
       name: polyrisk
