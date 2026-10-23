@@ -3969,14 +3969,14 @@ cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 
 [[package]]
 name = "ramanchada2"
-version = "1.3.1"
+version = "1.4.0"
 description = "Harmonising Raman Spectroscopy"
 optional = false
 python-versions = "<3.14,>=3.9"
 groups = ["main"]
 files = [
-    {file = "ramanchada2-1.3.1-py3-none-any.whl", hash = "sha256:557343112953ae282bc5f72d6099f2be08e3c29ff202da7de3767ef8fafc0088"},
-    {file = "ramanchada2-1.3.1.tar.gz", hash = "sha256:b0ff2d06ec3c0335a957c6ec43337756b0ff3d1c4adf863e4cf71ef27cfcb0d0"},
+    {file = "ramanchada2-1.4.0-py3-none-any.whl", hash = "sha256:a0647e60c2b7cbbb41f5646bc68fa46a1033b40b6cee365c91d0e2b6ec613abc"},
+    {file = "ramanchada2-1.4.0.tar.gz", hash = "sha256:f5111cfd709b87621393f9788c70825baa28e1062bdc1a17c54bc16749c5b7a8"},
 ]
 
 [package.dependencies]
